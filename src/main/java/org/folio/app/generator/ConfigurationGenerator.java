@@ -1,13 +1,16 @@
 package org.folio.app.generator;
 
 import java.util.List;
+import javax.inject.Inject;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.folio.app.generator.configuration.ApplicationContextBuilder;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
 import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.service.ApplicationDescriptorGenerator;
+import org.folio.app.generator.service.ModuleRegistryProvider;
 
 @Mojo(name = "generateFromConfiguration", defaultPhase = LifecyclePhase.COMPILE)
 public class ConfigurationGenerator extends AbstractGeneratorMojo {
@@ -20,6 +23,11 @@ public class ConfigurationGenerator extends AbstractGeneratorMojo {
 
   @Parameter(name = "dependencies")
   List<Dependency> dependencies;
+
+  @Inject
+  public ConfigurationGenerator(ModuleRegistryProvider registryProvider, ApplicationContextBuilder contextBuilder) {
+    super(registryProvider, contextBuilder);
+  }
 
   @Override
   public void execute() throws MojoExecutionException {

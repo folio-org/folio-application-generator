@@ -20,31 +20,37 @@ import software.amazon.awssdk.regions.Region;
 public abstract class AbstractGeneratorMojo extends AbstractMojo {
 
   @Parameter(defaultValue = "${project}", readonly = true, required = true)
-  MavenProject mavenProject;
+  protected MavenProject mavenProject;
 
   @Parameter(defaultValue = "${session}", required = true, readonly = true)
-  MavenSession mavenSession;
+  protected MavenSession mavenSession;
 
   @Parameter(defaultValue = "${buildNumber}")
-  String buildNumber;
+  protected String buildNumber;
 
   @Parameter(defaultValue = "${registries}")
-  String cmdRegistriesString;
+  protected String cmdRegistriesString;
 
   @Parameter(defaultValue = "${overrideConfigRegistries}")
-  String overrideConfigRegistries;
+  protected String overrideConfigRegistries;
 
   @Parameter(name = "moduleRegistries")
-  List<ConfigModuleRegistry> moduleRegistries;
+  protected List<ConfigModuleRegistry> moduleRegistries;
 
   @Parameter(name = "useModuleDescriptorsUrls")
-  String useModuleDescriptorsUrls;
+  protected String useModuleDescriptorsUrls;
 
   @Parameter(defaultValue = "${awsRegion}")
-  String awsRegion;
+  protected String awsRegion;
 
-  @Inject ModuleRegistryProvider moduleRegistryProvider;
-  @Inject ApplicationContextBuilder applicationContextBuilder;
+  protected final ModuleRegistryProvider moduleRegistryProvider;
+  protected final ApplicationContextBuilder applicationContextBuilder;
+
+  @Inject
+  protected AbstractGeneratorMojo(ModuleRegistryProvider registryProvider, ApplicationContextBuilder contextBuilder) {
+    this.moduleRegistryProvider = registryProvider;
+    this.applicationContextBuilder = contextBuilder;
+  }
 
   protected GenericApplicationContext buildApplicationContext() throws MojoExecutionException {
     var pluginConfig = PluginConfig.builder()

@@ -1,5 +1,6 @@
 package org.folio.app.generator.service.loader;
 
+import static java.lang.Boolean.TRUE;
 import static java.util.Optional.ofNullable;
 import static org.folio.app.generator.utils.PluginUtils.createModuleDefinitionFromId;
 
@@ -41,11 +42,9 @@ public class S3ModuleDescriptorLoader implements ModuleDescriptorLoader {
     var s3Registry = (S3ModuleRegistry) registry;
     var version = module.getVersion();
     var filter = "latest".equals(version) ? module.getName() : module.getId();
-    var s3RegistryPath = s3Registry.getPath();
-    var pathPrefix = s3RegistryPath.isEmpty() ? s3RegistryPath : s3RegistryPath + "/";
-    var fullPrefix = pathPrefix + filter;
+    var fullPrefix = s3Registry.getPath() + filter;
 
-    return findLatestVersionByPrefix(s3Registry, pathPrefix, fullPrefix)
+    return findLatestVersionByPrefix(s3Registry, fullPrefix)
       .flatMap(foundS3Object -> readS3Object(foundS3Object, s3Registry));
   }
 
@@ -54,7 +53,7 @@ public class S3ModuleDescriptorLoader implements ModuleDescriptorLoader {
     return RegistryType.AWS_S3;
   }
 
-  private Optional<S3Object> findLatestVersionByPrefix(S3ModuleRegistry s3Registry, String pathPrefix, String prefix) {
+  private Optional<S3Object> findLatestVersionByPrefix(S3ModuleRegistry s3Registry, String prefix) {
     var request = buildListObjectsRequest(s3Registry, prefix, null);
 
     ListObjectsV2Response result;
@@ -68,14 +67,14 @@ public class S3ModuleDescriptorLoader implements ModuleDescriptorLoader {
       }
 
       for (var s3Object : s3ObjectsByPrefix) {
-        var nextMaxValue = tryFindNextMaxValue(pathPrefix, s3Object, maxValueHolder);
+        var nextMaxValue = tryFindNextMaxValue(s3Registry.getPath(), s3Object, maxValueHolder);
         if (nextMaxValue != null) {
           maxValueHolder = nextMaxValue;
         }
       }
 
       request = buildListObjectsRequest(s3Registry, prefix, result.nextContinuationToken());
-    } while (result.isTruncated());
+    } while (TRUE.equals(result.isTruncated()));
 
     return ofNullable(maxValueHolder).map(Pair::getRight);
   }

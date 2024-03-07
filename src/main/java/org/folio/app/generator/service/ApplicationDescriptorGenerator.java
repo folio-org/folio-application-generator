@@ -15,8 +15,8 @@ public class ApplicationDescriptorGenerator {
 
   private final MavenProject mavenProject;
   private final JsonConverter jsonConverter;
+  private final ApplicationDescriptorService applicationDescriptorService;
   private final ApplicationDependencyValidator applicationDependencyValidator;
-  private final ApplicationDescriptorService applicationDescriptorGenerator;
 
   /**
    * Generates application descriptor from template.
@@ -26,7 +26,7 @@ public class ApplicationDescriptorGenerator {
    */
   public void generate(ApplicationDescriptorTemplate template) throws MojoExecutionException {
     applicationDependencyValidator.validateDependencies(template);
-    var application = applicationDescriptorGenerator.create(template);
+    var application = applicationDescriptorService.create(template);
 
     var targetDirectory = new File(mavenProject.getBuild().getDirectory());
     if (!targetDirectory.exists() && !targetDirectory.mkdirs()) {
