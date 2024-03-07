@@ -1,5 +1,6 @@
 package org.folio.app.generator.service.loader;
 
+import static java.lang.Boolean.TRUE;
 import static java.util.Optional.ofNullable;
 import static org.folio.app.generator.utils.PluginUtils.createModuleDefinitionFromId;
 
@@ -16,6 +17,7 @@ import org.folio.app.generator.model.registry.S3ModuleRegistry;
 import org.folio.app.generator.model.types.RegistryType;
 import org.folio.app.generator.utils.JsonConverter;
 import org.folio.app.generator.utils.PluginConfig;
+import org.folio.app.generator.utils.PluginUtils;
 import org.semver4j.Semver;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -42,7 +44,7 @@ public class S3ModuleDescriptorLoader implements ModuleDescriptorLoader {
     var version = module.getVersion();
     var filter = "latest".equals(version) ? module.getName() : module.getId();
     var s3RegistryPath = s3Registry.getPath();
-    var pathPrefix = s3RegistryPath.isEmpty() ? s3RegistryPath : s3RegistryPath + "/";
+    var pathPrefix = s3RegistryPath.isEmpty() ? s3RegistryPath : s3RegistryPath + PluginUtils.PATH_DELIMITER;
     var fullPrefix = pathPrefix + filter;
 
     return findLatestVersionByPrefix(s3Registry, pathPrefix, fullPrefix)
@@ -75,7 +77,7 @@ public class S3ModuleDescriptorLoader implements ModuleDescriptorLoader {
       }
 
       request = buildListObjectsRequest(s3Registry, prefix, result.nextContinuationToken());
-    } while (result.isTruncated());
+    } while (TRUE.equals(result.isTruncated()));
 
     return ofNullable(maxValueHolder).map(Pair::getRight);
   }

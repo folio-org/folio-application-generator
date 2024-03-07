@@ -3,6 +3,7 @@ package org.folio.app.generator.service.parsers;
 import static org.apache.commons.lang3.StringUtils.removeEnd;
 import static org.apache.commons.lang3.StringUtils.removeStart;
 import static org.apache.commons.lang3.StringUtils.trim;
+import static org.folio.app.generator.utils.PluginUtils.PATH_DELIMITER;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -18,10 +19,10 @@ import org.folio.app.generator.model.registry.S3ModuleRegistry;
 
 public class StringModuleRegistryParser {
 
-  private final Pattern okapiPattern1 = Pattern.compile("(okapi)::(.+)::(.+)");
-  private final Pattern okapiPattern2 = Pattern.compile("(okapi)::(.+)");
-  private final Pattern s3Pattern1 = Pattern.compile("(s3)::(.+)::(.+)::(.+)");
-  private final Pattern s3Pattern2 = Pattern.compile("(s3)::(.+)::(.+)");
+  private final Pattern okapiPattern1 = Pattern.compile("(okapi)::(.{1,1024})::(.{1,1024})");
+  private final Pattern okapiPattern2 = Pattern.compile("(okapi)::(.{1,1024})");
+  private final Pattern s3Pattern1 = Pattern.compile("(s3)::(.{1,1024})::(.{1,1024})::(.{1,1024})");
+  private final Pattern s3Pattern2 = Pattern.compile("(s3)::(.{1,1024})::(.{1,1024})");
 
   private final List<Pair<Pattern, Function<String[], ModuleRegistry>>> patterns = List.of(
     Pair.of(okapiPattern1, StringModuleRegistryParser::parseOkapiString),
@@ -63,18 +64,16 @@ public class StringModuleRegistryParser {
     var s3ModuleRegistry = new OkapiModuleRegistry();
     s3ModuleRegistry.setUrl(verifiedUrl);
 
-    if (stringParts.length == 2) {
-      s3ModuleRegistry.setPublicUrl(verifiedUrl + "/_/proxy/modules/{id}");
-    } else {
+    if (stringParts.length == 3) {
       s3ModuleRegistry.setPublicUrl(trim(stringParts[2]));
     }
 
-    return s3ModuleRegistry;
+    return s3ModuleRegistry.withGeneratedFields();
   }
 
   private static URL checkAndGetUrl(String probablyUrl) {
     try {
-      return new URL(removeEnd(probablyUrl, "/"));
+      return new URL(removeEnd(probablyUrl, PATH_DELIMITER));
     } catch (MalformedURLException e) {
       throw new IllegalArgumentException("Invalid url provided: " + probablyUrl, e);
     }
@@ -83,10 +82,10 @@ public class StringModuleRegistryParser {
   private static S3ModuleRegistry parseAwsS3String(String[] stringParts) {
     var s3ModuleRegistry = new S3ModuleRegistry();
     var bucket = stringParts[1];
-    var path = removeEnd(removeStart(trim(stringParts[2]), "/"), "/");
+    var path = removeEnd(removeStart(trim(stringParts[2]), PATH_DELIMITER), PATH_DELIMITER);
 
     s3ModuleRegistry.setBucket(trim(bucket));
-    s3ModuleRegistry.setPath(path);
+    s3ModuleRegistry.setPath(path.isEmpty() ? path : path + PATH_DELIMITER);
 
     if (stringParts.length == 4) {
       s3ModuleRegistry.setPublicUrl(trim(stringParts[3]));

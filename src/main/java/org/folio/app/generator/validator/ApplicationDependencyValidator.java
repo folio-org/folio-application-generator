@@ -56,33 +56,40 @@ public class ApplicationDependencyValidator {
     log.debug("Is pre-release application descriptor: " + isProjectHasFixVersion);
 
     for (int i = 0; i < dependencies.size(); i++) {
-      Dependency dependency = dependencies.get(i);
-      var name = dependency.getName();
-      if (StringUtils.isBlank(name)) {
-        errors.add("Dependency name cannot be empty at index: " + i);
-        continue;
-      }
-
-      var version = dependency.getVersion();
-      var parsedVersion = Semver.parse(version);
-      if (parsedVersion == null) {
-        if (!reservedVersionKeywords.contains(version)) {
-          errors.add(format("Dependency '%s' version '%s' must satisfy semver", name, version));
-          continue;
-        }
-
-        if (isProjectHasFixVersion) {
-          errors.add(format("Dependency '%s' version '%s' must be stable for a stable release", name, version));
-          continue;
-        }
-      }
-
-      if (isProjectHasFixVersion && !parsedVersion.getPreRelease().isEmpty()) {
-        errors.add(format("Dependency '%s' version '%s' must be stable for a stable release", name, version));
+      var dependency = dependencies.get(i);
+      var validationError = validateDependency(dependency, i, isProjectHasFixVersion);
+      if (validationError != null) {
+        errors.add(validationError);
       }
     }
 
     return errors;
+  }
+
+  private String validateDependency(Dependency dependency, int i, boolean isProjectHasFixVersion) {
+    var name = dependency.getName();
+    if (StringUtils.isBlank(name)) {
+      return "Dependency name cannot be empty at index: " + i;
+    }
+
+    var version = dependency.getVersion();
+    var parsedVersion = Semver.parse(version);
+
+    if (parsedVersion == null) {
+      if (!reservedVersionKeywords.contains(version)) {
+        return format("Dependency '%s' version '%s' must satisfy semver", name, version);
+      }
+
+      if (isProjectHasFixVersion) {
+        return format("Dependency '%s' version '%s' must be stable for a stable release", name, version);
+      }
+    }
+
+    if (isProjectHasFixVersion && !parsedVersion.getPreRelease().isEmpty()) {
+      return format("Dependency '%s' version '%s' must be stable for a stable release", name, version);
+    }
+
+    return null;
   }
 
   private Semver validateAndGetProjectVersion(ApplicationDescriptorTemplate template) throws MojoExecutionException {

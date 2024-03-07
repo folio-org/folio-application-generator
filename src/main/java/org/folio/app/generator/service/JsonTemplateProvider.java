@@ -49,7 +49,7 @@ public class JsonTemplateProvider {
     }
   }
 
-  private ApplicationDescriptorTemplate readJson(File f) throws IOException, MojoExecutionException {
+  private ApplicationDescriptorTemplate readJson(File f) throws IOException {
     var templateString = Files.readString(f.toPath(), StandardCharsets.UTF_8);
     var stringSubstitutor = new StringSubstitutor(substitutionMap);
     var json = stringSubstitutor.replace(templateString);

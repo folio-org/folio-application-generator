@@ -53,7 +53,11 @@ public class OkapiModuleRegistry implements ModuleRegistry {
   }
 
   @Override
-  public ModuleRegistry withGeneratedFields() {
-    return ModuleRegistry.super.withGeneratedFields();
+  public OkapiModuleRegistry withGeneratedFields() {
+    if (this.publicUrl == null) {
+      this.publicUrl = this.url + "/_/proxy/modules/{id}";
+    }
+
+    return this;
   }
 }

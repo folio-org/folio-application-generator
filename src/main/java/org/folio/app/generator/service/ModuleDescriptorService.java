@@ -1,5 +1,6 @@
 package org.folio.app.generator.service;
 
+import static org.folio.app.generator.utils.PluginUtils.collectToBulletedList;
 import static org.folio.app.generator.utils.PluginUtils.createModuleDefinitionFromId;
 
 import java.util.ArrayList;
@@ -8,7 +9,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.folio.app.generator.model.ModuleDefinition;
@@ -52,7 +52,7 @@ public class ModuleDescriptorService {
     notFoundModuleIds.removeAll(foundDescriptors.keySet());
 
     if (!notFoundModuleIds.isEmpty()) {
-      var modulesString = notFoundModuleIds.stream().collect(Collectors.joining("\n  * ", "\n  * ", ""));
+      var modulesString = collectToBulletedList(notFoundModuleIds);
       throw new MojoExecutionException("Failed to load module descriptors: " + modulesString);
     }
 

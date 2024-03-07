@@ -58,14 +58,14 @@ class StringModuleRegistryParserTest {
         okapiModuleRegistry("https://test-okapi.sample", "https://test-host.sample/okapi/${id}")),
 
       arguments("s3::test-bucket::/", s3ModuleRegistry("test-bucket", "")),
-      arguments("s3::test-bucket::test", s3ModuleRegistry("test-bucket", "test")),
-      arguments("s3::test-bucket::/test", s3ModuleRegistry("test-bucket", "test")),
-      arguments("s3::  test-bucket  ::  /test", s3ModuleRegistry("test-bucket", "test")),
-      arguments("s3::foo-bucket::/foo/bar", s3ModuleRegistry("foo-bucket", "foo/bar")),
-      arguments("s3::foo-bucket::/foo/bar/", s3ModuleRegistry("foo-bucket", "foo/bar")),
+      arguments("s3::test-bucket::test", s3ModuleRegistry("test-bucket", "test/")),
+      arguments("s3::test-bucket::/test", s3ModuleRegistry("test-bucket", "test/")),
+      arguments("s3::  test-bucket  ::  /test", s3ModuleRegistry("test-bucket", "test/")),
+      arguments("s3::foo-bucket::/foo/bar", s3ModuleRegistry("foo-bucket", "foo/bar/")),
+      arguments("s3::foo-bucket::/foo/bar/", s3ModuleRegistry("foo-bucket", "foo/bar/")),
 
       arguments("s3::test-bucket::/foo/bar/::https://s3-alias.sample/${id}",
-        s3ModuleRegistry("test-bucket", "foo/bar", "https://s3-alias.sample/${id}"))
+        s3ModuleRegistry("test-bucket", "foo/bar/", "https://s3-alias.sample/${id}"))
     );
   }
 
