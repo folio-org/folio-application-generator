@@ -59,7 +59,7 @@ public abstract class AbstractGeneratorMojo extends AbstractMojo {
     var registries = moduleRegistryProvider.validateAndGetModuleRegistries(pluginConfig);
 
     return applicationContextBuilder
-      .withLogger(getLog())
+      .withLog(getLog())
       .withMavenProject(mavenProject)
       .withMavenSession(mavenSession)
       .withPluginConfig(pluginConfig)

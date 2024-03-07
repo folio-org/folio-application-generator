@@ -14,7 +14,7 @@ import org.springframework.context.support.GenericApplicationContext;
 
 public class ApplicationContextBuilder {
 
-  private Log logger;
+  private Log log;
   private PluginConfig pluginConfig;
   private MavenProject mavenProject;
   private MavenSession mavenSession;
@@ -24,7 +24,7 @@ public class ApplicationContextBuilder {
     var context = new AnnotationConfigApplicationContext();
     setSpringContextProperties(context);
 
-    context.registerBean("mavenLogger", Log.class, () -> logger);
+    context.registerBean("mavenLogger", Log.class, () -> log);
     context.registerBean("mavenProject", MavenProject.class, () -> mavenProject);
     context.registerBean("mavenSession", MavenSession.class, () -> mavenSession);
     context.registerBean("pluginConfig", PluginConfig.class, () -> pluginConfig);
@@ -33,20 +33,16 @@ public class ApplicationContextBuilder {
 
     context.refresh();
 
-    for (var beanDefinitionName : context.getBeanDefinitionNames()) {
-      logger.info("Bean: " + beanDefinitionName);
-    }
-
     return context;
   }
 
   /**
-   * Sets logger field and returns {@link ApplicationContextBuilder}.
+   * Sets log field and returns {@link ApplicationContextBuilder}.
    *
    * @return modified {@link ApplicationContextBuilder} value
    */
-  public ApplicationContextBuilder withLogger(Log logger) {
-    this.logger = logger;
+  public ApplicationContextBuilder withLog(Log log) {
+    this.log = log;
     return this;
   }
 

@@ -22,13 +22,7 @@ public class ModuleDescriptorLoaderFacade {
   @Autowired
   public ModuleDescriptorLoaderFacade(Log log, List<ModuleDescriptorLoader> loaders) {
     this.log = log;
-    log.info("Module descriptors loaders list: " + loaders);
     this.loadersMap = loaders.stream().collect(toMap(ModuleDescriptorLoader::getType, identity()));
-
-    log.info("Module descriptors loader map: ");
-    for (var loaderEntry : this.loadersMap.entrySet()) {
-      log.info(String.format("%s: %s", loaderEntry.getKey(), loaderEntry.getValue()));
-    }
   }
 
   public Optional<Map<String, Object>> find(ModuleRegistry registry, ModuleDefinition module) {
