@@ -47,7 +47,7 @@ public abstract class AbstractGeneratorMojo extends AbstractMojo {
   protected final ApplicationContextBuilder applicationContextBuilder;
 
   @Inject
-  public AbstractGeneratorMojo(ModuleRegistryProvider registryProvider, ApplicationContextBuilder contextBuilder) {
+  protected AbstractGeneratorMojo(ModuleRegistryProvider registryProvider, ApplicationContextBuilder contextBuilder) {
     this.moduleRegistryProvider = registryProvider;
     this.applicationContextBuilder = contextBuilder;
   }
