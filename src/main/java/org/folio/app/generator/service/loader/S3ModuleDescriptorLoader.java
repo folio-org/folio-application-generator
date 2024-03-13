@@ -5,6 +5,7 @@ import static java.util.Optional.ofNullable;
 import static org.folio.app.generator.utils.PluginUtils.createModuleDefinitionFromId;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,8 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 @RequiredArgsConstructor
 @Conditional(AwsCondition.class)
 public class S3ModuleDescriptorLoader implements ModuleDescriptorLoader {
+
+  private static final List<String> FILE_EXTENSIONS = List.of("json");
 
   private final Log log;
   private final S3Client s3Client;
@@ -124,11 +127,14 @@ public class S3ModuleDescriptorLoader implements ModuleDescriptorLoader {
   private static Semver parseModuleVersion(S3Object s3Object, String pathPrefix) {
     var s3ObjectKey = s3Object.key();
     var fileName = s3ObjectKey.substring(pathPrefix.length());
-    if (!fileName.endsWith(".json")) {
-      return null;
-    }
 
-    return createModuleDefinitionFromId(fileName.substring(0, fileName.length() - 5))
+    var moduleDescriptorId = FILE_EXTENSIONS.stream()
+      .filter(extension -> fileName.endsWith("." + extension))
+      .findFirst()
+      .map(extension -> fileName.substring(0, fileName.length() - extension.length() - 1))
+      .orElse(fileName);
+
+    return createModuleDefinitionFromId(moduleDescriptorId)
       .map(ModuleDefinition::getVersion)
       .map(Semver::parse)
       .orElse(null);
