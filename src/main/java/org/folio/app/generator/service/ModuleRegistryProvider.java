@@ -43,8 +43,8 @@ public class ModuleRegistryProvider {
       return commandLineRegistries;
     }
 
-    var resultModuleRegistries = new ArrayList<>(validateAndGetConfigRegistries(pluginConfig, invalidRegistries));
-    resultModuleRegistries.addAll(commandLineRegistries);
+    var resultModuleRegistries = new ArrayList<>(commandLineRegistries);
+    resultModuleRegistries.addAll(validateAndGetConfigRegistries(pluginConfig, invalidRegistries));
     handleInvalidRegistries(invalidRegistries);
     return resultModuleRegistries;
   }
