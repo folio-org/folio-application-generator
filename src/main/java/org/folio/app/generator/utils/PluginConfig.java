@@ -12,9 +12,15 @@ import software.amazon.awssdk.regions.Region;
 public class PluginConfig {
 
   private final String buildNumber;
+
   private final List<ConfigModuleRegistry> registries;
+  private final List<ConfigModuleRegistry> beRegistries;
+  private final List<ConfigModuleRegistry> uiRegistries;
 
   private final String cmdRegistryString;
+  private final String beCmdRegistryString;
+  private final String uiCmdRegistryString;
+
   private final boolean useModuleDescriptorsUrls;
   private final boolean overrideConfigRegistries;
 

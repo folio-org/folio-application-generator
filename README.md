@@ -5,3 +5,194 @@ Copyright (C) 2022-2024 The Open Library Foundation
 This software is distributed under the terms of the Apache License,
 Version 2.0. See the file "[LICENSE](LICENSE)" for more information.
 
+### JSON-based configuration
+
+#### Configuration example
+
+```xml
+<plugin>
+  <groupId>org.folio</groupId>
+  <artifactId>folio-application-generator</artifactId>
+  <version>${folio-application-generator.version}</version>
+  <executions>
+    <execution>
+      <goals>
+        <goal>generateFromJson</goal>
+      </goals>
+    </execution>
+  </executions>
+  <configuration>
+    <templatePath>${basedir}/template.json</templatePath>
+    <moduleRegistries>
+      <registry>
+        <type>okapi</type>
+        <url>https://folio-registry.dev.folio.org</url>
+      </registry>
+    </moduleRegistries>
+  </configuration>
+</plugin>
+```
+
+#### Extending configuration with dedicated registries for BE and UI modules:
+
+```xml
+<plugin>
+  <groupId>org.folio</groupId>
+  <artifactId>folio-application-generator</artifactId>
+  <version>${folio-application-generator.version}</version>
+  <executions>
+    <execution>
+      <goals>
+        <goal>generateFromJson</goal>
+      </goals>
+    </execution>
+  </executions>
+  <configuration>
+    <templatePath>${basedir}/template.json</templatePath>
+    <moduleRegistries>
+      <registry>
+        <type>okapi</type>
+        <url>https://folio-registry.sample.org</url>
+      </registry>
+    </moduleRegistries>
+    <beModuleRegistries>
+      <registry>
+        <type>s3</type>
+        <bucket>folio-module-registry</bucket>
+        <path>be-modules/</path>
+      </registry>
+    </beModuleRegistries>
+    <uiModuleRegistries>
+      <registry>
+        <type>okapi</type>
+        <url>https://ui-folio-registry.sample.org</url>
+      </registry>
+    </uiModuleRegistries>
+  </configuration>
+</plugin>
+
+```
+
+#### JSON Template example
+
+```json
+{
+  "name": "${project.name}",
+  "version": "${project.version}",
+  "description": "${project.description}",
+  "platform": "base",
+  "dependencies": [
+    {
+      "name": "app-foo",
+      "version": "0.5.X"
+    }
+  ],
+  "modules": [
+    {
+      "name": "mod-foo",
+      "version": "latest"
+    }
+  ],
+  "uiModules": [
+    {
+      "name": "folio_foo",
+      "version": "latest"
+    }
+  ]
+}
+```
+
+#### Excluding JAR file from build results
+
+JAR file can be excluded from `/target` folder by using the following command
+
+```shell
+mvn folio-application-generator:generateFromJson
+```
+
+### pom.xml-based configuration
+
+#### Configuration example
+
+```xml
+<plugin>
+  <groupId>org.folio</groupId>
+  <artifactId>folio-application-generator</artifactId>
+  <version>${folio-application-generator.version}</version>
+  <executions>
+    <execution>
+      <goals>
+        <goal>generateFromConfiguration</goal>
+      </goals>
+    </execution>
+  </executions>
+  <configuration>
+    <modules>
+      <module>
+        <name>mod-foo</name>
+        <version>latest</version>
+      </module>
+    </modules>
+    <uiModules>
+      <module>
+        <name>folio_foo</name>
+        <version>latest</version>
+      </module>
+    </uiModules>
+    <dependencies>
+      <dependency>
+        <name>app-foo</name>
+        <version>0.5.X</version>
+      </dependency>
+    </dependencies>
+    <moduleRegistries>
+      <registry>
+        <type>okapi</type>
+        <url>https://folio-registry.dev.folio.org</url>
+      </registry>
+    </moduleRegistries>
+  </configuration>
+</plugin>
+```
+
+#### Excluding JAR file from build results
+
+JAR file can be excluded from `/target` folder by using the following command
+
+```shell
+mvn folio-application-generator:generateFromConfiguration
+```
+
+### Module-Registries order
+
+#### Backend module registries
+
+1. parsed registries from `beRegistries` command-line parameter (if present)
+2. parsed registries from `registries` command-line parameter (if present)
+3. Processed registries from `beModuleRegistries` plugin configuration (can be empty)
+4. Processed registries from `moduleRegistries` plugin configuration (can be empty)
+
+#### UI module registries
+
+1. parsed registries from `uiRegistries` command-line parameter (if present)
+2. parsed registries from `registries` command-line parameter (if present)
+3. Processed registries from `uiModuleRegistries` plugin configuration (can be empty)
+4. Processed registries from `moduleRegistries` plugin configuration (can be empty)
+
+### Command-line parameters
+
+These parameters can be specified in the job run using following notation
+
+```shell
+mvn install -DbuildNumber="123" -DawsRegion=us-east-1 
+```
+
+| Parameter                | Default Value | Description                                                                                                                               |
+|--------------------------|---------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| awsRegion                | us-east-1     | AWS Region for S3 client                                                                                                                  |
+| buildNumber              |               | Build number from CI tool (will be added for any '-SNAPSHOT' version of generated application                                             |
+| registries               |               | Comma-separated list of custom module-descriptor registries in formats: `s3::{{bucket-name}}:{{path-to-folder}}`, `okapi::{{okapi-base}}` |
+| beRegistries             |               | Comma-separated list of custom back-end module-descriptor registries in the same format as `registries` parameter                         |
+| uiRegistries             |               | Comma-separated list of custom ui module-descriptor registries in the same format as `registries` parameter                               |
+| overrideConfigRegistries |               | Defines if only command-line specified registries must be used (applies to `registries`, `beRegistries` and `uiRegistries` params)        |
+

@@ -1,7 +1,10 @@
 package org.folio.app.generator.service;
 
-import static java.util.Collections.emptyList;
+import static org.apache.commons.lang3.StringUtils.defaultIfBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.folio.app.generator.model.types.ModuleType.BE;
+import static org.folio.app.generator.model.types.ModuleType.UI;
+import static org.folio.app.generator.utils.PluginUtils.emptyIfNull;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -35,8 +38,8 @@ public class ApplicationDescriptorService {
 
     var modules = convertToArtifacts(template.getModules());
     var uiModules = convertToArtifacts(template.getUiModules());
-    var modulesLoadResult = moduleDescriptorService.loadModules(modules);
-    var uiModulesLoadResult = moduleDescriptorService.loadModules(uiModules);
+    var modulesLoadResult = moduleDescriptorService.loadModules(BE, modules);
+    var uiModulesLoadResult = moduleDescriptorService.loadModules(UI, uiModules);
 
     return baseAppDescriptor
       .description(defaultIfBlank(template.getDescription(), mavenProject.getDescription()))
@@ -87,14 +90,6 @@ public class ApplicationDescriptorService {
     var name = dependency.getName();
     var version = dependency.getVersion();
     return new ModuleDefinition().id(name + "-" + version).name(name).version(version);
-  }
-
-  public static <T> List<T> emptyIfNull(List<T> list) {
-    return list == null ? emptyList() : list;
-  }
-
-  public static String defaultIfBlank(String value, String defaultValue) {
-    return value == null || value.isBlank() ? defaultValue : value;
   }
 
   private String getVersionWithBuildNumber(String version) {

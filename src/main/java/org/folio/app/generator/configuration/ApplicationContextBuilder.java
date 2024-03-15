@@ -1,8 +1,8 @@
 package org.folio.app.generator.configuration;
 
-import static java.util.Collections.unmodifiableList;
-
-import java.util.List;
+import java.util.Collection;
+import java.util.Objects;
+import java.util.stream.Stream;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
@@ -18,7 +18,7 @@ public class ApplicationContextBuilder {
   private PluginConfig pluginConfig;
   private MavenProject mavenProject;
   private MavenSession mavenSession;
-  private List<ModuleRegistry> moduleRegistries;
+  private ModuleRegistries moduleRegistries;
 
   public GenericApplicationContext build() {
     var context = new AnnotationConfigApplicationContext();
@@ -28,7 +28,7 @@ public class ApplicationContextBuilder {
     context.registerBean("mavenProject", MavenProject.class, () -> mavenProject);
     context.registerBean("mavenSession", MavenSession.class, () -> mavenSession);
     context.registerBean("pluginConfig", PluginConfig.class, () -> pluginConfig);
-    context.registerBean("moduleRegistries", ModuleRegistries.class, () -> new ModuleRegistries(moduleRegistries));
+    context.registerBean("moduleRegistries", ModuleRegistries.class, () -> moduleRegistries);
     context.registerBean(SpringConfiguration.class);
 
     context.refresh();
@@ -76,13 +76,19 @@ public class ApplicationContextBuilder {
     return this;
   }
 
-  public ApplicationContextBuilder withModuleRegistries(List<ModuleRegistry> moduleRegistries) {
-    this.moduleRegistries = unmodifiableList(moduleRegistries);
+  public ApplicationContextBuilder withModuleRegistries(ModuleRegistries moduleRegistries) {
+    this.moduleRegistries = moduleRegistries;
     return this;
   }
 
   private void setSpringContextProperties(GenericApplicationContext context) {
-    var usedRegistryTypes = moduleRegistries.stream().map(ModuleRegistry::getType).distinct().toList();
+    var usedRegistryTypes = Stream.of(moduleRegistries.beRegistries(), moduleRegistries.uiRegistries())
+      .filter(Objects::nonNull)
+      .flatMap(Collection::stream)
+      .map(ModuleRegistry::getType)
+      .distinct()
+      .toList();
+
     var springEnvironment = context.getEnvironment().getSystemProperties();
     for (var usedRegistryType : usedRegistryTypes) {
       springEnvironment.put(usedRegistryType.getPropertyName(), true);

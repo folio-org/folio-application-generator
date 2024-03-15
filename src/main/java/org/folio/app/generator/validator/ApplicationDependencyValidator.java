@@ -1,14 +1,14 @@
 package org.folio.app.generator.validator;
 
 import static java.lang.String.format;
-import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
+import static org.folio.app.generator.utils.PluginUtils.collectToBulletedList;
+import static org.folio.app.generator.utils.PluginUtils.emptyIfNull;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -35,24 +35,19 @@ public class ApplicationDependencyValidator {
    */
   public void validateDependencies(ApplicationDescriptorTemplate template) {
     var projectVersion = validateAndGetProjectVersion(template);
-    var errors = Stream.of(template.getModules(), template.getUiModules())
+    var errors = Stream.of(emptyIfNull(template.getModules()), emptyIfNull(template.getUiModules()))
       .map(moduleDependencies -> validateModules(projectVersion, moduleDependencies))
       .flatMap(Collection::stream)
       .collect(toList());
 
-    errors.addAll(validateApplicationDependencies(template.getDependencies()));
+    errors.addAll(validateApplicationDependencies(emptyIfNull(template.getDependencies())));
 
     if (!errors.isEmpty()) {
-      var errorsString = errors.stream().collect(Collectors.joining("\n  * ", "  * ", ""));
-      throw new IllegalArgumentException("Invalid dependencies found:\n" + errorsString);
+      throw new IllegalArgumentException("Invalid dependencies found:\n" + collectToBulletedList(errors));
     }
   }
 
   private List<String> validateModules(Semver projectVersion, List<Dependency> dependencies) {
-    if (dependencies == null || dependencies.isEmpty()) {
-      return emptyList();
-    }
-
     var errors = new ArrayList<String>();
     boolean isProjectHasFixVersion = projectVersion.getPreRelease().isEmpty();
     log.debug("Is pre-release application descriptor: " + isProjectHasFixVersion);

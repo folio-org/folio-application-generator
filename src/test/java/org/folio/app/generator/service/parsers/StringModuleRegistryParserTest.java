@@ -43,12 +43,16 @@ class StringModuleRegistryParserTest {
 
   public static Stream<Arguments> registryStringDataSource() {
     return Stream.of(
+      arguments("", null),
+      arguments(null, null),
+      arguments("  ", null),
       arguments("http://localhost:3000", null),
       arguments("okapi::http://localhost:3000", okapiModuleRegistry("http://localhost:3000")),
       arguments("okapi::  http://localhost:3000", okapiModuleRegistry("http://localhost:3000")),
       arguments("okapi::http://localhost:3000/", okapiModuleRegistry("http://localhost:3000")),
       arguments("okapi::https://test-okapi.sample", okapiModuleRegistry("https://test-okapi.sample")),
       arguments("okapi::https://test-okapi.sample/", okapiModuleRegistry("https://test-okapi.sample")),
+      arguments("  okapi::http://localhost:3000  ", okapiModuleRegistry("http://localhost:3000")),
 
       arguments("okapi::http://localhost:3000::https://test-okapi.sample/${id}",
         okapiModuleRegistry("http://localhost:3000", "https://test-okapi.sample/${id}")),
@@ -74,24 +78,22 @@ class StringModuleRegistryParserTest {
   }
 
   private static Object okapiModuleRegistry(String url, String publicUrlTemplate) {
-    var registry = new OkapiModuleRegistry();
-    registry.setUrl(url);
-    registry.setPublicUrl(publicUrlTemplate);
-    return registry;
+    return new OkapiModuleRegistry()
+      .url(url)
+      .publicUrl(publicUrlTemplate);
   }
 
   private static S3ModuleRegistry s3ModuleRegistry(String bucket, String path) {
     var publicUrlTemplate = path.isEmpty()
       ? String.format("https://%s.s3.amazonaws.com/{id}", bucket)
-      : String.format("https://%s.s3.amazonaws.com/%s/{id}", bucket, path);
+      : String.format("https://%s.s3.amazonaws.com/%s{id}", bucket, path);
     return s3ModuleRegistry(bucket, path, publicUrlTemplate);
   }
 
   private static S3ModuleRegistry s3ModuleRegistry(String bucket, String path, String publicUrl) {
-    var registry = new S3ModuleRegistry();
-    registry.setBucket(bucket);
-    registry.setPath(path);
-    registry.setPublicUrl(publicUrl);
-    return registry;
+    return new S3ModuleRegistry()
+      .bucket(bucket)
+      .path(path)
+      .publicUrl(publicUrl);
   }
 }

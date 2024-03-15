@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.folio.app.generator.model.registry.ModuleRegistry;
 import org.folio.app.generator.model.registry.OkapiModuleRegistry;
@@ -33,18 +34,24 @@ public class StringModuleRegistryParser {
   /**
    * Parses module registry string to a {@link ModuleRegistry} object.
    *
-   * @param sourceValue - {@link String} value to parse.
+   * @param registryString - {@link String} value to parse.
    * @return {@link Optional} of {@link ModuleRegistry} object, it will be null if source string is not compatible
    */
-  public Optional<ModuleRegistry> parse(String sourceValue) {
+  public Optional<ModuleRegistry> parse(String registryString) {
+    if (StringUtils.isBlank(registryString)) {
+      return Optional.empty();
+    }
+
+    var value = registryString.trim();
     for (var patternPair : patterns) {
       var pattern = patternPair.getLeft();
-      var matcher = pattern.matcher(sourceValue);
+      var matcher = pattern.matcher(value);
       if (matcher.matches()) {
         var stringParts = convertToStringPartsArray(matcher);
         return Optional.of(patternPair.getRight().apply(stringParts));
       }
     }
+
     return Optional.empty();
   }
 

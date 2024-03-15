@@ -1,6 +1,7 @@
 package org.folio.app.generator.model.registry;
 
 import lombok.Data;
+import lombok.ToString;
 
 @Data
 public class ConfigModuleRegistry {
@@ -13,6 +14,7 @@ public class ConfigModuleRegistry {
   /**
    * Public url template, where module id must have {@code {id}} placeholder.
    */
+  @ToString.Exclude
   private String publicUrlTemplate;
 
   /**
