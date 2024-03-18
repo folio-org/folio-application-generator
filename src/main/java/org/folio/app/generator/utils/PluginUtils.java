@@ -1,8 +1,11 @@
 package org.folio.app.generator.utils;
 
+import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.joining;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -58,5 +61,26 @@ public class PluginUtils {
     }
 
     return values.stream().collect(joining("\n  * ", "\n  * ", ""));
+  }
+
+  /**
+   * Returns empty unmodifiable list if provided value is null.
+   *
+   * @param value - {@link List} value to check
+   * @param <T> - generic type for list element
+   * @return {@link Collections#emptyList()} if provided value is null
+   */
+  public static <T> List<T> emptyIfNull(List<T> value) {
+    return value == null ? emptyList() : value;
+  }
+
+  /**
+   * Checks if collection is null or empty.
+   *
+   * @param collection - {@link Collection} object to check
+   * @return true if collection is null or empty, false - otherwise
+   */
+  public static boolean isEmpty(Collection<?> collection) {
+    return collection == null || collection.isEmpty();
   }
 }

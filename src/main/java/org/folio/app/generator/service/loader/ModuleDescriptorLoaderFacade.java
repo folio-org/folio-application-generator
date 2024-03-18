@@ -25,6 +25,13 @@ public class ModuleDescriptorLoaderFacade {
     this.loadersMap = loaders.stream().collect(toMap(ModuleDescriptorLoader::getType, identity()));
   }
 
+  /**
+   * Tries to find module descriptor in specified registry using {@link ModuleDefinition} object.
+   *
+   * @param registry - {@link ModuleRegistry} description
+   * @param module - {@link ModuleDefinition} object with required information to find a module
+   * @return {@link Optional} of {@link Map} as module descriptor
+   */
   public Optional<Map<String, Object>> find(ModuleRegistry registry, ModuleDefinition module) {
     var moduleDescriptorLoader = loadersMap.get(registry.getType());
     if (moduleDescriptorLoader == null) {

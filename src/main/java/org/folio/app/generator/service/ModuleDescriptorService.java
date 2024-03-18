@@ -11,9 +11,11 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.ModulesLoadResult;
 import org.folio.app.generator.model.registry.ModuleRegistries;
+import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.service.loader.ModuleDescriptorLoaderFacade;
 import org.folio.app.generator.utils.JsonConverter;
 import org.springframework.stereotype.Component;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ModuleDescriptorService {
 
+  private final Log log;
   private final JsonConverter jsonConverter;
   private final ModuleRegistries moduleRegistries;
   private final ModuleDescriptorLoaderFacade moduleDescriptorLoaderFacade;
@@ -33,12 +36,18 @@ public class ModuleDescriptorService {
    * @return {@link ModulesLoadResult} with list of module definitions and module descriptors
    * @throws MojoExecutionException if not all modules have been loaded
    */
-  public ModulesLoadResult loadModules(List<ModuleDefinition> modules) throws MojoExecutionException {
+  public ModulesLoadResult loadModules(ModuleType type, List<ModuleDefinition> modules) throws MojoExecutionException {
     var foundDescriptors = new LinkedHashMap<String, Map<String, Object>>();
 
-    for (var module : modules) {
-      var moduleId = module.getId();
-      for (var registry : moduleRegistries.registries()) {
+    var registries = moduleRegistries.getRegistries(type);
+
+    if (registries.isEmpty()) {
+      log.warn("Module registries are empty for type: " + type.name());
+    }
+
+    for (var registry : registries) {
+      for (var module : modules) {
+        var moduleId = module.getId();
         if (foundDescriptors.containsKey(moduleId)) {
           continue;
         }

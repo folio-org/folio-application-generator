@@ -7,7 +7,6 @@ import java.util.List;
 import javax.inject.Inject;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.configuration.ApplicationContextBuilder;
@@ -31,11 +30,23 @@ public abstract class AbstractGeneratorMojo extends AbstractMojo {
   @Parameter(defaultValue = "${registries}")
   protected String cmdRegistriesString;
 
+  @Parameter(defaultValue = "${beRegistries}")
+  protected String cmdBeRegistriesString;
+
+  @Parameter(defaultValue = "${uiRegistries}")
+  protected String cmdUiRegistriesString;
+
   @Parameter(defaultValue = "${overrideConfigRegistries}")
   protected String overrideConfigRegistries;
 
   @Parameter(name = "moduleRegistries")
   protected List<ConfigModuleRegistry> moduleRegistries;
+
+  @Parameter(name = "beModuleRegistries")
+  protected List<ConfigModuleRegistry> beModuleRegistries;
+
+  @Parameter(name = "uiModuleRegistries")
+  protected List<ConfigModuleRegistry> uiModuleRegistries;
 
   @Parameter(name = "useModuleDescriptorsUrls")
   protected String useModuleDescriptorsUrls;
@@ -52,17 +63,21 @@ public abstract class AbstractGeneratorMojo extends AbstractMojo {
     this.applicationContextBuilder = contextBuilder;
   }
 
-  protected GenericApplicationContext buildApplicationContext() throws MojoExecutionException {
+  protected GenericApplicationContext buildApplicationContext() {
     var pluginConfig = PluginConfig.builder()
       .buildNumber(buildNumber)
       .registries(moduleRegistries)
+      .uiRegistries(uiModuleRegistries)
+      .beRegistries(beModuleRegistries)
       .cmdRegistryString(cmdRegistriesString)
+      .beCmdRegistryString(cmdBeRegistriesString)
+      .uiCmdRegistryString(cmdUiRegistriesString)
       .overrideConfigRegistries(parseBoolean(overrideConfigRegistries))
       .useModuleDescriptorsUrls(parseBoolean(useModuleDescriptorsUrls))
       .awsRegion(isNotBlank(awsRegion) ? Region.of(awsRegion) : Region.US_EAST_1)
       .build();
 
-    var registries = moduleRegistryProvider.validateAndGetModuleRegistries(pluginConfig);
+    var registries = moduleRegistryProvider.getModuleRegistries(pluginConfig);
 
     return applicationContextBuilder
       .withLog(getLog())

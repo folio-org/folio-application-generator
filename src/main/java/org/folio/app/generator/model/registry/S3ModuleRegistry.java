@@ -56,9 +56,9 @@ public class S3ModuleRegistry implements ModuleRegistry {
   @Override
   public S3ModuleRegistry withGeneratedFields() {
     if (isBlank(this.publicUrl)) {
-      this.publicUrl = path.isEmpty()
+      this.publicUrl = StringUtils.isEmpty(path)
         ? String.format("https://%s.s3.amazonaws.com/{id}", bucket)
-        : String.format("https://%s.s3.amazonaws.com/%s/{id}", bucket, path);
+        : String.format("https://%s.s3.amazonaws.com/%s{id}", bucket, path);
     }
 
     return this;
