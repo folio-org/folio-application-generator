@@ -124,44 +124,6 @@ class S3ModuleDescriptorLoaderTest {
   }
 
   @Test
-  void findModuleDescriptor_positive_singlePageWithSingleModuleDescriptor() {
-    var objectKey = "mod-foo-1.0.0.json";
-    var request = listObjectsRequest("mod-foo-1.0.0", null);
-    var listObjectsResponse = listObjectsResponse(s3Object(objectKey));
-    var expectedModuleDescriptor = fooModuleDescriptor("1.0.0");
-    var s3ObjectResponse = getObjectResponse(expectedModuleDescriptor);
-
-    when(s3Client.listObjectsV2(request)).thenReturn(listObjectsResponse);
-    when(s3Client.getObject(getObjectRequest(objectKey), toBytes())).thenReturn(s3ObjectResponse);
-    when(jsonConverter.parse(any(InputStream.class), any())).thenReturn(expectedModuleDescriptor);
-
-    var result = loader.findModuleDescriptor(s3Registry(), fooModule("1.0.0"));
-
-    assertThat(result).contains(expectedModuleDescriptor);
-    verify(log).info("Module descriptor 'mod-foo-1.0.0' loaded from s3 bucket: test-bucket/");
-    verify(pluginConfig, times(2)).getAwsS3BatchSize();
-  }
-
-  @Test
-  void findModuleDescriptor_positive_multiplePages() {
-    var objectKey = "mod-foo-1.0.0.json";
-    var request = listObjectsRequest("mod-foo-1.0.0", null);
-    var listObjectsResponse = listObjectsResponse(s3Object(objectKey));
-    var expectedModuleDescriptor = fooModuleDescriptor("1.0.0");
-    var s3ObjectResponse = getObjectResponse(expectedModuleDescriptor);
-
-    when(s3Client.listObjectsV2(request)).thenReturn(listObjectsResponse);
-    when(s3Client.getObject(getObjectRequest(objectKey), toBytes())).thenReturn(s3ObjectResponse);
-    when(jsonConverter.parse(any(InputStream.class), any())).thenReturn(expectedModuleDescriptor);
-
-    var result = loader.findModuleDescriptor(s3Registry(), fooModule("1.0.0"));
-
-    assertThat(result).contains(expectedModuleDescriptor);
-    verify(log).info("Module descriptor 'mod-foo-1.0.0' loaded from s3 bucket: test-bucket/");
-    verify(pluginConfig, times(2)).getAwsS3BatchSize();
-  }
-
-  @Test
   void findModuleDescriptor_positive_multiplePagesWithSingleModuleDescriptor() {
     var listObjectsResponse1 = listObjectsResponse("ct1",
       s3Object("mod-foo-1.0.0-SNAPSHOT.1"),
