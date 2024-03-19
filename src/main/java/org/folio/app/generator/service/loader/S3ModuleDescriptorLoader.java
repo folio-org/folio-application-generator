@@ -1,12 +1,14 @@
 package org.folio.app.generator.service.loader;
 
 import static java.lang.Boolean.TRUE;
+import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
 import static org.folio.app.generator.utils.PluginUtils.createModuleDefinitionFromId;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
@@ -44,11 +46,12 @@ public class S3ModuleDescriptorLoader implements ModuleDescriptorLoader {
   public Optional<Map<String, Object>> findModuleDescriptor(ModuleRegistry registry, ModuleDefinition module) {
     var s3Registry = (S3ModuleRegistry) registry;
     var version = module.getVersion();
+    var id = module.getId();
     var filter = "latest".equals(version) ? module.getName() : module.getId();
     var fullPrefix = s3Registry.getPath() + filter;
 
-    return findLatestVersionByPrefix(s3Registry, fullPrefix)
-      .flatMap(foundS3Object -> readS3Object(foundS3Object, s3Registry));
+    return findLatestVersionByPrefix(module, s3Registry, fullPrefix)
+      .flatMap(foundS3Object -> readS3Object(id, foundS3Object, s3Registry));
   }
 
   @Override
@@ -56,61 +59,78 @@ public class S3ModuleDescriptorLoader implements ModuleDescriptorLoader {
     return RegistryType.AWS_S3;
   }
 
-  private Optional<S3Object> findLatestVersionByPrefix(S3ModuleRegistry s3Registry, String prefix) {
-    var request = buildListObjectsRequest(s3Registry, prefix, null);
+  private Optional<S3Object> findLatestVersionByPrefix(ModuleDefinition module, S3ModuleRegistry mr, String prefix) {
+    var request = buildListObjectsRequest(mr, prefix, null);
+    var moduleId = module.getId();
 
     ListObjectsV2Response result;
     Pair<Semver, S3Object> maxValueHolder = null;
 
     do {
-      result = s3Client.listObjectsV2(request);
+      try {
+        result = s3Client.listObjectsV2(request);
+      } catch (Exception e) {
+        log.warn(format("Failed to find module descriptor '%s' in s3 bucket: %s", moduleId, getBucketPath(mr)), e);
+        return Optional.empty();
+      }
+
       var s3ObjectsByPrefix = result.contents();
       if (s3ObjectsByPrefix.isEmpty()) {
+        log.warn(format("Module '%s' is not found in s3 bucket: %s", moduleId, getBucketPath(mr)));
         return Optional.empty();
       }
 
       for (var s3Object : s3ObjectsByPrefix) {
-        var nextMaxValue = tryFindNextMaxValue(s3Registry.getPath(), s3Object, maxValueHolder);
+        var nextMaxValue = tryFindNextMaxValue(mr.getPath(), module, s3Object, maxValueHolder);
         if (nextMaxValue != null) {
           maxValueHolder = nextMaxValue;
         }
       }
 
-      request = buildListObjectsRequest(s3Registry, prefix, result.nextContinuationToken());
+      request = buildListObjectsRequest(mr, prefix, result.nextContinuationToken());
     } while (TRUE.equals(result.isTruncated()));
 
     return ofNullable(maxValueHolder).map(Pair::getRight);
   }
 
-  private static Pair<Semver, S3Object> tryFindNextMaxValue(String prefix, S3Object o, Pair<Semver, S3Object> mv) {
-    var currentSemver = parseModuleVersion(o, prefix);
-    if (mv == null) {
-      return Pair.of(currentSemver, o);
-    }
-
-    if (currentSemver == null) {
+  private static Pair<Semver, S3Object> tryFindNextMaxValue(String prefix, ModuleDefinition module,
+    S3Object s3Object, Pair<Semver, S3Object> mv) {
+    var moduleNameAndVersionPair = parseS3ObjectKey(s3Object, prefix);
+    if (moduleNameAndVersionPair == null) {
       return null;
     }
 
+    if (!Objects.equals(moduleNameAndVersionPair.getLeft(), module.getName())) {
+      return null;
+    }
+
+    var semver = moduleNameAndVersionPair.getRight();
+    if (mv == null) {
+      return Pair.of(semver, s3Object);
+    }
+
     var maxSemver = mv.getLeft();
-    if (maxSemver == null || currentSemver.compareTo(maxSemver) > 0) {
-      return Pair.of(currentSemver, o);
+    if (semver.compareTo(maxSemver) > 0) {
+      return Pair.of(semver, s3Object);
     }
 
     return null;
   }
 
-  private Optional<Map<String, Object>> readS3Object(S3Object object, S3ModuleRegistry registry) {
+  private Optional<Map<String, Object>> readS3Object(String id, S3Object object, S3ModuleRegistry mr) {
     var request = GetObjectRequest.builder()
-      .bucket(registry.getBucket())
+      .bucket(mr.getBucket())
       .key(object.key())
       .build();
 
-    var responseBytes = s3Client.getObject(request, ResponseTransformer.toBytes());
     try {
-      return Optional.ofNullable(jsonConverter.parse(responseBytes.asInputStream(), new TypeReference<>() {}));
-    } catch (Exception exception) {
-      log.warn("Failed to get content from s3 object by key: " + object.key(), exception);
+      var responseBytes = s3Client.getObject(request, ResponseTransformer.toBytes());
+      var inputStream = responseBytes.asInputStream();
+      var moduleDescriptor = jsonConverter.parse(inputStream, new TypeReference<Map<String, Object>>() {});
+      log.info(format("Module descriptor '%s' loaded from s3 bucket: %s", id, getBucketPath(mr)));
+      return Optional.ofNullable(moduleDescriptor);
+    } catch (Exception e) {
+      log.warn(format("Failed to load module descriptor '%s' from s3 bucket: %s", id, getBucketPath(mr)), e);
       return Optional.empty();
     }
   }
@@ -124,7 +144,7 @@ public class S3ModuleDescriptorLoader implements ModuleDescriptorLoader {
       .build();
   }
 
-  private static Semver parseModuleVersion(S3Object s3Object, String pathPrefix) {
+  private static Pair<String, Semver> parseS3ObjectKey(S3Object s3Object, String pathPrefix) {
     var s3ObjectKey = s3Object.key();
     var fileName = s3ObjectKey.substring(pathPrefix.length());
 
@@ -135,8 +155,12 @@ public class S3ModuleDescriptorLoader implements ModuleDescriptorLoader {
       .orElse(fileName);
 
     return createModuleDefinitionFromId(moduleDescriptorId)
-      .map(ModuleDefinition::getVersion)
-      .map(Semver::parse)
+      .map(md -> Pair.of(md.getName(), Semver.parse(md.getVersion())))
+      .filter(pair -> pair.getRight() != null)
       .orElse(null);
+  }
+
+  private static String getBucketPath(S3ModuleRegistry s3ModuleRegistry) {
+    return s3ModuleRegistry.getBucket() + "/" + s3ModuleRegistry.getPath();
   }
 }
