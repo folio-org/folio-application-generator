@@ -50,15 +50,8 @@ public class S3ModuleDescriptorLoader implements ModuleDescriptorLoader {
     var filter = "latest".equals(version) ? module.getName() : module.getId();
     var fullPrefix = s3Registry.getPath() + filter;
 
-    Optional<S3Object> latestVersionByPrefix;
-    try {
-      latestVersionByPrefix = findLatestVersionByPrefix(module, s3Registry, fullPrefix);
-    } catch (Exception e) {
-      log.warn(format("Failed to find module descriptor '%s' in s3 bucket: %s", id, getBucketPath(s3Registry)), e);
-      return Optional.empty();
-    }
-
-    return latestVersionByPrefix.flatMap(foundS3Object -> readS3Object(id, foundS3Object, s3Registry));
+    return findLatestVersionByPrefix(module, s3Registry, fullPrefix)
+      .flatMap(foundS3Object -> readS3Object(id, foundS3Object, s3Registry));
   }
 
   @Override
@@ -68,16 +61,22 @@ public class S3ModuleDescriptorLoader implements ModuleDescriptorLoader {
 
   private Optional<S3Object> findLatestVersionByPrefix(ModuleDefinition module, S3ModuleRegistry mr, String prefix) {
     var request = buildListObjectsRequest(mr, prefix, null);
+    var moduleId = module.getId();
 
     ListObjectsV2Response result;
     Pair<Semver, S3Object> maxValueHolder = null;
 
     do {
-      result = s3Client.listObjectsV2(request);
+      try {
+        result = s3Client.listObjectsV2(request);
+      } catch (Exception e) {
+        log.warn(format("Failed to find module descriptor '%s' in s3 bucket: %s", moduleId, getBucketPath(mr)), e);
+        return Optional.empty();
+      }
 
       var s3ObjectsByPrefix = result.contents();
       if (s3ObjectsByPrefix.isEmpty()) {
-        log.warn(format("Module '%s' is not found in s3 bucket: %s", module.getId(), getBucketPath(mr)));
+        log.warn(format("Module '%s' is not found in s3 bucket: %s", moduleId, getBucketPath(mr)));
         return Optional.empty();
       }
 
