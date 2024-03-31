@@ -20,7 +20,7 @@
     <maven-checkstyle-plugin.version>3.3.1</maven-checkstyle-plugin.version>
 
     <semver4j.version>5.2.2</semver4j.version>
-    <lombok.version>1.18.30</lombok.version>
+    <lombok.version>1.18.32</lombok.version>
     <maven-core.version>3.9.6</maven-core.version>
     <commons-text.version>1.11.0</commons-text.version>
     <commons-collections4.version>4.4</commons-collections4.version>
@@ -33,7 +33,7 @@
     <junit-jupiter.version>5.10.2</junit-jupiter.version>
     <mockito-junit-jupiter.version>5.11.0</mockito-junit-jupiter.version>
     <spring-context.version>6.1.5</spring-context.version>
-    <aws-sdk.version>2.25.11</aws-sdk.version>
+    <aws-sdk.version>2.25.21</aws-sdk.version>
     <testcontainers.version>1.19.7</testcontainers.version>
     <slf4j.version>2.0.12</slf4j.version>
   </properties>
@@ -257,7 +257,7 @@
 
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.12.1</version>
+          <version>3.13.0</version>
         </plugin>
 
         <plugin>
