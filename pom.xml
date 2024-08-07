@@ -333,9 +333,9 @@
   </pluginRepositories>
 
   <scm>
-    <url>https://https://github.com/folio-org/mgr-tenant-entitlements</url>
-    <connection>scm:git:git://github.com:folio-org/mgr-tenant-entitlements.git</connection>
-    <developerConnection>scm:git:git@github.com:folio-org/mgr-tenant-entitlements.git</developerConnection>
+    <url>https://https://github.com/folio-org/folio-application-generator</url>
+    <connection>scm:git:git://github.com:folio-org/folio-application-generator.git</connection>
+    <developerConnection>scm:git:git@github.com:folio-org/folio-application-generator.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 </project>
