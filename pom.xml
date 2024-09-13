@@ -6,9 +6,10 @@
 
   <groupId>org.folio</groupId>
   <artifactId>folio-application-generator</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.0.2-SNAPSHOT</version>
   <packaging>maven-plugin</packaging>
   <name>folio-application-generator</name>
+  <description>Folio application descriptor generator</description>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
