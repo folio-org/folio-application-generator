@@ -55,6 +55,7 @@ public class ApplicationDescriptorUpdateService {
     var modulesLoadResult = loadModules(moduleNameVersion, BE);
     var uiModulesLoadResult = loadModules(uiModuleNameVersion, UI);
 
+    application.setVersion(getVersionWithIncPatch(application.getVersion()));
     application.setModules(updateModules(application.getModules(), modulesLoadResult));
     application.setUiModules(updateModules(application.getUiModules(), uiModulesLoadResult));
 
@@ -72,6 +73,10 @@ public class ApplicationDescriptorUpdateService {
   private ModulesLoadResult loadModules(Map<String, String> moduleNameVersion, ModuleType moduleType)
     throws MojoExecutionException {
     return moduleDescriptorService.loadModules(moduleType, getModuleDefinitions(moduleNameVersion));
+  }
+
+  private String getVersionWithIncPatch(String version) {
+    return ofNullable(Semver.parse(version)).map(Semver::withIncPatch).map(Semver::getVersion).orElse(version);
   }
 
   private List<Dependency> getDescriptorModuleIds(List<Map<String, Object>> descriptors) {
