@@ -63,6 +63,8 @@ class ApplicationDescriptorUpdateServiceTest {
     var uiModuleDefinitions = List.of(new ModuleDefinition().id("uiModule1-1.0.1").name("uiModule1").version("1.0.1"));
 
     final var application = new ApplicationDescriptor()
+      .id("name-1.0.0-SNAPSHOT")
+      .name("name")
       .version("1.0.0-SNAPSHOT")
       .modules(List.of(new ModuleDefinition().id("module1-1.0.0").name("module1").version("1.0.0"),
         new ModuleDefinition().id("module2-2.0.0").name("module2").version("2.0.0"),
@@ -90,6 +92,7 @@ class ApplicationDescriptorUpdateServiceTest {
     assertThat(uiDescriptorsCaptor.getValue()).isEqualTo(
       List.of(new ModuleDefinition().id("uiModule1-1.0.1").name("uiModule1").version("1.0.1")));
 
+    assertThat(applicationCaptor.getValue().getId()).isEqualTo("name-1.0.1-SNAPSHOT");
     assertThat(applicationCaptor.getValue().getVersion()).isEqualTo("1.0.1-SNAPSHOT");
 
     assertThat(applicationCaptor.getValue().getModules()).isEqualTo(
