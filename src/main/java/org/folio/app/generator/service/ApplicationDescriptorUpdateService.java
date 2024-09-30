@@ -55,7 +55,9 @@ public class ApplicationDescriptorUpdateService {
     var modulesLoadResult = loadModules(moduleNameVersion, BE);
     var uiModulesLoadResult = loadModules(uiModuleNameVersion, UI);
 
-    application.setVersion(getVersionWithIncPatch(application.getVersion()));
+    var version = getVersionWithIncPatch(application.getVersion());
+    application.setId(getId(application.getName(), version));
+    application.setVersion(version);
     application.setModules(updateModules(application.getModules(), modulesLoadResult));
     application.setUiModules(updateModules(application.getUiModules(), uiModulesLoadResult));
 
@@ -149,7 +151,11 @@ public class ApplicationDescriptorUpdateService {
   private ModuleDefinition toArtifact(Dependency dependency) {
     var name = dependency.getName();
     var version = dependency.getVersion();
-    return new ModuleDefinition().id(name + "-" + version).name(name).version(version);
+    return new ModuleDefinition().id(getId(name, version)).name(name).version(version);
+  }
+
+  private String getId(String name, String version) {
+    return name + "-" + version;
   }
 
   private Map<String, String> parseModuleIdsToUpdate(String modules) {
