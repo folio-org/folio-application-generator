@@ -35,7 +35,7 @@ public class ApplicationDependencyValidator {
    */
   public void validateDependencies(ApplicationDescriptorTemplate template) {
     var projectVersion = validateAndGetProjectVersion(template);
-    var errors = Stream.of(emptyIfNull(template.getModules()), emptyIfNull(template.getUiModules()))
+    var errors = Stream.of(emptyIfNull(template.getModules()))
       .map(moduleDependencies -> validateModules(projectVersion, moduleDependencies))
       .flatMap(Collection::stream)
       .collect(toList());
