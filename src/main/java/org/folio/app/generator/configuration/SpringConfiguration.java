@@ -36,9 +36,14 @@ public class SpringConfiguration {
   @Bean(name = "amazonS3Client")
   @Conditional(AwsCondition.class)
   public S3Client amazonS3Client(PluginConfig config) {
-    return S3Client.builder()
+    var builder = S3Client.builder()
       .region(config.getAwsRegion())
-      .credentialsProvider(DefaultCredentialsProvider.create())
-      .build();
+      .credentialsProvider(DefaultCredentialsProvider.create());
+
+    if (config.getAwsEndpointOverride() != null) {
+      builder.endpointOverride(config.getAwsEndpointOverride());
+    }
+
+    return builder.build();
   }
 }
