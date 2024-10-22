@@ -1,15 +1,19 @@
 package org.folio.app.generator.service.loader;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpClient.Version;
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.conditions.OkapiCondition;
@@ -25,6 +29,9 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Conditional(OkapiCondition.class)
 public class OkapiModuleDescriptorLoader implements ModuleDescriptorLoader {
+
+  private static final Set<Integer> RETRYABLE_STATUS_CODES = Set.of(504);
+  private static final int RETRYABLE_ATTEMPTS_NUMBER = 5;
 
   private final Log log;
   private final HttpClient httpClient;
@@ -51,10 +58,10 @@ public class OkapiModuleDescriptorLoader implements ModuleDescriptorLoader {
     var request = prepareHttpRequest(url, module);
     var moduleId = module.getId();
 
-    var response = httpClient.send(request, BodyHandlers.ofInputStream());
+    var response = retryLoad(request);
     var responseStatus = response.statusCode();
     if (responseStatus != 200) {
-      log.warn(String.format("Failed to load module descriptor '%s' from %s", url, responseStatus));
+      log.warn(String.format("Failed to load module descriptor '%s' from %s: %s", moduleId, url, responseStatus));
       return Optional.empty();
     }
 
@@ -66,6 +73,16 @@ public class OkapiModuleDescriptorLoader implements ModuleDescriptorLoader {
 
     log.info(String.format("Module descriptor '%s' loaded from %s", moduleId, url));
     return Optional.of(searchResult.get(0));
+  }
+
+  private HttpResponse<InputStream> retryLoad(HttpRequest request) throws IOException, InterruptedException {
+    var attemptsCount = 0;
+    var response = httpClient.send(request, BodyHandlers.ofInputStream());
+    while (RETRYABLE_STATUS_CODES.contains(response.statusCode()) && attemptsCount++ < RETRYABLE_ATTEMPTS_NUMBER) {
+      response = httpClient.send(request, BodyHandlers.ofInputStream());
+    }
+
+    return response;
   }
 
   private static HttpRequest prepareHttpRequest(String url, ModuleDefinition module) {
