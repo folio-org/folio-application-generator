@@ -23,6 +23,7 @@ import org.folio.app.generator.model.registry.ModuleRegistries;
 import org.folio.app.generator.model.registry.ModuleRegistry;
 import org.folio.app.generator.model.registry.OkapiModuleRegistry;
 import org.folio.app.generator.model.registry.S3ModuleRegistry;
+import org.folio.app.generator.model.registry.SimpleModuleRegistry;
 import org.folio.app.generator.service.parsers.StringModuleRegistryParser;
 import org.folio.app.generator.utils.PluginConfig;
 
@@ -30,7 +31,7 @@ import org.folio.app.generator.utils.PluginConfig;
 public class ModuleRegistryProvider {
 
   private final StringModuleRegistryParser moduleRegistryParser;
-  private final List<String> supportedRegistryTypes = List.of("s3", "okapi");
+  private final List<String> supportedRegistryTypes = List.of("s3", "okapi", "simple");
 
   /**
    * Provides list of validated registries to load module descriptors.
@@ -103,6 +104,12 @@ public class ModuleRegistryProvider {
         .path(StringUtils.isEmpty(path) ? path : path + PATH_DELIMITER)
         .bucket(trim(registry.getBucket()))
         .publicUrl(trim(registry.getPublicUrlTemplate()));
+    }
+
+    if ("simple".equals(registry.getType())) {
+      return new SimpleModuleRegistry()
+          .url(removeEnd(trim(registry.getUrl()), PATH_DELIMITER))
+          .publicUrl(trim(registry.getPublicUrlTemplate()));
     }
 
     return new OkapiModuleRegistry()
