@@ -61,6 +61,13 @@ class StringModuleRegistryParserTest {
       arguments("okapi::https://test-okapi.sample::https://test-host.sample/okapi/${id}",
         okapiModuleRegistry("https://test-okapi.sample", "https://test-host.sample/okapi/${id}")),
 
+      arguments("okapi::http://localhost:3000::https://test-simple.sample/${id}",
+        okapiModuleRegistry("http://localhost:3000", "https://test-simple.sample/${id}")),
+      arguments("okapi::  http://localhost:3000  :: https://test-simple.sample/${id}  ",
+        okapiModuleRegistry("http://localhost:3000", "https://test-simple.sample/${id}")),
+      arguments("okapi::https://test-simple.sample::https://test-host.sample/simple/${id}",
+        okapiModuleRegistry("https://test-simple.sample", "https://test-host.sample/simple/${id}")),
+
       arguments("s3::test-bucket::/", s3ModuleRegistry("test-bucket", "")),
       arguments("s3::test-bucket::test", s3ModuleRegistry("test-bucket", "test/")),
       arguments("s3::test-bucket::/test", s3ModuleRegistry("test-bucket", "test/")),
