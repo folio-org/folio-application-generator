@@ -1,6 +1,7 @@
 package org.folio.app.generator.service.loader;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -13,6 +14,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.registry.SimpleModuleRegistry;
@@ -24,7 +26,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -51,16 +54,12 @@ class SimpleModuleDescriptorLoaderTest {
     assertThat(loader.getType()).isEqualTo(RegistryType.SIMPLE);
   }
 
-  @ParameterizedTest
-  @ValueSource(strings = { "", "/" })
-  void findModuleDescriptor_positive_emptyResult(String extraPath)
+  @ParameterizedTest(name = "[{index}] retry = {0}, extraPath = {1}")
+  @MethodSource("statusPathRetrySuccessSource")
+  void findModuleDescriptor_positive_emptyResult(boolean retry, String extraPath)
       throws IOException, InterruptedException, JSONException {
 
-    ReflectionTestUtils.setField(loader, "httpClient", httpClient);
-
-    when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
-    when(httpResponse.statusCode()).thenReturn(200);
-    when(httpResponse.statusCode()).thenReturn(200);
+    mockResponse(200, retry);
 
     when(httpResponse.body()).thenReturn(IOUtils.toInputStream("", "UTF-8"));
     when(jsonConverter.parse(any(InputStream.class), any())).thenReturn(new HashMap<String, Object>());
@@ -71,16 +70,12 @@ class SimpleModuleDescriptorLoaderTest {
     verify(log).warn("Module descriptor 'mod-foo-1.0.0' is not found in http://localhost/mod-foo-1.0.0");
   }
 
-  @ParameterizedTest
-  @ValueSource(strings = { "", "/" })
-  void findModuleDescriptor_positive_singleModuleDescriptor(String extraPath)
+  @ParameterizedTest(name = "[{index}] retry = {0}, extraPath = {1}")
+  @MethodSource("statusPathRetrySuccessSource")
+  void findModuleDescriptor_positive_singleModuleDescriptor(boolean retry, String extraPath)
       throws IOException, InterruptedException, JSONException {
 
-    ReflectionTestUtils.setField(loader, "httpClient", httpClient);
-
-    when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
-    when(httpResponse.statusCode()).thenReturn(200);
-    when(httpResponse.statusCode()).thenReturn(200);
+    mockResponse(200, retry);
 
     var expectedModuleDescriptor = fooModuleDescriptor("1.0.0");
 
@@ -93,55 +88,14 @@ class SimpleModuleDescriptorLoaderTest {
     verify(log).info("Module descriptor 'mod-foo-1.0.0' loaded from http://localhost/mod-foo-1.0.0");
   }
 
-  @ParameterizedTest
-  @ValueSource(strings = { "", "/" })
-  void findModuleDescriptor_positive_singleModuleDescriptorRetry(String extraPath)
-      throws IOException, InterruptedException, JSONException {
+  @ParameterizedTest(name = "[{index}] statusCode = {0}, retry = {1}, extraPath = {2}")
+  @MethodSource("statusPathRetryFailSource")
+  void findModuleDescriptor_negative_loadFail(int statusCode, boolean retry, String extraPath)
+      throws IOException, InterruptedException {
 
-    ReflectionTestUtils.setField(loader, "httpClient", httpClient);
-
-    when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
-    when(httpResponse.statusCode()).thenReturn(504);
-    when(httpResponse.statusCode()).thenReturn(200);
-    when(httpResponse.statusCode()).thenReturn(200);
-
-    var expectedModuleDescriptor = fooModuleDescriptor("1.0.0");
-
-    when(httpResponse.body()).thenReturn(IOUtils.toInputStream("", "UTF-8"));
-    when(jsonConverter.parse(any(InputStream.class), any())).thenReturn(expectedModuleDescriptor);
+    mockResponse(statusCode, retry);
 
     var result = loader.findModuleDescriptor(simpleRegistry(extraPath), fooModule("1.0.0"));
-
-    assertThat(result).contains(expectedModuleDescriptor);
-    verify(log).info("Module descriptor 'mod-foo-1.0.0' loaded from http://localhost/mod-foo-1.0.0");
-  }
-
-  @ParameterizedTest
-  @ValueSource(ints = { 204, 404 })
-  void findModuleDescriptor_negative_loadFail(int statusCode) throws IOException, InterruptedException {
-    ReflectionTestUtils.setField(loader, "httpClient", httpClient);
-
-    when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
-    when(httpResponse.statusCode()).thenReturn(statusCode);
-    when(httpResponse.statusCode()).thenReturn(statusCode);
-
-    var result = loader.findModuleDescriptor(simpleRegistry(), fooModule("1.0.0"));
-
-    assertThat(result).isEmpty();
-    verify(log).warn("Failed to load module descriptor 'mod-foo-1.0.0' from http://localhost/mod-foo-1.0.0: " + statusCode);
-  }
-
-  @ParameterizedTest
-  @ValueSource(ints = { 204, 404 })
-  void findModuleDescriptor_negative_loadFailRetry(int statusCode) throws IOException, InterruptedException {
-    ReflectionTestUtils.setField(loader, "httpClient", httpClient);
-
-    when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
-    when(httpResponse.statusCode()).thenReturn(504);
-    when(httpResponse.statusCode()).thenReturn(statusCode);
-    when(httpResponse.statusCode()).thenReturn(statusCode);
-
-    var result = loader.findModuleDescriptor(simpleRegistry(), fooModule("1.0.0"));
 
     assertThat(result).isEmpty();
     verify(log).warn("Failed to load module descriptor 'mod-foo-1.0.0' from http://localhost/mod-foo-1.0.0: " + statusCode);
@@ -154,11 +108,46 @@ class SimpleModuleDescriptorLoaderTest {
     var exception = new IOException("This is a mocked exception.");
     when(httpClient.send(any(HttpRequest.class), any())).thenThrow(exception);
 
-    var result = loader.findModuleDescriptor(simpleRegistry(), fooModule("1.0.0"));
+    var result = loader.findModuleDescriptor(simpleRegistry(""), fooModule("1.0.0"));
 
     assertThat(result).isEmpty();
     verify(log)
       .warn("Failed to load module descriptor 'mod-foo-1.0.0' from http://localhost/mod-foo-1.0.0", exception);
+  }
+
+  public static Stream<Arguments> statusPathRetryFailSource() {
+    return Stream.of(
+      arguments(204, false, ""),
+      arguments(404, false, ""),
+      arguments(204, true, ""),
+      arguments(404, true, ""),
+      arguments(204, false, "/"),
+      arguments(404, false, "/"),
+      arguments(204, true, "/"),
+      arguments(404, true, "/")
+    );
+  }
+
+  public static Stream<Arguments> statusPathRetrySuccessSource() {
+    return Stream.of(
+      arguments(false, ""),
+      arguments(true, ""),
+      arguments(false, "/"),
+      arguments(true, "/")
+    );
+  }
+
+  private void mockResponse(int statusCode, boolean retry) throws IOException, InterruptedException {
+    ReflectionTestUtils.setField(loader, "httpClient", httpClient);
+
+    when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
+
+    if (retry) {
+      when(httpResponse.statusCode()).thenReturn(504);
+    }
+
+    when(httpResponse.statusCode()).thenReturn(statusCode);
+    when(httpResponse.statusCode()).thenReturn(statusCode);
   }
 
   private static Map<String, Object> fooModuleDescriptor(String version) {
@@ -171,10 +160,6 @@ class SimpleModuleDescriptorLoaderTest {
 
   private static ModuleDefinition fooModule(String version) {
     return new ModuleDefinition().id("mod-foo-" + version).name("mod-foo").version(version);
-  }
-
-  private static SimpleModuleRegistry simpleRegistry() {
-    return simpleRegistry("");
   }
 
   private static SimpleModuleRegistry simpleRegistry(String extra) {
