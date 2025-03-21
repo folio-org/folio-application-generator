@@ -102,6 +102,20 @@ class SimpleModuleDescriptorLoaderTest {
     verify(log).warn("Failed to load module descriptor 'mod-foo-1.0.0' from http://localhost/mod-foo-1.0.0: " + statusCode);
   }
 
+  @Test
+  void findModuleDescriptor_negative_throwsException() throws IOException, InterruptedException, JSONException {
+    ReflectionTestUtils.setField(loader, "httpClient", httpClient);
+
+    var exception = new IOException("This is a mocked exception.");
+    when(httpClient.send(any(HttpRequest.class), any())).thenThrow(exception);
+
+    var result = loader.findModuleDescriptor(simpleRegistry(), fooModule("1.0.0"));
+
+    assertThat(result).isEmpty();
+    verify(log)
+      .warn("Failed to load module descriptor 'mod-foo-1.0.0' from http://localhost/mod-foo-1.0.0", exception);
+  }
+
   private static Map<String, Object> fooModuleDescriptor(String version) {
     return Map.of(
       "id", "mod-foo" + "-" + version,
