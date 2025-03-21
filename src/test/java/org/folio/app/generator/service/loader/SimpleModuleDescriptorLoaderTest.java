@@ -94,11 +94,50 @@ class SimpleModuleDescriptorLoaderTest {
   }
 
   @ParameterizedTest
+  @ValueSource(strings = { "", "/" })
+  void findModuleDescriptor_positive_singleModuleDescriptorRetry(String extraPath)
+      throws IOException, InterruptedException, JSONException {
+
+    ReflectionTestUtils.setField(loader, "httpClient", httpClient);
+
+    when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
+    when(httpResponse.statusCode()).thenReturn(504);
+    when(httpResponse.statusCode()).thenReturn(200);
+    when(httpResponse.statusCode()).thenReturn(200);
+
+    var expectedModuleDescriptor = fooModuleDescriptor("1.0.0");
+
+    when(httpResponse.body()).thenReturn(IOUtils.toInputStream("", "UTF-8"));
+    when(jsonConverter.parse(any(InputStream.class), any())).thenReturn(expectedModuleDescriptor);
+
+    var result = loader.findModuleDescriptor(simpleRegistry(extraPath), fooModule("1.0.0"));
+
+    assertThat(result).contains(expectedModuleDescriptor);
+    verify(log).info("Module descriptor 'mod-foo-1.0.0' loaded from http://localhost/mod-foo-1.0.0");
+  }
+
+  @ParameterizedTest
   @ValueSource(ints = { 204, 404 })
   void findModuleDescriptor_negative_loadFail(int statusCode) throws IOException, InterruptedException {
     ReflectionTestUtils.setField(loader, "httpClient", httpClient);
 
     when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
+    when(httpResponse.statusCode()).thenReturn(statusCode);
+    when(httpResponse.statusCode()).thenReturn(statusCode);
+
+    var result = loader.findModuleDescriptor(simpleRegistry(), fooModule("1.0.0"));
+
+    assertThat(result).isEmpty();
+    verify(log).warn("Failed to load module descriptor 'mod-foo-1.0.0' from http://localhost/mod-foo-1.0.0: " + statusCode);
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = { 204, 404 })
+  void findModuleDescriptor_negative_loadFailRetry(int statusCode) throws IOException, InterruptedException {
+    ReflectionTestUtils.setField(loader, "httpClient", httpClient);
+
+    when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
+    when(httpResponse.statusCode()).thenReturn(504);
     when(httpResponse.statusCode()).thenReturn(statusCode);
     when(httpResponse.statusCode()).thenReturn(statusCode);
 
