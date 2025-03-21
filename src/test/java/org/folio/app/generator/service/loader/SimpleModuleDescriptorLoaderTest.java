@@ -14,6 +14,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.ModuleDefinition;
@@ -59,15 +60,13 @@ class SimpleModuleDescriptorLoaderTest {
   void findModuleDescriptor_positive_emptyResult(int retry, String extraPath)
       throws IOException, InterruptedException, JSONException {
 
-    mockResponse(200, retry);
-
-    when(httpResponse.body()).thenReturn(IOUtils.toInputStream("", "UTF-8"));
-    when(jsonConverter.parse(any(InputStream.class), any())).thenReturn(new HashMap<String, Object>());
+    mockStatusResponse(200, retry);
+    mockPayloadResponse(new HashMap<String, Object>());
 
     var result = loader.findModuleDescriptor(simpleRegistry(extraPath), fooModule("1.0.0"));
 
-    assertThat(result).isEmpty();
-    verify(log).warn("Module descriptor 'mod-foo-1.0.0' is not found in http://localhost/mod-foo-1.0.0");
+    assertEmptyAndWarnLog(result,
+      "Module descriptor 'mod-foo-1.0.0' is not found in http://localhost/mod-foo-1.0.0");
   }
 
   @ParameterizedTest(name = "[{index}] retry = {0}, extraPath = {1}")
@@ -75,12 +74,10 @@ class SimpleModuleDescriptorLoaderTest {
   void findModuleDescriptor_positive_singleModuleDescriptor(int retry, String extraPath)
       throws IOException, InterruptedException, JSONException {
 
-    mockResponse(200, retry);
-
     var expectedModuleDescriptor = fooModuleDescriptor("1.0.0");
 
-    when(httpResponse.body()).thenReturn(IOUtils.toInputStream("", "UTF-8"));
-    when(jsonConverter.parse(any(InputStream.class), any())).thenReturn(expectedModuleDescriptor);
+    mockStatusResponse(200, retry);
+    mockPayloadResponse(expectedModuleDescriptor);
 
     var result = loader.findModuleDescriptor(simpleRegistry(extraPath), fooModule("1.0.0"));
 
@@ -93,12 +90,12 @@ class SimpleModuleDescriptorLoaderTest {
   void findModuleDescriptor_negative_loadFail(int statusCode, int retry, String extraPath)
       throws IOException, InterruptedException {
 
-    mockResponse(statusCode, retry);
+    mockStatusResponse(statusCode, retry);
 
     var result = loader.findModuleDescriptor(simpleRegistry(extraPath), fooModule("1.0.0"));
 
-    assertThat(result).isEmpty();
-    verify(log).warn("Failed to load module descriptor 'mod-foo-1.0.0' from http://localhost/mod-foo-1.0.0: " + statusCode);
+    assertEmptyAndWarnLog(result,
+      "Failed to load module descriptor 'mod-foo-1.0.0' from http://localhost/mod-foo-1.0.0: " + statusCode);
   }
 
   @Test
@@ -143,7 +140,12 @@ class SimpleModuleDescriptorLoaderTest {
     );
   }
 
-  private void mockResponse(int statusCode, int retry) throws IOException, InterruptedException {
+  private void assertEmptyAndWarnLog(Optional<Map<String, Object>> result, String message) {
+    assertThat(result).isEmpty();
+    verify(log).warn(message);
+  }
+
+  private void mockStatusResponse(int statusCode, int retry) throws IOException, InterruptedException {
     ReflectionTestUtils.setField(loader, "httpClient", httpClient);
 
     when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
@@ -154,6 +156,11 @@ class SimpleModuleDescriptorLoaderTest {
 
     when(httpResponse.statusCode()).thenReturn(statusCode);
     when(httpResponse.statusCode()).thenReturn(statusCode);
+  }
+
+  private void mockPayloadResponse(Object payload) {
+    when(httpResponse.body()).thenReturn(IOUtils.toInputStream("", "UTF-8"));
+    when(jsonConverter.parse(any(InputStream.class), any())).thenReturn(payload);
   }
 
   private static Map<String, Object> fooModuleDescriptor(String version) {
