@@ -56,7 +56,7 @@ class SimpleModuleDescriptorLoaderTest {
 
   @ParameterizedTest(name = "[{index}] retry = {0}, extraPath = {1}")
   @MethodSource("statusPathRetrySuccessSource")
-  void findModuleDescriptor_positive_emptyResult(boolean retry, String extraPath)
+  void findModuleDescriptor_positive_emptyResult(int retry, String extraPath)
       throws IOException, InterruptedException, JSONException {
 
     mockResponse(200, retry);
@@ -72,7 +72,7 @@ class SimpleModuleDescriptorLoaderTest {
 
   @ParameterizedTest(name = "[{index}] retry = {0}, extraPath = {1}")
   @MethodSource("statusPathRetrySuccessSource")
-  void findModuleDescriptor_positive_singleModuleDescriptor(boolean retry, String extraPath)
+  void findModuleDescriptor_positive_singleModuleDescriptor(int retry, String extraPath)
       throws IOException, InterruptedException, JSONException {
 
     mockResponse(200, retry);
@@ -90,7 +90,7 @@ class SimpleModuleDescriptorLoaderTest {
 
   @ParameterizedTest(name = "[{index}] statusCode = {0}, retry = {1}, extraPath = {2}")
   @MethodSource("statusPathRetryFailSource")
-  void findModuleDescriptor_negative_loadFail(int statusCode, boolean retry, String extraPath)
+  void findModuleDescriptor_negative_loadFail(int statusCode, int retry, String extraPath)
       throws IOException, InterruptedException {
 
     mockResponse(statusCode, retry);
@@ -117,32 +117,38 @@ class SimpleModuleDescriptorLoaderTest {
 
   public static Stream<Arguments> statusPathRetryFailSource() {
     return Stream.of(
-      arguments(204, false, ""),
-      arguments(404, false, ""),
-      arguments(204, true, ""),
-      arguments(404, true, ""),
-      arguments(204, false, "/"),
-      arguments(404, false, "/"),
-      arguments(204, true, "/"),
-      arguments(404, true, "/")
+      arguments(204, 0, ""),
+      arguments(404, 0, ""),
+      arguments(204, 1, ""),
+      arguments(404, 1, ""),
+      arguments(204, 6, ""),
+      arguments(404, 6, ""),
+      arguments(204, 0, "/"),
+      arguments(404, 0, "/"),
+      arguments(204, 1, "/"),
+      arguments(404, 1, "/"),
+      arguments(204, 6, "/"),
+      arguments(404, 6, "/")
     );
   }
 
   public static Stream<Arguments> statusPathRetrySuccessSource() {
     return Stream.of(
-      arguments(false, ""),
-      arguments(true, ""),
-      arguments(false, "/"),
-      arguments(true, "/")
+      arguments(0, ""),
+      arguments(1, ""),
+      arguments(6, ""),
+      arguments(0, "/"),
+      arguments(1, "/"),
+      arguments(6, "/")
     );
   }
 
-  private void mockResponse(int statusCode, boolean retry) throws IOException, InterruptedException {
+  private void mockResponse(int statusCode, int retry) throws IOException, InterruptedException {
     ReflectionTestUtils.setField(loader, "httpClient", httpClient);
 
     when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
 
-    if (retry) {
+    for (int i = 0; i < retry; i++) {
       when(httpResponse.statusCode()).thenReturn(504);
     }
 
