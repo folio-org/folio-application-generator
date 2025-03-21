@@ -51,8 +51,11 @@ class SimpleModuleDescriptorLoaderTest {
     assertThat(loader.getType()).isEqualTo(RegistryType.SIMPLE);
   }
 
-  @Test
-  void findModuleDescriptor_positive_emptyResult() throws IOException, InterruptedException, JSONException {
+  @ParameterizedTest
+  @ValueSource(strings = { "", "/" })
+  void findModuleDescriptor_positive_emptyResult(String extraPath)
+      throws IOException, InterruptedException, JSONException {
+
     ReflectionTestUtils.setField(loader, "httpClient", httpClient);
 
     when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
@@ -62,14 +65,17 @@ class SimpleModuleDescriptorLoaderTest {
     when(httpResponse.body()).thenReturn(IOUtils.toInputStream("", "UTF-8"));
     when(jsonConverter.parse(any(InputStream.class), any())).thenReturn(new HashMap<String, Object>());
 
-    var result = loader.findModuleDescriptor(simpleRegistry(), fooModule("1.0.0"));
+    var result = loader.findModuleDescriptor(simpleRegistry(extraPath), fooModule("1.0.0"));
 
     assertThat(result).isEmpty();
     verify(log).warn("Module descriptor 'mod-foo-1.0.0' is not found in http://localhost/mod-foo-1.0.0");
   }
 
-  @Test
-  void findModuleDescriptor_positive_singleModuleDescriptor() throws IOException, InterruptedException, JSONException {
+  @ParameterizedTest
+  @ValueSource(strings = { "", "/" })
+  void findModuleDescriptor_positive_singleModuleDescriptor(String extraPath)
+      throws IOException, InterruptedException, JSONException {
+
     ReflectionTestUtils.setField(loader, "httpClient", httpClient);
 
     when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
@@ -81,7 +87,7 @@ class SimpleModuleDescriptorLoaderTest {
     when(httpResponse.body()).thenReturn(IOUtils.toInputStream("", "UTF-8"));
     when(jsonConverter.parse(any(InputStream.class), any())).thenReturn(expectedModuleDescriptor);
 
-    var result = loader.findModuleDescriptor(simpleRegistry(), fooModule("1.0.0"));
+    var result = loader.findModuleDescriptor(simpleRegistry(extraPath), fooModule("1.0.0"));
 
     assertThat(result).contains(expectedModuleDescriptor);
     verify(log).info("Module descriptor 'mod-foo-1.0.0' loaded from http://localhost/mod-foo-1.0.0");
@@ -129,8 +135,12 @@ class SimpleModuleDescriptorLoaderTest {
   }
 
   private static SimpleModuleRegistry simpleRegistry() {
+    return simpleRegistry("");
+  }
+
+  private static SimpleModuleRegistry simpleRegistry(String extra) {
     return new SimpleModuleRegistry()
-      .url("http://localhost/")
+      .url("http://localhost" + extra)
       .withGeneratedFields();
   }
 }
