@@ -17,6 +17,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.folio.app.generator.model.registry.ModuleRegistry;
 import org.folio.app.generator.model.registry.OkapiModuleRegistry;
 import org.folio.app.generator.model.registry.S3ModuleRegistry;
+import org.folio.app.generator.model.registry.SimpleModuleRegistry;
 
 public class StringModuleRegistryParser {
 
@@ -24,12 +25,16 @@ public class StringModuleRegistryParser {
   private final Pattern okapiPattern2 = Pattern.compile("(okapi)::(.{1,1024})");
   private final Pattern s3Pattern1 = Pattern.compile("(s3)::(.{1,1024})::(.{1,1024})::(.{1,1024})");
   private final Pattern s3Pattern2 = Pattern.compile("(s3)::(.{1,1024})::(.{1,1024})");
+  private final Pattern simplePattern1 = Pattern.compile("(simple)::(.{1,1024})::(.{1,1024})");
+  private final Pattern simplePattern2 = Pattern.compile("(simple)::(.{1,1024})");
 
   private final List<Pair<Pattern, Function<String[], ModuleRegistry>>> patterns = List.of(
     Pair.of(okapiPattern1, StringModuleRegistryParser::parseOkapiString),
     Pair.of(okapiPattern2, StringModuleRegistryParser::parseOkapiString),
     Pair.of(s3Pattern1, StringModuleRegistryParser::parseAwsS3String),
-    Pair.of(s3Pattern2, StringModuleRegistryParser::parseAwsS3String));
+    Pair.of(s3Pattern2, StringModuleRegistryParser::parseAwsS3String),
+    Pair.of(simplePattern1, StringModuleRegistryParser::parseSimpleString),
+    Pair.of(simplePattern2, StringModuleRegistryParser::parseSimpleString));
 
   /**
    * Parses module registry string to a {@link ModuleRegistry} object.
@@ -76,6 +81,20 @@ public class StringModuleRegistryParser {
     }
 
     return s3ModuleRegistry.withGeneratedFields();
+  }
+
+  private static ModuleRegistry parseSimpleString(String[] stringParts) {
+    var baseUrl = checkAndGetUrl(stringParts[1]);
+    var verifiedUrl = baseUrl.toString();
+
+    var registry = new SimpleModuleRegistry();
+    registry.setUrl(verifiedUrl);
+
+    if (stringParts.length == 3) {
+      registry.setPublicUrl(trim(stringParts[2]));
+    }
+
+    return registry.withGeneratedFields();
   }
 
   private static URL checkAndGetUrl(String probablyUrl) {
