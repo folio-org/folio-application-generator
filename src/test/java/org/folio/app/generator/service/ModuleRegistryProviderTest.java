@@ -12,6 +12,7 @@ import org.folio.app.generator.model.registry.ModuleRegistries;
 import org.folio.app.generator.model.registry.ModuleRegistry;
 import org.folio.app.generator.model.registry.OkapiModuleRegistry;
 import org.folio.app.generator.model.registry.S3ModuleRegistry;
+import org.folio.app.generator.model.registry.SimpleModuleRegistry;
 import org.folio.app.generator.service.parsers.StringModuleRegistryParser;
 import org.folio.app.generator.support.UnitTest;
 import org.folio.app.generator.utils.PluginConfig;
@@ -198,6 +199,78 @@ class ModuleRegistryProviderTest {
           .beRegistries(List.of(s3ConfigRegistry("be/")))
           .uiRegistries(List.of(s3ConfigRegistry("ui/")))
           .build(),
+        registries(emptyList(), emptyList())),
+
+      arguments(
+        "Config registry provided simple (override = false)",
+        config(false, null, simpleConfigRegistry()),
+        registries(List.of(simpleRegistry()), List.of(simpleRegistry()))),
+
+      arguments(
+        "Config registry provided for simple (override = true)",
+        config(true, null, simpleConfigRegistry()),
+        registries(emptyList(), emptyList())),
+
+      arguments(
+        "Command-line(s3) and config(simple) registries provided (override = false)",
+        config(false, "s3::test::/", simpleConfigRegistry()),
+        registries(List.of(s3Registry(""), simpleRegistry()), List.of(s3Registry(""), simpleRegistry()))),
+
+      arguments(
+        "Command-line(s3) and config(simple) registries provided (override = true)",
+        config(true, "s3::test::test/", simpleConfigRegistry()),
+        registries(List.of(s3Registry()), List.of(s3Registry()))),
+
+      arguments(
+        "Command-line(simple) and config(s3) registries provided (override = false)",
+        config(false, "simple::https://localhost:9130", s3ConfigRegistry()),
+        registries(List.of(simpleRegistry(), s3Registry()), List.of(simpleRegistry(), s3Registry()))),
+
+      arguments(
+        "Command-line(simple) and config(s3) registries provided (override = true)",
+        config(true, "simple::https://localhost:9130", s3ConfigRegistry()),
+        registries(List.of(simpleRegistry()), List.of(simpleRegistry()))),
+
+      arguments("Config (be, ui, global) registries provided with simple (override = false)",
+        PluginConfig.builder()
+          .overrideConfigRegistries(false)
+          .registries(List.of(simpleConfigRegistry()))
+          .beRegistries(List.of(s3ConfigRegistry("be/")))
+          .uiRegistries(List.of(s3ConfigRegistry("ui/")))
+          .build(),
+        registries(List.of(s3Registry("be/"), simpleRegistry()), List.of(s3Registry("ui/"), simpleRegistry()))),
+
+      arguments(
+        "Command-line(be, ui, global) and config (be, ui, global) registries provided with simple (override = false)",
+        PluginConfig.builder()
+          .overrideConfigRegistries(false)
+          .registries(List.of(simpleConfigRegistry()))
+          .beRegistries(List.of(s3ConfigRegistry("be/")))
+          .uiRegistries(List.of(s3ConfigRegistry("ui/")))
+          .cmdRegistryString("s3::test::/global/")
+          .beCmdRegistryString("s3::test::be/f/")
+          .uiCmdRegistryString("s3::test::ui/f/")
+          .build(),
+        registries(
+          List.of(s3Registry("be/f/"), s3Registry("global/"), s3Registry("be/"), simpleRegistry()),
+          List.of(s3Registry("ui/f/"), s3Registry("global/"), s3Registry("ui/"), simpleRegistry()))),
+
+      arguments("Config (be, ui, global) registries provided with simple (override = false)",
+        PluginConfig.builder()
+          .overrideConfigRegistries(false)
+          .registries(List.of(simpleConfigRegistry()))
+          .beRegistries(List.of(s3ConfigRegistry("be/")))
+          .uiRegistries(List.of(s3ConfigRegistry("ui/")))
+          .build(),
+        registries(List.of(s3Registry("be/"), simpleRegistry()), List.of(s3Registry("ui/"), simpleRegistry()))),
+
+      arguments("Config (be, ui, global) registries provided with simple (override = true)",
+        PluginConfig.builder()
+          .overrideConfigRegistries(true)
+          .registries(List.of(simpleConfigRegistry()))
+          .beRegistries(List.of(s3ConfigRegistry("be/")))
+          .uiRegistries(List.of(s3ConfigRegistry("ui/")))
+          .build(),
         registries(emptyList(), emptyList()))
     );
   }
@@ -238,6 +311,12 @@ class ModuleRegistryProviderTest {
       .withGeneratedFields();
   }
 
+  private static ModuleRegistry simpleRegistry() {
+    return new SimpleModuleRegistry()
+      .url("https://localhost:9130")
+      .withGeneratedFields();
+  }
+
   private static ConfigModuleRegistry okapiConfigRegistry() {
     return okapiConfigRegistry("https://localhost:9130");
   }
@@ -258,6 +337,17 @@ class ModuleRegistryProviderTest {
     configModuleRegistry.setType("s3");
     configModuleRegistry.setBucket("test");
     configModuleRegistry.setPath(path);
+    return configModuleRegistry;
+  }
+
+  private static ConfigModuleRegistry simpleConfigRegistry() {
+    return simpleConfigRegistry("https://localhost:9130");
+  }
+
+  private static ConfigModuleRegistry simpleConfigRegistry(String url) {
+    var configModuleRegistry = new ConfigModuleRegistry();
+    configModuleRegistry.setType("simple");
+    configModuleRegistry.setUrl(url);
     return configModuleRegistry;
   }
 }
