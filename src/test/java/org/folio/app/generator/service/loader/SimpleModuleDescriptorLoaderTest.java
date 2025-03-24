@@ -22,7 +22,6 @@ import org.folio.app.generator.model.registry.SimpleModuleRegistry;
 import org.folio.app.generator.model.types.RegistryType;
 import org.folio.app.generator.support.UnitTest;
 import org.folio.app.generator.utils.JsonConverter;
-import org.json.JSONException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,7 +57,7 @@ class SimpleModuleDescriptorLoaderTest {
   @ParameterizedTest(name = "[{index}] retry = {0}, extraPath = {1}")
   @MethodSource("statusPathRetrySuccessSource")
   void findModuleDescriptor_positive_emptyResult(int retry, String extraPath)
-      throws IOException, InterruptedException, JSONException {
+      throws IOException, InterruptedException {
 
     mockStatusResponse(200, retry);
     mockPayloadResponse(new HashMap<String, Object>());
@@ -72,7 +71,7 @@ class SimpleModuleDescriptorLoaderTest {
   @ParameterizedTest(name = "[{index}] retry = {0}, extraPath = {1}")
   @MethodSource("statusPathRetrySuccessSource")
   void findModuleDescriptor_positive_singleModuleDescriptor(int retry, String extraPath)
-      throws IOException, InterruptedException, JSONException {
+      throws IOException, InterruptedException {
 
     var expectedModuleDescriptor = fooModuleDescriptor("1.0.0");
 
@@ -99,7 +98,7 @@ class SimpleModuleDescriptorLoaderTest {
   }
 
   @Test
-  void findModuleDescriptor_negative_throwsException() throws IOException, InterruptedException, JSONException {
+  void findModuleDescriptor_negative_throwsException() throws IOException, InterruptedException {
     ReflectionTestUtils.setField(loader, "httpClient", httpClient);
 
     var exception = new IOException("This is a mocked exception.");
