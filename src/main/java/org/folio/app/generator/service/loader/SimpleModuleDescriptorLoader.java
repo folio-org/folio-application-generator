@@ -55,7 +55,9 @@ public class SimpleModuleDescriptorLoader implements ModuleDescriptorLoader {
     return RegistryType.SIMPLE;
   }
 
-  private Optional<Map<String, Object>> loadModuleDescriptor(String url, ModuleDefinition module) throws Exception {
+  private Optional<Map<String, Object>> loadModuleDescriptor(String url, ModuleDefinition module)
+      throws IOException, InterruptedException {
+
     HttpRequest request = prepareHttpRequest(url, module);
     var moduleId = module.getId();
 
