@@ -42,7 +42,7 @@ public class SimpleModuleDescriptorLoader implements ModuleDescriptorLoader {
     var url = simpleRegistry.getUrl();
     try {
       return loadModuleDescriptor(url, module);
-    } catch (IOException | InterruptedException e) {
+    } catch (Exception e) {
       HttpRequest request = prepareHttpRequest(url, module);
       log.warn(String.format("Failed to load module descriptor '%s' from %s", module.getId(),
           request.uri().toString()), e);
