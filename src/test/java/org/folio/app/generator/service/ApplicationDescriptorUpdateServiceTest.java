@@ -44,7 +44,9 @@ class ApplicationDescriptorUpdateServiceTest {
 
   @Test
   void update_negative_invalidModuleVersion() {
-    List<Map<String, Object>> modules = List.of(Map.of("id", "module1-1.0.0"), Map.of("id", "module2-2.0.0"),
+    List<Map<String, Object>> modules = List.of(
+      Map.of("id", "module1-1.0.0"),
+      Map.of("id", "module2-2.0.0"),
       Map.of("id", "module3:latest"));
     var application = new ApplicationDescriptor().moduleDescriptors(modules);
 

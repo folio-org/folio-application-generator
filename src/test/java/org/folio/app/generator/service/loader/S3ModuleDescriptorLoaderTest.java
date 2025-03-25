@@ -88,8 +88,10 @@ class S3ModuleDescriptorLoaderTest {
     var result = loader.findModuleDescriptor(s3Registry(), fooModule("1.0.0"));
 
     assertThat(result).contains(expectedModuleDescriptor);
+
+    verify(log).info("Exact match found for module 'mod-foo-1.0.0' in s3 bucket: test-bucket/");
     verify(log).info("Module descriptor 'mod-foo-1.0.0' loaded from s3 bucket: test-bucket/");
-    verify(pluginConfig, times(2)).getAwsS3BatchSize();
+    verify(pluginConfig, times(1)).getAwsS3BatchSize();
   }
 
   @Test
@@ -119,8 +121,9 @@ class S3ModuleDescriptorLoaderTest {
     var result = loader.findModuleDescriptor(s3Registry(), fooModule("1.0.0"));
 
     assertThat(result).isEmpty();
+    verify(log).info("Exact match found for module 'mod-foo-1.0.0' in s3 bucket: test-bucket/");
     verify(log).warn("Failed to load module descriptor 'mod-foo-1.0.0' from s3 bucket: test-bucket/", exception);
-    verify(pluginConfig, times(2)).getAwsS3BatchSize();
+    verify(pluginConfig, times(1)).getAwsS3BatchSize();
   }
 
   @Test
@@ -215,7 +218,28 @@ class S3ModuleDescriptorLoaderTest {
 
     assertThat(result).contains(expectedModuleDescriptor);
 
+    verify(log).info("Exact match found for module 'mod-foo-1.0.0' in s3 bucket: test-bucket/");
     verify(log).info("Module descriptor 'mod-foo-1.0.0' loaded from s3 bucket: test-bucket/");
+    verify(pluginConfig, times(1)).getAwsS3BatchSize();
+  }
+
+  @Test
+  void findModuleDescriptor_negative_specificVersion_notFound() {
+    var request = listObjectsRequest("mod-foo-1.0.0", null);
+    var listObjectsResponse = listObjectsResponse(
+      s3Object("mod-foo-1.0.0-SNAPSHOT.4"),
+      s3Object("mod-foo-1.0.0-SNAPSHOT.2"),
+      s3Object("mod-foo-1.0.0.1"),
+      s3Object("mod-foo-1.0.0.18"),
+      s3Object("mod-foo-1.0.0-SNAPSHOT.3"),
+      s3Object("mod-foo-1.0.0-SNAPSHOT.1"));
+
+    when(s3Client.listObjectsV2(request)).thenReturn(listObjectsResponse);
+
+    var result = loader.findModuleDescriptor(s3Registry(), fooModule("1.0.0"));
+
+    assertThat(result).isEmpty();
+
     verify(pluginConfig, times(2)).getAwsS3BatchSize();
   }
 
