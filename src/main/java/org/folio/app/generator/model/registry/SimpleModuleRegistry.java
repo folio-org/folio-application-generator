@@ -3,7 +3,8 @@ package org.folio.app.generator.model.registry;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Setter;
@@ -40,16 +41,16 @@ public class SimpleModuleRegistry implements ModuleRegistry {
 
   @Override
   public boolean isValid() {
-    if (isBlank(url)) {
-      return false;
+    try {
+      if (!isBlank(url)) {
+        new URI(url).toURL();
+        return true;
+      }
+    } catch (MalformedURLException | URISyntaxException e) {
+      // This exception is used to determine the validity and no error needs to be thrown.
     }
 
-    try {
-      new URL(url);
-      return true;
-    } catch (MalformedURLException e) {
-      return false;
-    }
+    return false;
   }
 
   @Override
