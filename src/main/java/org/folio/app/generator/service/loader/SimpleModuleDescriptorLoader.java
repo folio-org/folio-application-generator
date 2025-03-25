@@ -39,11 +39,11 @@ public class SimpleModuleDescriptorLoader implements ModuleDescriptorLoader {
   @Override
   public Optional<Map<String, Object>> findModuleDescriptor(ModuleRegistry registry, ModuleDefinition module) {
     var simpleRegistry = (SimpleModuleRegistry) registry;
-    var url = simpleRegistry.getUrl();
+    var request = prepareHttpRequest(simpleRegistry.getUrl(), module);
+
     try {
-      return loadModuleDescriptor(url, module);
+      return loadModuleDescriptor(request, module);
     } catch (Exception e) {
-      HttpRequest request = prepareHttpRequest(url, module);
       log.warn(String.format("Failed to load module descriptor '%s' from %s", module.getId(),
           request.uri().toString()), e);
       return Optional.empty();
@@ -55,27 +55,29 @@ public class SimpleModuleDescriptorLoader implements ModuleDescriptorLoader {
     return RegistryType.SIMPLE;
   }
 
-  private Optional<Map<String, Object>> loadModuleDescriptor(String url, ModuleDefinition module) throws Exception {
-    HttpRequest request = prepareHttpRequest(url, module);
+  private Optional<Map<String, Object>> loadModuleDescriptor(HttpRequest request, ModuleDefinition module)
+      throws Exception {
+
+    var uri = request.uri().toString();
     var moduleId = module.getId();
 
     var response = retryLoad(request);
     var responseStatus = response.statusCode();
 
-    if (responseStatus != 200) {
-      log.warn(String.format("Failed to load module descriptor '%s' from %s: %s", moduleId,
-          request.uri().toString(), responseStatus));
-      return Optional.empty();
+    if (responseStatus == 200) {
+      var searchResult = jsonConverter.parse(response.body(), new TypeReference<Map<String, Object>>() {});
+
+      if (!searchResult.isEmpty()) {
+        log.info(String.format("Module descriptor '%s' loaded from %s", moduleId, uri));
+        return Optional.of(searchResult);
+      }
+
+      log.warn(String.format("Module descriptor '%s' is not found in %s", moduleId, uri));
+    } else {
+      log.warn(String.format("Failed to load module descriptor '%s' from %s: %s", moduleId, uri, responseStatus));
     }
 
-    var searchResult = jsonConverter.parse(response.body(), new TypeReference<Map<String, Object>>() {});
-    if (searchResult.isEmpty()) {
-      log.warn(String.format("Module descriptor '%s' is not found in %s", moduleId, request.uri().toString()));
-      return Optional.empty();
-    }
-
-    log.info(String.format("Module descriptor '%s' loaded from %s", moduleId, request.uri().toString()));
-    return Optional.of(searchResult);
+    return Optional.empty();
   }
 
   private HttpResponse<InputStream> retryLoad(HttpRequest request) throws IOException, InterruptedException {
@@ -89,19 +91,16 @@ public class SimpleModuleDescriptorLoader implements ModuleDescriptorLoader {
   }
 
   private static HttpRequest prepareHttpRequest(String url, ModuleDefinition module) {
-    var baseUrl = url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
     return HttpRequest.newBuilder()
       .GET()
-      .uri(URI.create(prepareUriString(baseUrl, module)))
+      .uri(URI.create(prepareUriString(url, module)))
       .timeout(Duration.ofMinutes(5))
       .version(Version.HTTP_1_1)
       .build();
   }
 
-  private static String prepareUriString(String baseUrl, ModuleDefinition module) {
-    var moduleName = module.getName();
-    var version = module.getVersion();
-
-    return baseUrl + "/" + moduleName + "-" + version;
+  private static String prepareUriString(String url, ModuleDefinition module) {
+    var baseUrl = url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
+    return baseUrl + "/" + module.getName() + "-" + module.getVersion();
   }
 }
