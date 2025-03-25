@@ -122,13 +122,13 @@ public class ApplicationDescriptorUpdateService {
     var moduleNameVersion = modules.stream().collect(
       toMap(Dependency::getName, Dependency::getVersion, (v1, v2) -> v2));
 
-    var invalid = updateModuleNameVersion.entrySet()
-      .stream().filter(entry -> isInvalidModule(entry.getKey(), entry.getValue(), moduleNameVersion))
+    var invalid = updateModuleNameVersion.entrySet().stream()
+      .filter(entry -> isInvalidModule(entry.getKey(), entry.getValue(), moduleNameVersion))
       .map(entry -> new Dependency(entry.getKey(), entry.getValue())).toList();
 
     if (!invalid.isEmpty()) {
       throw new IllegalArgumentException("Invalid input modules to update:\n"
-        + collectToBulletedList(invalid.stream().map(Dependency::toString).toList()));
+        + collectToBulletedList(invalid.stream().map(ApplicationDescriptorUpdateService::mapToErrorMessage).toList()));
     }
   }
 
@@ -178,5 +178,9 @@ public class ApplicationDescriptorUpdateService {
       return Optional.of(new Dependency(name, LATEST_VERSION));
     }
     return splitModuleId(moduleId);
+  }
+
+  private static String mapToErrorMessage(Dependency dependency) {
+    return String.format("%s version older or the same: %s", dependency.getName(), dependency.getVersion());
   }
 }
