@@ -196,15 +196,15 @@ These parameters can be specified in the job run using following notation
 mvn install -DbuildNumber="123" -DawsRegion=us-east-1
 ```
 
-| Parameter                | Default Value | Description                                                                                                                               |
-|--------------------------|---------------|-------------------------------------------------------------------------------------------------------------------------------------------|
-| awsRegion                | us-east-1     | AWS Region for S3 client                                                                                                                  |
-| buildNumber              |               | Build number from CI tool (will be added for any '-SNAPSHOT' version of generated application                                             |
-| registries               |               | Comma-separated list of custom module-descriptor registries in formats: `s3::{{bucket-name}}:{{path-to-folder}}`, `okapi::{{okapi-base}}` |
-| beRegistries             |               | Comma-separated list of custom back-end module-descriptor registries in the same format as `registries` parameter                         |
-| uiRegistries             |               | Comma-separated list of custom ui module-descriptor registries in the same format as `registries` parameter                               |
-| appDescriptorPath        |               | File path of the application descriptor to update                                                                                         |
-| modules                  |               | Comma-separated list of BE module ids to be updated in format: `module1-1.1.0,module2-2.1.0`                                              |
-| uiModules                |               | Comma-separated list of UI module ids to be updated in the same format as `modules` parameter                                             |
-| overrideConfigRegistries |               | Defines if only command-line specified registries must be used (applies to `registries`, `beRegistries` and `uiRegistries` params)        |
+| Parameter                | Default Value | Description
+|--------------------------|---------------|-------------------------------------------------------------------------------------------------------------------------------------------
+| awsRegion                | us-east-1     | AWS Region for S3 client
+| buildNumber              |               | Build number from CI tool (will be added for any '-SNAPSHOT' version of generated application
+| registries               |               | Comma-separated list of custom module-descriptor registries in formats: `s3::{{bucket-name}}:{{path-to-folder}}`, `okapi::{{okapi-base}}`, `simple::{{okapi-base}}`
+| beRegistries             |               | Comma-separated list of custom back-end module-descriptor registries in the same format as `registries` parameter
+| uiRegistries             |               | Comma-separated list of custom ui module-descriptor registries in the same format as `registries` parameter
+| appDescriptorPath        |               | File path of the application descriptor to update
+| modules                  |               | Comma-separated list of BE module ids to be updated in format: `module1-1.1.0,module2-2.1.0`
+| uiModules                |               | Comma-separated list of UI module ids to be updated in the same format as `modules` parameter
+| overrideConfigRegistries |               | Defines if only command-line specified registries must be used (applies to `registries`, `beRegistries` and `uiRegistries` params)
 

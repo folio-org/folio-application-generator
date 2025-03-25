@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 import org.folio.app.generator.model.registry.ModuleRegistry;
 import org.folio.app.generator.model.registry.OkapiModuleRegistry;
 import org.folio.app.generator.model.registry.S3ModuleRegistry;
+import org.folio.app.generator.model.registry.SimpleModuleRegistry;
 import org.folio.app.generator.support.UnitTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -61,6 +62,20 @@ class StringModuleRegistryParserTest {
       arguments("okapi::https://test-okapi.sample::https://test-host.sample/okapi/${id}",
         okapiModuleRegistry("https://test-okapi.sample", "https://test-host.sample/okapi/${id}")),
 
+      arguments("simple::http://localhost:3000", simpleModuleRegistry("http://localhost:3000")),
+      arguments("simple::  http://localhost:3000", simpleModuleRegistry("http://localhost:3000")),
+      arguments("simple::http://localhost:3000/", simpleModuleRegistry("http://localhost:3000")),
+      arguments("simple::https://test-simple.sample", simpleModuleRegistry("https://test-simple.sample")),
+      arguments("simple::https://test-simple.sample/", simpleModuleRegistry("https://test-simple.sample")),
+      arguments("  simple::http://localhost:3000  ", simpleModuleRegistry("http://localhost:3000")),
+
+      arguments("simple::http://localhost:3000::https://test-simple.sample/${id}",
+        simpleModuleRegistry("http://localhost:3000", "https://test-simple.sample/${id}")),
+      arguments("simple::  http://localhost:3000  :: https://test-simple.sample/${id}  ",
+        simpleModuleRegistry("http://localhost:3000", "https://test-simple.sample/${id}")),
+      arguments("simple::https://test-simple.sample::https://test-host.sample/simple/${id}",
+        simpleModuleRegistry("https://test-simple.sample", "https://test-host.sample/simple/${id}")),
+
       arguments("s3::test-bucket::/", s3ModuleRegistry("test-bucket", "")),
       arguments("s3::test-bucket::test", s3ModuleRegistry("test-bucket", "test/")),
       arguments("s3::test-bucket::/test", s3ModuleRegistry("test-bucket", "test/")),
@@ -79,6 +94,16 @@ class StringModuleRegistryParserTest {
 
   private static Object okapiModuleRegistry(String url, String publicUrlTemplate) {
     return new OkapiModuleRegistry()
+      .url(url)
+      .publicUrl(publicUrlTemplate);
+  }
+
+  private static Object simpleModuleRegistry(String url) {
+    return simpleModuleRegistry(url, url + "/{id}");
+  }
+
+  private static Object simpleModuleRegistry(String url, String publicUrlTemplate) {
+    return new SimpleModuleRegistry()
       .url(url)
       .publicUrl(publicUrlTemplate);
   }
