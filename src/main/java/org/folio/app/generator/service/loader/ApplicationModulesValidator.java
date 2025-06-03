@@ -1,0 +1,106 @@
+package org.folio.app.generator.service.loader;
+
+import static java.util.Collections.singletonList;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.net.HttpHeaders;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import lombok.RequiredArgsConstructor;
+import org.apache.maven.plugin.logging.Log;
+import org.folio.app.generator.model.ApplicationDescriptor;
+import org.folio.app.generator.model.ApplicationDescriptorCollection;
+import org.springframework.stereotype.Component;
+
+/**
+ * Service for validating application module descriptors by sending them to a remote validator endpoint.
+ */
+@Component
+@RequiredArgsConstructor
+public class ApplicationModulesValidator {
+  private static final String VALIDATOR_PATH = "/applications/validate-descriptors";
+
+  private final ObjectMapper objectMapper;
+  private final HttpClient httpClient;
+  private final Log log;
+
+  /**
+   * Validates a single application descriptor by sending it to the validator endpoint.
+   *
+   * @param descriptor the application descriptor to validate
+   * @param baseUrl the base URL of the validator service
+   * @param token the authentication token
+   */
+  public void validateApplication(ApplicationDescriptor descriptor, String baseUrl, String token) {
+    log.info(String.format("Starting validation for application descriptor: %s", descriptor.getId()));
+    var applicationDescriptors = new ApplicationDescriptorCollection();
+    applicationDescriptors.setApplicationDescriptors(singletonList(descriptor));
+
+    var response = sendValidationRequest(applicationDescriptors, baseUrl, token);
+    var responseStatus = response.statusCode();
+
+    if (responseStatus != 202) {
+      log.error(String.format("Failed to validate application descriptor '%s'. Status code: %s", descriptor.getId(),
+        responseStatus));
+      log.error(String.format(response.body()));
+    } else {
+      log.info(String.format("Application descriptor '%s' validated successfully.", descriptor.getId()));
+    }
+  }
+
+  /**
+   * Sends the validation request to the validator endpoint.
+   *
+   * @param applicationDescriptors the collection of application descriptors
+   * @param baseUrl the base URL of the validator service
+   * @param token the authentication token
+   * @return the HTTP response from the validator service
+   */
+  private HttpResponse<String> sendValidationRequest(ApplicationDescriptorCollection applicationDescriptors,
+                                                     String baseUrl, String token) {
+    try {
+      HttpRequest request = prepareHttpRequest(applicationDescriptors, baseUrl, token);
+      log.info("Sending HTTP request to validate application descriptor: " + request.uri());
+
+      HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      log.info(String.format("Received response with status code: %d", response.statusCode()));
+      return response;
+    } catch (IOException | InterruptedException e) {
+      log.error("Exception occurred while sending validation request: " + e.getMessage(), e);
+      throw new RuntimeException(e);
+    }
+  }
+
+  /**
+   * Prepares the HTTP request for validating application descriptors.
+   *
+   * @param descriptors the collection of application descriptors
+   * @param baseUrl the base URL of the validator service
+   * @param token the authentication token
+   * @return the prepared HTTP request
+   * @throws JsonProcessingException if serialization fails
+   */
+  private HttpRequest prepareHttpRequest(ApplicationDescriptorCollection descriptors, String baseUrl, String token)
+    throws JsonProcessingException {
+    baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+    var url = baseUrl + VALIDATOR_PATH;
+    var body = objectMapper.writeValueAsString(descriptors);
+
+    log.debug("Prepared HTTP request body: " + body);
+    log.info("Prepared HTTP request to validate application descriptor: " + url);
+
+    return HttpRequest.newBuilder()
+      .POST(HttpRequest.BodyPublishers.ofString(body))
+      .uri(URI.create(url))
+      .timeout(Duration.ofMinutes(1))
+      .header(HttpHeaders.CONTENT_TYPE, "application/json")
+      .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+      .version(HttpClient.Version.HTTP_1_1)
+      .build();
+  }
+}

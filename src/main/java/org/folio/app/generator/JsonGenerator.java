@@ -28,10 +28,13 @@ public class JsonGenerator extends AbstractGeneratorMojo {
   public void execute() throws MojoExecutionException {
     var ctx = buildApplicationContext();
 
-    var jsonProvider = ctx.getBean(JsonProvider.class);
-    var template = jsonProvider.readJsonFromFile(templatePath, ApplicationDescriptorTemplate.class, true);
-
     var applicationDescriptorService = ctx.getBean(ApplicationDescriptorGenerator.class);
-    applicationDescriptorService.generate(template);
+    applicationDescriptorService.generate(readTemplate());
+  }
+
+  protected ApplicationDescriptorTemplate readTemplate() throws MojoExecutionException {
+    var ctx = buildApplicationContext();
+    var jsonProvider = ctx.getBean(JsonProvider.class);
+    return jsonProvider.readJsonFromFile(templatePath, ApplicationDescriptorTemplate.class, true);
   }
 }
