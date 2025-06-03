@@ -27,6 +27,7 @@ public class ValidateDependenciesMojo extends JsonGenerator {
 
   @Override
   public void execute() throws MojoExecutionException {
+    prevalidateParameters();
 
     var ctx = buildApplicationContext();
     var applicationDescriptorService = ctx.getBean(ApplicationDescriptorService.class);
@@ -38,7 +39,7 @@ public class ValidateDependenciesMojo extends JsonGenerator {
     applicationModulesValidator.validateApplication(application, baseUrl, token);
   }
 
-  private final void prevalidateParameters() throws MojoExecutionException {
+  private void prevalidateParameters() throws MojoExecutionException {
     if (StringUtils.isBlank(baseUrl)) {
       throw new MojoExecutionException("Parameter 'baseUrl' is required");
     }
