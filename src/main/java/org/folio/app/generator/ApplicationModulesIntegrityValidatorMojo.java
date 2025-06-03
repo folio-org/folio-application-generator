@@ -7,11 +7,11 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.folio.app.generator.configuration.ApplicationContextBuilder;
 import org.folio.app.generator.service.ApplicationDescriptorService;
+import org.folio.app.generator.service.ApplicationModulesIntegrityValidator;
 import org.folio.app.generator.service.ModuleRegistryProvider;
-import org.folio.app.generator.service.loader.ApplicationModulesValidator;
 
-@Mojo(name = "validateDependencies")
-public class ValidateDependenciesMojo extends JsonGenerator {
+@Mojo(name = "validateIntegrity")
+public class ApplicationModulesIntegrityValidatorMojo extends JsonGenerator {
 
   @Parameter(property = "baseUrl", required = true)
   String baseUrl;
@@ -20,7 +20,7 @@ public class ValidateDependenciesMojo extends JsonGenerator {
   String token;
 
   @Inject
-  public ValidateDependenciesMojo(ModuleRegistryProvider registryProvider,
+  public ApplicationModulesIntegrityValidatorMojo(ModuleRegistryProvider registryProvider,
                                   ApplicationContextBuilder contextBuilder) {
     super(registryProvider, contextBuilder);
   }
@@ -31,7 +31,7 @@ public class ValidateDependenciesMojo extends JsonGenerator {
 
     var ctx = buildApplicationContext();
     var applicationDescriptorService = ctx.getBean(ApplicationDescriptorService.class);
-    var applicationModulesValidator = ctx.getBean(ApplicationModulesValidator.class);
+    var applicationModulesValidator = ctx.getBean(ApplicationModulesIntegrityValidator.class);
 
     var template = readTemplate();
     var application = applicationDescriptorService.create(template);

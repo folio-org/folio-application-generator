@@ -18,11 +18,11 @@ class ValidateDependenciesMojoTest {
   @Mock
   private ApplicationContextBuilder mockContextBuilder;
 
-  private ValidateDependenciesMojo generator;
+  private ApplicationModulesIntegrityValidatorMojo generator;
 
   @BeforeEach
   void setUp() {
-    generator = new ValidateDependenciesMojo(mockRegistryProvider, mockContextBuilder);
+    generator = new ApplicationModulesIntegrityValidatorMojo(mockRegistryProvider, mockContextBuilder);
   }
 
   @Test

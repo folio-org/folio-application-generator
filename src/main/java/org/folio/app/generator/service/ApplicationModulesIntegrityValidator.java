@@ -1,4 +1,4 @@
-package org.folio.app.generator.service.loader;
+package org.folio.app.generator.service;
 
 import static java.util.Collections.singletonList;
 
@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-public class ApplicationModulesValidator {
+public class ApplicationModulesIntegrityValidator {
   private static final String VALIDATOR_PATH = "/applications/validate-descriptors";
 
   private final ObjectMapper objectMapper;
@@ -65,7 +65,7 @@ public class ApplicationModulesValidator {
                                                      String baseUrl, String token) {
     try {
       HttpRequest request = prepareHttpRequest(applicationDescriptors, baseUrl, token);
-      log.info("Sending HTTP request to validate application descriptor: " + request.uri());
+      log.info("Sending HTTP request to validate application descriptor");
 
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
       log.info(String.format("Received response with status code: %d", response.statusCode()));
