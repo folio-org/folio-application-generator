@@ -86,7 +86,7 @@ class ApplicationModulesIntegrityValidatorTest {
       .POST(HttpRequest.BodyPublishers.ofString("{\"applicationDescriptors\":[{\"id\":\"test-app\"}]}"))
       .build();
 
-    verify(httpClient).send(eq(expectedRequest), eq(HttpResponse.BodyHandlers.ofString()));
+    verify(httpClient).send(expectedRequest, HttpResponse.BodyHandlers.ofString());
   }
 
   @Test

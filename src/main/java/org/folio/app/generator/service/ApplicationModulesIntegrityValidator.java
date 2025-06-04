@@ -9,6 +9,7 @@ import static software.amazon.awssdk.http.HttpStatusCode.ACCEPTED;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.net.HttpHeaders;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -77,7 +78,7 @@ public class ApplicationModulesIntegrityValidator {
    */
   private HttpResponse<String> sendValidationRequest(ApplicationDescriptorCollection applicationDescriptors,
                                                      String baseUrl, String token)
-    throws Exception {
+    throws IOException, InterruptedException {
     HttpRequest request = prepareHttpRequest(applicationDescriptors, baseUrl, token);
     log.info("Sending HTTP request to validate application descriptor");
 
