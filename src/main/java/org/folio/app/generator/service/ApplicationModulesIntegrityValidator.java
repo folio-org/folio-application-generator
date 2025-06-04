@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.ApplicationDescriptor;
 import org.folio.app.generator.model.ApplicationDescriptorCollection;
+import org.folio.app.generator.service.exceptions.ModulesIntegrityValidatorException;
 import org.springframework.stereotype.Component;
 
 /**
@@ -65,10 +66,10 @@ public class ApplicationModulesIntegrityValidator {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       log.error("An error occurred during validation for application descriptor: " + descriptor.getId(), e);
-      throw new RuntimeException(e);
+      throw new ModulesIntegrityValidatorException(e);
     } catch (IOException e) {
       log.error("An I/O error occurred during validation for application descriptor: " + descriptor.getId(), e);
-      throw new RuntimeException(e);
+      throw new ModulesIntegrityValidatorException(e);
     }
   }
 
