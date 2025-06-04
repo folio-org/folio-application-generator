@@ -2,48 +2,68 @@ package org.folio.app.generator;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.folio.app.generator.configuration.ApplicationContextBuilder;
+import org.folio.app.generator.service.ApplicationDescriptorService;
+import org.folio.app.generator.service.ApplicationModulesIntegrityValidator;
+import org.folio.app.generator.service.JsonProvider;
 import org.folio.app.generator.service.ModuleRegistryProvider;
-import org.junit.jupiter.api.BeforeEach;
+import org.folio.app.generator.support.UnitTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.support.GenericApplicationContext;
 
+@UnitTest
 @ExtendWith(MockitoExtension.class)
 class IntegrityValidatorMojoTest {
 
-  @Mock
-  private ModuleRegistryProvider mockRegistryProvider;
-  @Mock
-  private ApplicationContextBuilder mockContextBuilder;
-
-  private IntegrityValidatorMojo generator;
-
-  @BeforeEach
-  void setUp() {
-    generator = new IntegrityValidatorMojo(mockRegistryProvider, mockContextBuilder);
-  }
+  @Mock private ModuleRegistryProvider mockRegistryProvider;
+  @Mock private ApplicationContextBuilder mockContextBuilder;
+  @Mock private GenericApplicationContext mockGenericApplicationContext;
+  @Mock private ApplicationDescriptorService mockApplicationDescriptorService;
+  @Mock private ApplicationModulesIntegrityValidator mockApplicationModulesIntegrityValidator;
+  @Mock private JsonProvider mockJsonProvider;
+  @InjectMocks private IntegrityValidatorMojo mockMojo;
 
   @Test
   void execute_shouldRunWithoutErrors() {
-    generator.baseUrl = "baseUrl";
-    generator.token = "token";
-    assertDoesNotThrow(() -> generator.execute());
+    mockMojo.baseUrl = "baseUrl";
+    mockMojo.token = "token";
+
+    when(mockContextBuilder.withLog(any())).thenReturn(mockContextBuilder);
+    when(mockContextBuilder.withMavenSession(any())).thenReturn(mockContextBuilder);
+    when(mockContextBuilder.withMavenProject(any())).thenReturn(mockContextBuilder);
+    when(mockContextBuilder.withPluginConfig(any())).thenReturn(mockContextBuilder);
+    when(mockContextBuilder.withModuleRegistries(any())).thenReturn(mockContextBuilder);
+
+    when(mockMojo.buildApplicationContext()).thenReturn(mockGenericApplicationContext);
+
+    when(mockGenericApplicationContext.getBean(ApplicationDescriptorService.class))
+      .thenReturn(mockApplicationDescriptorService);
+    when(mockGenericApplicationContext.getBean(ApplicationModulesIntegrityValidator.class))
+      .thenReturn(mockApplicationModulesIntegrityValidator);
+    when(mockGenericApplicationContext.getBean(JsonProvider.class))
+      .thenReturn(mockJsonProvider);
+
+    assertDoesNotThrow(() -> mockMojo.execute());
   }
 
   @Test
   void execute_shouldRunWithErrorsWithoutToken() {
-    generator.baseUrl = "baseUrl";
-    assertThrows(MojoExecutionException.class, () -> generator.execute());
+    mockMojo.baseUrl = "baseUrl";
+    assertThrows(MojoExecutionException.class, () -> mockMojo.execute());
   }
 
   @Test
   void execute_shouldRunWithErrorsWithoutUrl() {
-    generator.token = "token";
-    assertThrows(MojoExecutionException.class, () -> generator.execute());
+    mockMojo.token = "token";
+    assertThrows(MojoExecutionException.class, () -> mockMojo.execute());
   }
 }
 

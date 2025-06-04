@@ -1,8 +1,11 @@
 package org.folio.app.generator;
 
+import static org.apache.maven.plugins.annotations.ResolutionScope.RUNTIME;
+
 import javax.inject.Inject;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.folio.app.generator.configuration.ApplicationContextBuilder;
@@ -10,7 +13,7 @@ import org.folio.app.generator.service.ApplicationDescriptorService;
 import org.folio.app.generator.service.ApplicationModulesIntegrityValidator;
 import org.folio.app.generator.service.ModuleRegistryProvider;
 
-@Mojo(name = "validateIntegrity")
+@Mojo(name = "validateIntegrity", defaultPhase = LifecyclePhase.COMPILE, requiresDependencyResolution = RUNTIME)
 public class IntegrityValidatorMojo extends JsonGenerator {
 
   @Parameter(property = "baseUrl", required = true)

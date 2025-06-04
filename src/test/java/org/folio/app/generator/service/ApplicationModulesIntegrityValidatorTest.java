@@ -21,23 +21,22 @@ import java.util.List;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.ApplicationDescriptor;
 import org.folio.app.generator.model.ApplicationDescriptorCollection;
+import org.folio.app.generator.support.UnitTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@UnitTest
 @ExtendWith(MockitoExtension.class)
 class ApplicationModulesIntegrityValidatorTest {
   private static final String BASE_URL = "http://validator-service";
   private static final String TOKEN = "test-token";
 
-  @Mock
-  private ObjectMapper objectMapper;
-  @Mock
-  private HttpClient httpClient;
-  @Mock
-  private Log log;
+  @Mock private ObjectMapper objectMapper;
+  @Mock private HttpClient httpClient;
+  @Mock private Log log;
 
   @InjectMocks
   private ApplicationModulesIntegrityValidator validator;
