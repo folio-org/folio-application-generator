@@ -86,7 +86,7 @@ public class ApplicationModulesIntegrityValidator {
       }
 
       return response;
-    } catch (IOException | InterruptedException e) {
+    } catch (Exception e) {
       log.error("Exception occurred while sending validation request: " + e.getMessage(), e);
       throw new RuntimeException(e);
     }

@@ -112,7 +112,6 @@ class ApplicationModulesIntegrityValidatorTest {
     when(httpClient.send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString())))
       .thenThrow(new IOException("HTTP error"));
 
-    // Act & Assert
     assertThrows(RuntimeException.class, () -> validator.validateApplication(descriptor, BASE_URL, TOKEN));
   }
 
