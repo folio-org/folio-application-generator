@@ -1,5 +1,6 @@
 package org.folio.app.generator.service;
 
+import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -8,7 +9,6 @@ import static software.amazon.awssdk.http.HttpStatusCode.ACCEPTED;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.net.HttpHeaders;
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -43,23 +43,27 @@ public class ApplicationModulesIntegrityValidator {
     if (descriptor == null || isBlank(descriptor.getId())) {
       throw new IllegalArgumentException("Application descriptor or its ID cannot be null or empty");
     }
+    try {
+      var applicationDescriptors = new ApplicationDescriptorCollection();
+      applicationDescriptors.setApplicationDescriptors(singletonList(descriptor));
 
-    var applicationDescriptors = new ApplicationDescriptorCollection();
-    applicationDescriptors.setApplicationDescriptors(singletonList(descriptor));
+      log.info(format("Starting validation for application descriptor: %s", descriptor.getId()));
 
-    log.info(String.format("Starting validation for application descriptor: %s", descriptor.getId()));
+      var response = sendValidationRequest(applicationDescriptors, baseUrl, token);
+      var responseStatus = response.statusCode();
 
-    var response = sendValidationRequest(applicationDescriptors, baseUrl, token);
-    var responseStatus = response.statusCode();
-
-    if (responseStatus != ACCEPTED) {
-      log.error(String.format("Failed to validate application descriptor '%s'. Status code: %s", descriptor.getId(),
-        responseStatus));
-      if (isNotBlank(response.body())) {
-        log.error(response.body());
+      if (responseStatus != ACCEPTED) {
+        log.error(format("Failed to validate application descriptor '%s'. Status code: %s", descriptor.getId(),
+          responseStatus));
+        if (isNotBlank(response.body())) {
+          log.error(response.body());
+        }
+      } else {
+        log.info(format("Application descriptor '%s' validated successfully.", descriptor.getId()));
       }
-    } else {
-      log.info(String.format("Application descriptor '%s' validated successfully.", descriptor.getId()));
+    } catch (Exception e) {
+      log.error("An error occurred during validation for application descriptor: " + descriptor.getId(), e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -72,22 +76,15 @@ public class ApplicationModulesIntegrityValidator {
    * @return the HTTP response from the validator service
    */
   private HttpResponse<String> sendValidationRequest(ApplicationDescriptorCollection applicationDescriptors,
-                                                     String baseUrl, String token) {
-    try {
-      HttpRequest request = prepareHttpRequest(applicationDescriptors, baseUrl, token);
-      log.info("Sending HTTP request to validate application descriptor");
+                                                     String baseUrl, String token)
+    throws Exception {
+    HttpRequest request = prepareHttpRequest(applicationDescriptors, baseUrl, token);
+    log.info("Sending HTTP request to validate application descriptor");
 
-      HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-      log.info(String.format("Received response with status code: %d", response.statusCode()));
+    HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    log.info(format("Received response with status code: %d", response.statusCode()));
 
-      return response;
-    } catch (InterruptedException e) {
-      log.error("Validation request interrupted: " + e.getMessage(), e);
-      throw new RuntimeException(e);
-    } catch (IOException e) {
-      log.error("Failed to send validation request: " + e.getMessage(), e);
-      throw new RuntimeException(e);
-    }
+    return response;
   }
 
   /**
