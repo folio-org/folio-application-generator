@@ -62,8 +62,12 @@ public class ApplicationModulesIntegrityValidator {
       } else {
         log.info(format("Application descriptor '%s' validated successfully.", descriptor.getId()));
       }
-    } catch (Exception e) {
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
       log.error("An error occurred during validation for application descriptor: " + descriptor.getId(), e);
+      throw new RuntimeException(e);
+    } catch (IOException e) {
+      log.error("An I/O error occurred during validation for application descriptor: " + descriptor.getId(), e);
       throw new RuntimeException(e);
     }
   }
