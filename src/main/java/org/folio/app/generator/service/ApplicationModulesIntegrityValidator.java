@@ -80,14 +80,12 @@ public class ApplicationModulesIntegrityValidator {
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
       log.info(String.format("Received response with status code: %d", response.statusCode()));
 
-      if (response == null) {
-        log.error("HTTP response is null");
-        throw new RuntimeException("Failed to receive a valid HTTP response");
-      }
-
       return response;
-    } catch (Exception e) {
-      log.error("Exception occurred while sending validation request: " + e.getMessage(), e);
+    } catch (InterruptedException e) {
+      log.error("Validation request interrupted: " + e.getMessage(), e);
+      throw new RuntimeException(e);
+    } catch (IOException e) {
+      log.error("Failed to send validation request: " + e.getMessage(), e);
       throw new RuntimeException(e);
     }
   }
