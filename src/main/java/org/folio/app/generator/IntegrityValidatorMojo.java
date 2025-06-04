@@ -11,7 +11,7 @@ import org.folio.app.generator.service.ApplicationModulesIntegrityValidator;
 import org.folio.app.generator.service.ModuleRegistryProvider;
 
 @Mojo(name = "validateIntegrity")
-public class ApplicationModulesIntegrityValidatorMojo extends JsonGenerator {
+public class IntegrityValidatorMojo extends JsonGenerator {
 
   @Parameter(property = "baseUrl", required = true)
   String baseUrl;
@@ -20,8 +20,8 @@ public class ApplicationModulesIntegrityValidatorMojo extends JsonGenerator {
   String token;
 
   @Inject
-  public ApplicationModulesIntegrityValidatorMojo(ModuleRegistryProvider registryProvider,
-                                  ApplicationContextBuilder contextBuilder) {
+  public IntegrityValidatorMojo(ModuleRegistryProvider registryProvider,
+                                ApplicationContextBuilder contextBuilder) {
     super(registryProvider, contextBuilder);
   }
 

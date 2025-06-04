@@ -1,6 +1,9 @@
 package org.folio.app.generator.service;
 
 import static java.util.Collections.singletonList;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static software.amazon.awssdk.http.HttpStatusCode.ACCEPTED;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,21 +36,28 @@ public class ApplicationModulesIntegrityValidator {
    * Validates a single application descriptor by sending it to the validator endpoint.
    *
    * @param descriptor the application descriptor to validate
-   * @param baseUrl the base URL of the validator service
-   * @param token the authentication token
+   * @param baseUrl    the base URL of the validator service
+   * @param token      the authentication token
    */
   public void validateApplication(ApplicationDescriptor descriptor, String baseUrl, String token) {
-    log.info(String.format("Starting validation for application descriptor: %s", descriptor.getId()));
+    if (descriptor == null || isBlank(descriptor.getId())) {
+      throw new IllegalArgumentException("Application descriptor or its ID cannot be null or empty");
+    }
+
     var applicationDescriptors = new ApplicationDescriptorCollection();
     applicationDescriptors.setApplicationDescriptors(singletonList(descriptor));
+
+    log.info(String.format("Starting validation for application descriptor: %s", descriptor.getId()));
 
     var response = sendValidationRequest(applicationDescriptors, baseUrl, token);
     var responseStatus = response.statusCode();
 
-    if (responseStatus != 202) {
+    if (responseStatus != ACCEPTED) {
       log.error(String.format("Failed to validate application descriptor '%s'. Status code: %s", descriptor.getId(),
         responseStatus));
-      log.error(String.format(response.body()));
+      if (isNotBlank(response.body())) {
+        log.error(response.body());
+      }
     } else {
       log.info(String.format("Application descriptor '%s' validated successfully.", descriptor.getId()));
     }
@@ -57,8 +67,8 @@ public class ApplicationModulesIntegrityValidator {
    * Sends the validation request to the validator endpoint.
    *
    * @param applicationDescriptors the collection of application descriptors
-   * @param baseUrl the base URL of the validator service
-   * @param token the authentication token
+   * @param baseUrl                the base URL of the validator service
+   * @param token                  the authentication token
    * @return the HTTP response from the validator service
    */
   private HttpResponse<String> sendValidationRequest(ApplicationDescriptorCollection applicationDescriptors,
@@ -69,6 +79,12 @@ public class ApplicationModulesIntegrityValidator {
 
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
       log.info(String.format("Received response with status code: %d", response.statusCode()));
+
+      if (response == null) {
+        log.error("HTTP response is null");
+        throw new RuntimeException("Failed to receive a valid HTTP response");
+      }
+
       return response;
     } catch (IOException | InterruptedException e) {
       log.error("Exception occurred while sending validation request: " + e.getMessage(), e);
@@ -80,8 +96,8 @@ public class ApplicationModulesIntegrityValidator {
    * Prepares the HTTP request for validating application descriptors.
    *
    * @param descriptors the collection of application descriptors
-   * @param baseUrl the base URL of the validator service
-   * @param token the authentication token
+   * @param baseUrl     the base URL of the validator service
+   * @param token       the authentication token
    * @return the prepared HTTP request
    * @throws JsonProcessingException if serialization fails
    */
@@ -90,6 +106,10 @@ public class ApplicationModulesIntegrityValidator {
     baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
     var url = baseUrl + VALIDATOR_PATH;
     var body = objectMapper.writeValueAsString(descriptors);
+
+    if (body == null || body.isEmpty()) {
+      throw new IllegalArgumentException("Serialized request body cannot be null or empty");
+    }
 
     log.debug("Prepared HTTP request body: " + body);
     log.info("Prepared HTTP request to validate application descriptor: " + url);
