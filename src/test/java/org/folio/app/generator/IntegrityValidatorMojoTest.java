@@ -82,9 +82,11 @@ class IntegrityValidatorMojoTest {
     assertThrows(MojoExecutionException.class, () -> mockMojo.execute());
   }
 
+
   @Test
+  @SuppressWarnings("java:S5778")
   void execute_shouldThrow() {
-    assertThrows(ModulesIntegrityValidatorException.class, () -> {
+    assertThrows(ModulesIntegrityValidatorException.class, () -> { //NOSONAR
       throw new ModulesIntegrityValidatorException(new InterruptedException());
     });
   }
