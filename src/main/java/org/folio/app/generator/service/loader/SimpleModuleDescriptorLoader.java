@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpClient.Version;
 import java.net.http.HttpRequest;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.conditions.SimpleCondition;
 import org.folio.app.generator.model.ModuleDefinition;
@@ -36,16 +38,21 @@ public class SimpleModuleDescriptorLoader implements ModuleDescriptorLoader {
   private final HttpClient httpClient;
   private final JsonConverter jsonConverter;
 
+  @SneakyThrows
   @Override
-  public Optional<Map<String, Object>> findModuleDescriptor(ModuleRegistry registry, ModuleDefinition module) {
+  public Optional<LoaderResultContainer> findModuleDescriptor(ModuleRegistry registry,
+    ModuleDefinition module) {
     var simpleRegistry = (SimpleModuleRegistry) registry;
     var request = prepareHttpRequest(simpleRegistry.getUrl(), module);
 
     try {
-      return loadModuleDescriptor(request, module);
+      return loadModuleDescriptor(request, module).map(
+        md -> new LoaderResultContainer()
+          .sourceUrl(createDirectUrl(simpleRegistry.getUrl(), String.valueOf(md.get("id"))))
+          .moduleDescriptor(md));
     } catch (Exception e) {
       log.warn(String.format("Failed to load module descriptor '%s' from %s", module.getId(),
-          request.uri().toString()), e);
+        request.uri().toString()), e);
       return Optional.empty();
     }
   }
@@ -88,6 +95,12 @@ public class SimpleModuleDescriptorLoader implements ModuleDescriptorLoader {
     }
 
     return response;
+  }
+
+  @SneakyThrows
+  private static URL createDirectUrl(String baseUrl, String moduleId) {
+    var cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+    return new URL(cleanBaseUrl + "/" + moduleId);
   }
 
   private static HttpRequest prepareHttpRequest(String url, ModuleDefinition module) {

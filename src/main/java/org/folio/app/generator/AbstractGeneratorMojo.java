@@ -48,8 +48,8 @@ public abstract class AbstractGeneratorMojo extends AbstractMojo {
   @Parameter(name = "uiModuleRegistries")
   protected List<ConfigModuleRegistry> uiModuleRegistries;
 
-  @Parameter(name = "useModuleDescriptorsUrls")
-  protected String useModuleDescriptorsUrls;
+  @Parameter(name = "moduleUrlsOnly", defaultValue = "false")
+  protected String moduleUrlsOnly;
 
   @Parameter(defaultValue = "${awsRegion}")
   protected String awsRegion;
@@ -73,7 +73,7 @@ public abstract class AbstractGeneratorMojo extends AbstractMojo {
       .beCmdRegistryString(cmdBeRegistriesString)
       .uiCmdRegistryString(cmdUiRegistriesString)
       .overrideConfigRegistries(parseBoolean(overrideConfigRegistries))
-      .useModuleDescriptorsUrls(parseBoolean(useModuleDescriptorsUrls))
+      .moduleUrlsOnly(parseBoolean(moduleUrlsOnly))
       .awsRegion(isNotBlank(awsRegion) ? Region.of(awsRegion) : Region.US_EAST_1)
       .build();
 

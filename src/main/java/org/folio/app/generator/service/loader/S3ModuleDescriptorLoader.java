@@ -6,6 +6,7 @@ import static java.util.Optional.ofNullable;
 import static org.folio.app.generator.utils.PluginUtils.createModuleDefinitionFromId;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -25,7 +26,9 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Utilities;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetUrlRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.S3Object;
@@ -43,14 +46,18 @@ public class S3ModuleDescriptorLoader implements ModuleDescriptorLoader {
   private final JsonConverter jsonConverter;
 
   @Override
-  public Optional<Map<String, Object>> findModuleDescriptor(ModuleRegistry registry, ModuleDefinition module) {
+  public Optional<LoaderResultContainer> findModuleDescriptor(ModuleRegistry registry,
+    ModuleDefinition module) {
     var s3Registry = (S3ModuleRegistry) registry;
     var version = module.getVersion();
     var id = module.getId();
     var filter = "latest".equals(version) ? module.getName() : module.getId();
     var fullPrefix = s3Registry.getPath() + filter;
     return findVersionByPrefix(module, s3Registry, fullPrefix)
-      .flatMap(s3Object -> readS3Object(id, s3Object, s3Registry));
+      .flatMap(s3Object -> readS3Object(id, s3Object, s3Registry)
+        .map(md -> new LoaderResultContainer()
+          .sourceUrl(buildPublicUrl(s3Registry, s3Object))
+          .moduleDescriptor(md)));
   }
 
   @Override
@@ -149,6 +156,15 @@ public class S3ModuleDescriptorLoader implements ModuleDescriptorLoader {
       .maxKeys(pluginConfig.getAwsS3BatchSize())
       .continuationToken(nct)
       .build();
+  }
+
+  private URL buildPublicUrl(S3ModuleRegistry mr, S3Object object) {
+    S3Utilities utils = s3Client.utilities();
+    var req = GetUrlRequest.builder()
+      .bucket(mr.getBucket())
+      .key(object.key())
+      .build();
+    return utils.getUrl(req);
   }
 
   private static Pair<String, Semver> parseS3ObjectKey(S3Object s3Object, String pathPrefix) {

@@ -21,6 +21,11 @@ public class ModuleDefinition {
   private String version;
 
   /**
+   * URL to the artifact.
+   */
+  private String url;
+
+  /**
    * Sets id field and returns {@link ModuleDefinition}.
    *
    * @return modified {@link ModuleDefinition} value
@@ -47,6 +52,16 @@ public class ModuleDefinition {
    */
   public ModuleDefinition version(String version) {
     this.version = version;
+    return this;
+  }
+
+  /**
+   * Sets url field and returns {@link ModuleDefinition}.
+   *
+   * @return modified {@link ModuleDefinition} value
+   */
+  public ModuleDefinition url(String url) {
+    this.url = url;
     return this;
   }
 }

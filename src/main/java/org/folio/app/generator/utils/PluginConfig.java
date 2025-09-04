@@ -21,7 +21,7 @@ public class PluginConfig {
   private final String beCmdRegistryString;
   private final String uiCmdRegistryString;
 
-  private final boolean useModuleDescriptorsUrls;
+  private final boolean moduleUrlsOnly;
   private final boolean overrideConfigRegistries;
 
   private final Region awsRegion;

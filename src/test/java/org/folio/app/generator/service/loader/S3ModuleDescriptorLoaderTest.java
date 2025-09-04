@@ -1,6 +1,7 @@
 package org.folio.app.generator.service.loader;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -11,6 +12,8 @@ import static software.amazon.awssdk.core.sync.ResponseTransformer.toBytes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Map;
 import lombok.SneakyThrows;
 import org.apache.maven.plugin.logging.Log;
@@ -30,8 +33,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Utilities;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.GetUrlRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.S3Object;
@@ -42,11 +47,21 @@ class S3ModuleDescriptorLoaderTest {
 
   private static final String S3_BUCKET = "test-bucket";
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final URL URL;
+
+  static {
+    try {
+      URL = new URL("http://localhost");
+    } catch (MalformedURLException e) {
+      throw new RuntimeException("Error during url creation", e);
+    }
+  }
 
   @InjectMocks private S3ModuleDescriptorLoader loader;
   @Mock private Log log;
   @Mock private S3Client s3Client;
   @Mock private JsonConverter jsonConverter;
+  @Mock private S3Utilities utilities;
   @Spy private final PluginConfig pluginConfig = PluginConfig.builder().awsS3BatchSize(5).build();
 
   @AfterEach
@@ -84,10 +99,14 @@ class S3ModuleDescriptorLoaderTest {
     when(s3Client.listObjectsV2(request)).thenReturn(listObjectsResponse);
     when(s3Client.getObject(getObjectRequest(objectKey), toBytes())).thenReturn(s3ObjectResponse);
     when(jsonConverter.parse(any(InputStream.class), any())).thenReturn(expectedModuleDescriptor);
+    when(s3Client.utilities()).thenReturn(utilities);
+    when(utilities.getUrl((GetUrlRequest) any())).thenReturn(URL);
 
     var result = loader.findModuleDescriptor(s3Registry(), fooModule("1.0.0"));
 
-    assertThat(result).contains(expectedModuleDescriptor);
+    assertTrue(result.isPresent());
+    assertThat(result.get().getModuleDescriptor()).containsAllEntriesOf(expectedModuleDescriptor);
+    assertThat(result.get().getSourceUrl().toString()).isEqualTo(URL.toString());
 
     verify(log).info("Exact match found for module 'mod-foo-1.0.0' in s3 bucket: test-bucket/");
     verify(log).info("Module descriptor 'mod-foo-1.0.0' loaded from s3 bucket: test-bucket/");
@@ -152,10 +171,14 @@ class S3ModuleDescriptorLoaderTest {
     when(s3Client.listObjectsV2(listObjectsRequest("mod-foo", "ct2"))).thenReturn(listObjectsResponse3);
     when(s3Client.getObject(getObjectRequest(objectKey), toBytes())).thenReturn(s3ObjectResponse);
     when(jsonConverter.parse(any(InputStream.class), any())).thenReturn(expectedModuleDescriptor);
+    when(s3Client.utilities()).thenReturn(utilities);
+    when(utilities.getUrl((GetUrlRequest) any())).thenReturn(URL);
 
     var result = loader.findModuleDescriptor(s3Registry(), fooModule("latest"));
 
-    assertThat(result).contains(expectedModuleDescriptor);
+    assertTrue(result.isPresent());
+    assertThat(result.get().getModuleDescriptor()).containsAllEntriesOf(expectedModuleDescriptor);
+    assertThat(result.get().getSourceUrl().toString()).isEqualTo(URL.toString());
 
     verify(log).info("Module descriptor 'mod-foo-latest' loaded from s3 bucket: test-bucket/");
     verify(pluginConfig, times(4)).getAwsS3BatchSize();
@@ -186,10 +209,14 @@ class S3ModuleDescriptorLoaderTest {
     when(s3Client.listObjectsV2(request)).thenReturn(listObjectsResponse);
     when(s3Client.getObject(getObjectRequest(objectKey), toBytes())).thenReturn(s3ObjectResponse);
     when(jsonConverter.parse(any(InputStream.class), any())).thenReturn(expectedModuleDescriptor);
+    when(s3Client.utilities()).thenReturn(utilities);
+    when(utilities.getUrl((GetUrlRequest) any())).thenReturn(URL);
 
     var result = loader.findModuleDescriptor(s3Registry(), fooModule("latest"));
 
-    assertThat(result).contains(expectedModuleDescriptor);
+    assertTrue(result.isPresent());
+    assertThat(result.get().getModuleDescriptor()).containsAllEntriesOf(expectedModuleDescriptor);
+    assertThat(result.get().getSourceUrl().toString()).isEqualTo(URL.toString());
 
     verify(log).info("Module descriptor 'mod-foo-latest' loaded from s3 bucket: test-bucket/");
     verify(pluginConfig, times(2)).getAwsS3BatchSize();
@@ -213,10 +240,14 @@ class S3ModuleDescriptorLoaderTest {
     when(s3Client.listObjectsV2(request)).thenReturn(listObjectsResponse);
     when(s3Client.getObject(getObjectRequest(objectKey), toBytes())).thenReturn(s3ObjectResponse);
     when(jsonConverter.parse(any(InputStream.class), any())).thenReturn(expectedModuleDescriptor);
+    when(s3Client.utilities()).thenReturn(utilities);
+    when(utilities.getUrl((GetUrlRequest) any())).thenReturn(URL);
 
     var result = loader.findModuleDescriptor(s3Registry(), fooModule("1.0.0"));
 
-    assertThat(result).contains(expectedModuleDescriptor);
+    assertTrue(result.isPresent());
+    assertThat(result.get().getModuleDescriptor()).containsAllEntriesOf(expectedModuleDescriptor);
+    assertThat(result.get().getSourceUrl().toString()).isEqualTo(URL.toString());
 
     verify(log).info("Exact match found for module 'mod-foo-1.0.0' in s3 bucket: test-bucket/");
     verify(log).info("Module descriptor 'mod-foo-1.0.0' loaded from s3 bucket: test-bucket/");
@@ -258,10 +289,14 @@ class S3ModuleDescriptorLoaderTest {
     when(s3Client.listObjectsV2(request)).thenReturn(listObjectsResponse);
     when(s3Client.getObject(getObjectRequest(objectKey), toBytes())).thenReturn(s3ObjectResponse);
     when(jsonConverter.parse(any(InputStream.class), any())).thenReturn(expectedModuleDescriptor);
+    when(s3Client.utilities()).thenReturn(utilities);
+    when(utilities.getUrl((GetUrlRequest) any())).thenReturn(URL);
 
     var result = loader.findModuleDescriptor(s3Registry(), fooModule("1.0.0-SNAPSHOT"));
 
-    assertThat(result).contains(expectedModuleDescriptor);
+    assertTrue(result.isPresent());
+    assertThat(result.get().getModuleDescriptor()).containsAllEntriesOf(expectedModuleDescriptor);
+    assertThat(result.get().getSourceUrl().toString()).isEqualTo(URL.toString());
 
     verify(log).info("Module descriptor 'mod-foo-1.0.0-SNAPSHOT' loaded from s3 bucket: test-bucket/");
     verify(pluginConfig, times(2)).getAwsS3BatchSize();
@@ -283,10 +318,14 @@ class S3ModuleDescriptorLoaderTest {
     when(s3Client.listObjectsV2(request)).thenReturn(listObjectsResponse);
     when(s3Client.getObject(getObjectRequest(objectKey), toBytes())).thenReturn(s3ObjectResponse);
     when(jsonConverter.parse(any(InputStream.class), any())).thenReturn(expectedModuleDescriptor);
+    when(s3Client.utilities()).thenReturn(utilities);
+    when(utilities.getUrl((GetUrlRequest) any())).thenReturn(URL);
 
     var result = loader.findModuleDescriptor(s3Registry(), fooModule("latest"));
 
-    assertThat(result).contains(expectedModuleDescriptor);
+    assertTrue(result.isPresent());
+    assertThat(result.get().getModuleDescriptor()).containsAllEntriesOf(expectedModuleDescriptor);
+    assertThat(result.get().getSourceUrl().toString()).isEqualTo(URL.toString());
 
     verify(log).info("Module descriptor 'mod-foo-latest' loaded from s3 bucket: test-bucket/");
     verify(pluginConfig, times(2)).getAwsS3BatchSize();

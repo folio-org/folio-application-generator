@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpClient.Version;
 import java.net.http.HttpRequest;
@@ -15,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.conditions.OkapiCondition;
 import org.folio.app.generator.model.ModuleDefinition;
@@ -38,11 +40,15 @@ public class OkapiModuleDescriptorLoader implements ModuleDescriptorLoader {
   private final JsonConverter jsonConverter;
 
   @Override
-  public Optional<Map<String, Object>> findModuleDescriptor(ModuleRegistry registry, ModuleDefinition module) {
+  public Optional<LoaderResultContainer> findModuleDescriptor(ModuleRegistry registry,
+    ModuleDefinition module) {
     var okapiRegistry = (OkapiModuleRegistry) registry;
     var url = okapiRegistry.getUrl();
     try {
-      return loadModuleDescriptor(url, module);
+      return loadModuleDescriptor(url, module).map(
+        md -> new LoaderResultContainer()
+          .sourceUrl(createDirectUrl(url, String.valueOf(md.get("id"))))
+          .moduleDescriptor(md));
     } catch (Exception e) {
       log.warn(String.format("Failed to load module descriptor '%s' from %s", module.getId(), url), e);
       return Optional.empty();
@@ -54,7 +60,8 @@ public class OkapiModuleDescriptorLoader implements ModuleDescriptorLoader {
     return RegistryType.OKAPI;
   }
 
-  private Optional<Map<String, Object>> loadModuleDescriptor(String url, ModuleDefinition module) throws Exception {
+  @SneakyThrows
+  private Optional<Map<String, Object>> loadModuleDescriptor(String url, ModuleDefinition module) {
     var request = prepareHttpRequest(url, module);
     var moduleId = module.getId();
 
@@ -65,7 +72,8 @@ public class OkapiModuleDescriptorLoader implements ModuleDescriptorLoader {
       return Optional.empty();
     }
 
-    var searchResult = jsonConverter.parse(response.body(), new TypeReference<List<Map<String, Object>>>() {});
+    var searchResult = jsonConverter.parse(response.body(), new TypeReference<List<Map<String, Object>>>() {
+    });
     if (searchResult.isEmpty()) {
       log.warn(String.format("Module descriptor '%s' is not found in %s", moduleId, url));
       return Optional.empty();
@@ -83,6 +91,12 @@ public class OkapiModuleDescriptorLoader implements ModuleDescriptorLoader {
     }
 
     return response;
+  }
+
+  @SneakyThrows
+  private static URL createDirectUrl(String baseUrl, String moduleId) {
+    var cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+    return new URL(cleanBaseUrl + "/_/proxy/modules/" + moduleId);
   }
 
   private static HttpRequest prepareHttpRequest(String url, ModuleDefinition module) {

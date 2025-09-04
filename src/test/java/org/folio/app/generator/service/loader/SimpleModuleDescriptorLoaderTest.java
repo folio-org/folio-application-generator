@@ -1,6 +1,7 @@
 package org.folio.app.generator.service.loader;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -38,6 +39,8 @@ import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
 @ExtendWith(MockitoExtension.class)
 class SimpleModuleDescriptorLoaderTest {
 
+  private static final String URL = "http://localhost/mod-foo-1.0.0";
+  
   @InjectMocks private SimpleModuleDescriptorLoader loader;
   @Mock private Log log;
   @Mock private HttpClient httpClient;
@@ -80,7 +83,10 @@ class SimpleModuleDescriptorLoaderTest {
 
     var result = loader.findModuleDescriptor(simpleRegistry(extraPath), fooModule("1.0.0"));
 
-    assertThat(result).contains(expectedModuleDescriptor);
+    assertTrue(result.isPresent());
+    assertThat(result.get().getModuleDescriptor()).containsAllEntriesOf(expectedModuleDescriptor);
+    assertThat(result.get().getSourceUrl().toString()).isEqualTo(URL);
+
     verify(log).info("Module descriptor 'mod-foo-1.0.0' loaded from http://localhost/mod-foo-1.0.0");
   }
 
@@ -139,7 +145,7 @@ class SimpleModuleDescriptorLoaderTest {
     );
   }
 
-  private void assertEmptyAndWarnLog(Optional<Map<String, Object>> result, String message) {
+  private void assertEmptyAndWarnLog(Optional<LoaderResultContainer> result, String message) {
     assertThat(result).isEmpty();
     verify(log).warn(message);
   }
