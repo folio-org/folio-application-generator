@@ -72,8 +72,9 @@ public class OkapiModuleDescriptorLoader implements ModuleDescriptorLoader {
       return Optional.empty();
     }
 
-    var searchResult = jsonConverter.parse(response.body(), new TypeReference<List<Map<String, Object>>>() {
-    });
+    var searchResult = jsonConverter
+      .parse(response.body(), new TypeReference<List<Map<String, Object>>>() {});
+
     if (searchResult.isEmpty()) {
       log.warn(String.format("Module descriptor '%s' is not found in %s", moduleId, url));
       return Optional.empty();

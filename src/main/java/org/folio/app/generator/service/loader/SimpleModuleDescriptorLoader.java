@@ -38,7 +38,6 @@ public class SimpleModuleDescriptorLoader implements ModuleDescriptorLoader {
   private final HttpClient httpClient;
   private final JsonConverter jsonConverter;
 
-  @SneakyThrows
   @Override
   public Optional<LoaderResultContainer> findModuleDescriptor(ModuleRegistry registry,
     ModuleDefinition module) {
