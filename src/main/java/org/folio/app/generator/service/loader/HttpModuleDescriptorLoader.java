@@ -31,4 +31,8 @@ public abstract class HttpModuleDescriptorLoader implements ModuleDescriptorLoad
     }
     return response;
   }
+
+  protected static String cleanUrl(String url) {
+    return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
+  }
 }

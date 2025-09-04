@@ -40,7 +40,7 @@ public class OkapiModuleDescriptorLoader extends HttpModuleDescriptorLoader {
           .sourceUrl(createDirectUrl(url, String.valueOf(md.get("id"))))
           .moduleDescriptor(md));
     } catch (Exception e) {
-      log.warn(String.format("Failed to load module descriptor '%s' from %s", module.getId(), url), e);
+      log.warn(String.format("Failed to load module descriptor '%s' from %s", module.getId(), cleanUrl(url)), e);
       return Optional.empty();
     }
   }
@@ -75,12 +75,12 @@ public class OkapiModuleDescriptorLoader extends HttpModuleDescriptorLoader {
 
   @SneakyThrows
   private static URL createDirectUrl(String baseUrl, String moduleId) {
-    var cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+    var cleanBaseUrl = cleanUrl(baseUrl);
     return new URL(cleanBaseUrl + "/_/proxy/modules/" + moduleId);
   }
 
   private static HttpRequest prepareHttpRequest(String url, ModuleDefinition module) {
-    var baseUrl = url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
+    var baseUrl = cleanUrl(url);
     return HttpRequest.newBuilder()
       .GET()
       .uri(URI.create(prepareUriString(baseUrl, module)))

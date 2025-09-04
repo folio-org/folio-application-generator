@@ -51,8 +51,7 @@ public class SimpleModuleDescriptorLoader extends HttpModuleDescriptorLoader {
     return RegistryType.SIMPLE;
   }
 
-  private Optional<Map<String, Object>> loadModuleDescriptor(HttpRequest request, ModuleDefinition module)
-      throws Exception {
+  private Optional<Map<String, Object>> loadModuleDescriptor(HttpRequest request, ModuleDefinition module) {
 
     var uri = request.uri().toString();
     var moduleId = module.getId();
@@ -78,7 +77,7 @@ public class SimpleModuleDescriptorLoader extends HttpModuleDescriptorLoader {
 
   @SneakyThrows
   private static URL createDirectUrl(String baseUrl, String moduleId) {
-    var cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+    var cleanBaseUrl = cleanUrl(baseUrl);
     return new URL(cleanBaseUrl + "/" + moduleId);
   }
 
@@ -92,7 +91,7 @@ public class SimpleModuleDescriptorLoader extends HttpModuleDescriptorLoader {
   }
 
   private static String prepareUriString(String url, ModuleDefinition module) {
-    var baseUrl = url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
+    var baseUrl = cleanUrl(url);
     return baseUrl + "/" + module.getName() + "-" + module.getVersion();
   }
 }
