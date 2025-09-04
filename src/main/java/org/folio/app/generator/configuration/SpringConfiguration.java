@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import org.folio.app.generator.conditions.AwsCondition;
-import org.folio.app.generator.conditions.OkapiCondition;
+import org.folio.app.generator.conditions.HttpCondition;
 import org.folio.app.generator.utils.PluginConfig;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -26,7 +26,7 @@ public class SpringConfiguration {
   }
 
   @Bean(name = "httpClient")
-  @Conditional(OkapiCondition.class)
+  @Conditional(HttpCondition.class)
   public HttpClient httpClient() {
     return HttpClient.newBuilder()
       .connectTimeout(Duration.ofSeconds(30))
@@ -36,9 +36,14 @@ public class SpringConfiguration {
   @Bean(name = "amazonS3Client")
   @Conditional(AwsCondition.class)
   public S3Client amazonS3Client(PluginConfig config) {
-    return S3Client.builder()
+    var builder = S3Client.builder()
       .region(config.getAwsRegion())
-      .credentialsProvider(DefaultCredentialsProvider.create())
-      .build();
+      .credentialsProvider(DefaultCredentialsProvider.create());
+
+    if (config.getAwsEndpointOverride() != null) {
+      builder.endpointOverride(config.getAwsEndpointOverride());
+    }
+
+    return builder.build();
   }
 }

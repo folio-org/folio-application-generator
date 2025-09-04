@@ -1,41 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.folio</groupId>
   <artifactId>folio-application-generator</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>1.2.0-SNAPSHOT</version>
   <packaging>maven-plugin</packaging>
   <name>folio-application-generator</name>
+  <description>Folio application descriptor generator</description>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
-    <maven-plugin-tools.version>3.11.0</maven-plugin-tools.version>
-    <maven-plugin-api.version>3.9.6</maven-plugin-api.version>
-    <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
-    <maven-checkstyle-plugin.version>3.3.1</maven-checkstyle-plugin.version>
+    <maven-plugin-tools.version>3.13.1</maven-plugin-tools.version>
+    <maven-plugin-api.version>3.9.8</maven-plugin-api.version>
+    <maven-surefire-plugin.version>3.3.0</maven-surefire-plugin.version>
+    <maven-checkstyle-plugin.version>3.4.0</maven-checkstyle-plugin.version>
 
-    <semver4j.version>5.2.2</semver4j.version>
-    <lombok.version>1.18.30</lombok.version>
-    <maven-core.version>3.9.6</maven-core.version>
-    <commons-text.version>1.11.0</commons-text.version>
+    <semver4j.version>5.3.0</semver4j.version>
+    <lombok.version>1.18.32</lombok.version>
+    <maven-core.version>3.9.8</maven-core.version>
+    <commons-text.version>1.12.0</commons-text.version>
     <commons-collections4.version>4.4</commons-collections4.version>
 
     <folio-java-checkstyle.version>1.0.1</folio-java-checkstyle.version>
-    <maven-checkstyle.version>10.14.2</maven-checkstyle.version>
+    <maven-checkstyle.version>10.17.0</maven-checkstyle.version>
 
     <assertj-core.version>3.26.0</assertj-core.version>
-    <jackson-databind.version>2.17.0</jackson-databind.version>
-    <junit-jupiter.version>5.10.2</junit-jupiter.version>
     <mockito-junit-jupiter.version>5.12.0</mockito-junit-jupiter.version>
-    <spring-context.version>6.1.5</spring-context.version>
-    <aws-sdk.version>2.25.11</aws-sdk.version>
     <testcontainers.version>1.19.8</testcontainers.version>
     <slf4j.version>2.0.13</slf4j.version>
+    <jackson-databind.version>2.17.1</jackson-databind.version>
+    <junit-jupiter.version>5.10.2</junit-jupiter.version>
+    <aws-sdk.version>2.26.7</aws-sdk.version>
+    <spring-boot.version>3.3.9</spring-boot.version>
+    <spring-context.version>6.1.17</spring-context.version>
   </properties>
 
   <dependencies>
@@ -77,6 +78,19 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
       <version>${spring-context.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+      <version>${spring-boot.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+      <version>${spring-boot.version}</version>
     </dependency>
 
     <dependency>
@@ -173,7 +187,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-plugin-plugin</artifactId>
-        <version>3.11.0</version>
+        <version>3.13.1</version>
         <configuration>
           <goalPrefix>${project.name}</goalPrefix>
         </configuration>
@@ -247,7 +261,7 @@
       <plugins>
         <plugin>
           <artifactId>maven-clean-plugin</artifactId>
-          <version>3.3.2</version>
+          <version>3.4.0</version>
         </plugin>
 
         <plugin>
@@ -257,27 +271,27 @@
 
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.12.1</version>
+          <version>3.13.0</version>
         </plugin>
 
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.2.5</version>
-        </plugin>
-
-        <plugin>
-          <artifactId>maven-jar-plugin</artifactId>
           <version>3.3.0</version>
         </plugin>
 
         <plugin>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.4.2</version>
+        </plugin>
+
+        <plugin>
           <artifactId>maven-install-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.1.2</version>
         </plugin>
 
         <plugin>
           <artifactId>maven-deploy-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.1.2</version>
         </plugin>
 
         <plugin>
@@ -287,7 +301,7 @@
 
         <plugin>
           <artifactId>maven-project-info-reports-plugin</artifactId>
-          <version>3.5.0</version>
+          <version>3.6.0</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -333,9 +347,9 @@
   </pluginRepositories>
 
   <scm>
-    <url>https://https://github.com/folio-org/mgr-tenant-entitlements</url>
-    <connection>scm:git:git://github.com:folio-org/mgr-tenant-entitlements.git</connection>
-    <developerConnection>scm:git:git@github.com:folio-org/mgr-tenant-entitlements.git</developerConnection>
+    <url>https://https://github.com/folio-org/folio-application-generator</url>
+    <connection>scm:git:git://github.com:folio-org/folio-application-generator.git</connection>
+    <developerConnection>scm:git:git@github.com:folio-org/folio-application-generator.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 </project>

@@ -163,6 +163,38 @@ JAR file can be excluded from `/target` folder by using the following command
 mvn folio-application-generator:generateFromConfiguration
 ```
 
+### Update application descriptor
+
+To run the operation an app descriptor needs to be specified via `appDescriptorPath` parameter or by default locate in
+`${basedir}/application-descriptor.json`
+```shell
+mvn org.folio:folio-application-generator:0.0.1-SNAPSHOT:updateFromJson
+-Dmodules="mod-consortia-keycloak-1.4.4" -DuiModules="folio_consortia-settings:latest" -Dregistries="okapi::https://folio-registry.dev.folio.org"
+```
+
+### Validate Application's Modules Interface Integrity
+
+The `validateIntegrity` goal is used to validate the integrity of application's modules. 
+This validation is performed in mgr-applications via specified URL and requires authentication via a token.
+
+#### Parameters
+- `baseUrl` (required): The base URL of the mgr-applications.
+- `token` (required): The authentication token used to access the mgr-applications.
+
+#### Restrictions
+Both `baseUrl` and `token` parameters are mandatory. If either is missing, the plugin will throw a `MojoExecutionException`.
+
+#### Usage
+To run the `validateIntegrity` goal, use the following command:
+
+```shell
+mvn org.folio:folio-application-generator:0.0.1-SNAPSHOT:validateIntegrity \
+-DbaseUrl="https://mgr-applications:8080" \
+-Dtoken="your-authentication-token"
+```
+
+This command will generate application on a fly and validates the application's modules in mgr-applications.
+
 ### Module-Registries order
 
 #### Backend module registries
@@ -184,15 +216,17 @@ mvn folio-application-generator:generateFromConfiguration
 These parameters can be specified in the job run using following notation
 
 ```shell
-mvn install -DbuildNumber="123" -DawsRegion=us-east-1 
+mvn install -DbuildNumber="123" -DawsRegion=us-east-1
 ```
 
-| Parameter                | Default Value | Description                                                                                                                               |
-|--------------------------|---------------|-------------------------------------------------------------------------------------------------------------------------------------------|
-| awsRegion                | us-east-1     | AWS Region for S3 client                                                                                                                  |
-| buildNumber              |               | Build number from CI tool (will be added for any '-SNAPSHOT' version of generated application                                             |
-| registries               |               | Comma-separated list of custom module-descriptor registries in formats: `s3::{{bucket-name}}:{{path-to-folder}}`, `okapi::{{okapi-base}}` |
-| beRegistries             |               | Comma-separated list of custom back-end module-descriptor registries in the same format as `registries` parameter                         |
-| uiRegistries             |               | Comma-separated list of custom ui module-descriptor registries in the same format as `registries` parameter                               |
-| overrideConfigRegistries |               | Defines if only command-line specified registries must be used (applies to `registries`, `beRegistries` and `uiRegistries` params)        |
-
+| Parameter                | Default Value | Description
+|--------------------------|---------------|-------------------------------------------------------------------------------------------------------------------------------------------
+| awsRegion                | us-east-1     | AWS Region for S3 client
+| buildNumber              |               | Build number from CI tool (will be added for any '-SNAPSHOT' version of generated application
+| registries               |               | Comma-separated list of custom module-descriptor registries in formats: `s3::{{bucket-name}}:{{path-to-folder}}`, `okapi::{{okapi-base}}`, `simple::{{okapi-base}}`
+| beRegistries             |               | Comma-separated list of custom back-end module-descriptor registries in the same format as `registries` parameter
+| uiRegistries             |               | Comma-separated list of custom ui module-descriptor registries in the same format as `registries` parameter
+| appDescriptorPath        |               | File path of the application descriptor to update
+| modules                  |               | Comma-separated list of BE module ids to be updated in format: `module1-1.1.0,module2-2.1.0`
+| uiModules                |               | Comma-separated list of UI module ids to be updated in the same format as `modules` parameter
+| overrideConfigRegistries |               | Defines if only command-line specified registries must be used (applies to `registries`, `beRegistries` and `uiRegistries` params)

@@ -49,9 +49,8 @@ public class S3ModuleDescriptorLoader implements ModuleDescriptorLoader {
     var id = module.getId();
     var filter = "latest".equals(version) ? module.getName() : module.getId();
     var fullPrefix = s3Registry.getPath() + filter;
-
-    return findLatestVersionByPrefix(module, s3Registry, fullPrefix)
-      .flatMap(foundS3Object -> readS3Object(id, foundS3Object, s3Registry));
+    return findVersionByPrefix(module, s3Registry, fullPrefix)
+      .flatMap(s3Object -> readS3Object(id, s3Object, s3Registry));
   }
 
   @Override
@@ -59,10 +58,11 @@ public class S3ModuleDescriptorLoader implements ModuleDescriptorLoader {
     return RegistryType.AWS_S3;
   }
 
-  private Optional<S3Object> findLatestVersionByPrefix(ModuleDefinition module, S3ModuleRegistry mr, String prefix) {
+  private Optional<S3Object> findVersionByPrefix(ModuleDefinition module, S3ModuleRegistry mr, String prefix) {
     var request = buildListObjectsRequest(mr, prefix, null);
     var moduleId = module.getId();
 
+    var exactMatch = isStableVersion(module);
     ListObjectsV2Response result;
     Pair<Semver, S3Object> maxValueHolder = null;
 
@@ -81,9 +81,16 @@ public class S3ModuleDescriptorLoader implements ModuleDescriptorLoader {
       }
 
       for (var s3Object : s3ObjectsByPrefix) {
-        var nextMaxValue = tryFindNextMaxValue(mr.getPath(), module, s3Object, maxValueHolder);
-        if (nextMaxValue != null) {
-          maxValueHolder = nextMaxValue;
+        if (exactMatch) {
+          if (match(module, parseS3ObjectKey(s3Object, mr.getPath()))) {
+            log.info(format("Exact match found for module '%s' in s3 bucket: %s", moduleId, getBucketPath(mr)));
+            return Optional.of(s3Object);
+          }
+        } else {
+          var nextMaxValue = tryFindNextMaxValue(mr.getPath(), module, s3Object, maxValueHolder);
+          if (nextMaxValue != null) {
+            maxValueHolder = nextMaxValue;
+          }
         }
       }
 
@@ -162,5 +169,16 @@ public class S3ModuleDescriptorLoader implements ModuleDescriptorLoader {
 
   private static String getBucketPath(S3ModuleRegistry s3ModuleRegistry) {
     return s3ModuleRegistry.getBucket() + "/" + s3ModuleRegistry.getPath();
+  }
+
+  private static boolean match(ModuleDefinition module, Pair<String, Semver> moduleNameToVersionPair) {
+    return moduleNameToVersionPair != null
+      && moduleNameToVersionPair.getLeft().equals(module.getName())
+      && moduleNameToVersionPair.getRight().equals(Semver.parse(module.getVersion()));
+  }
+
+  private static boolean isStableVersion(ModuleDefinition module) {
+    var parsedVersion = Semver.parse(module.getVersion());
+    return parsedVersion != null && parsedVersion.isStable();
   }
 }
