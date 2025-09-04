@@ -8,8 +8,9 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.folio.app.generator.configuration.ApplicationContextBuilder;
+import org.folio.app.generator.model.ApplicationDescriptorTemplate;
 import org.folio.app.generator.service.ApplicationDescriptorGenerator;
-import org.folio.app.generator.service.JsonTemplateProvider;
+import org.folio.app.generator.service.JsonProvider;
 import org.folio.app.generator.service.ModuleRegistryProvider;
 
 @Mojo(name = "generateFromJson", defaultPhase = LifecyclePhase.COMPILE, requiresDependencyResolution = RUNTIME)
@@ -26,12 +27,14 @@ public class JsonGenerator extends AbstractGeneratorMojo {
   @Override
   public void execute() throws MojoExecutionException {
     var ctx = buildApplicationContext();
-    ctx.registerBean("jsonTemplateProvider", JsonTemplateProvider.class);
-
-    var jsonTemplateProvider = ctx.getBean(JsonTemplateProvider.class);
-    var template = jsonTemplateProvider.readTemplate(templatePath);
 
     var applicationDescriptorService = ctx.getBean(ApplicationDescriptorGenerator.class);
-    applicationDescriptorService.generate(template);
+    applicationDescriptorService.generate(readTemplate());
+  }
+
+  protected ApplicationDescriptorTemplate readTemplate() throws MojoExecutionException {
+    var ctx = buildApplicationContext();
+    var jsonProvider = ctx.getBean(JsonProvider.class);
+    return jsonProvider.readJsonFromFile(templatePath, ApplicationDescriptorTemplate.class, true);
   }
 }

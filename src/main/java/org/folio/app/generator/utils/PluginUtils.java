@@ -10,6 +10,7 @@ import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.ModuleDefinition;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -18,27 +19,34 @@ public class PluginUtils {
   public static final String PATH_DELIMITER = "/";
 
   /**
-   * Creates a {@link ModuleDefinition} object from the given module id.
+   * Creates a {@link ModuleDefinition} object from the given module id to be split.
    *
-   * <p>This method splits module id to the module name and module version</p>
-   *
-   * @param moduleId - module id to be parsed
-   * @return {@link Optional} with {@link ModuleDefinition} object if module id parsed successfully, empty - otherwise
+   * @param moduleId - module id to be split
+   * @return {@link Optional} with {@link ModuleDefinition} object if module id split successfully, empty - otherwise
    */
   public static Optional<ModuleDefinition> createModuleDefinitionFromId(String moduleId) {
     if (StringUtils.isBlank(moduleId)) {
       return Optional.empty();
     }
 
+    return splitModuleId(moduleId).map(dependency ->
+      new ModuleDefinition().id(moduleId).name(dependency.getName()).version(dependency.getVersion()));
+  }
+
+  /**
+   * Splits module id to the module name and module version.
+   *
+   * @param moduleId - module id to be split
+   * @return {@link Optional} with {@link Dependency} object if split successfully, empty - otherwise
+   */
+  public static Optional<Dependency> splitModuleId(String moduleId) {
     for (int i = 0; i < moduleId.length() - 1; i++) {
       if (moduleId.charAt(i) == '-' && Character.isDigit(moduleId.charAt(i + 1))) {
-        return Optional.of(new ModuleDefinition()
-          .id(moduleId)
-          .name(moduleId.substring(0, i))
-          .version(moduleId.substring(i + 1)));
+        var name = moduleId.substring(0, i);
+        var version = moduleId.substring(i + 1);
+        return Optional.of(new Dependency(name, version));
       }
     }
-
     return Optional.empty();
   }
 

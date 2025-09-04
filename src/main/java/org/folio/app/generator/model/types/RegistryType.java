@@ -8,7 +8,8 @@ import lombok.RequiredArgsConstructor;
 public enum RegistryType {
 
   AWS_S3("s3", "folio-app-generator.s3.enabled"),
-  OKAPI("okapi", "folio-app-generator.okapi.enabled");
+  OKAPI("okapi", "folio-app-generator.okapi.enabled"),
+  SIMPLE("simple", "folio-app-generator.simple.enabled");
 
   private final String value;
   private final String propertyName;
