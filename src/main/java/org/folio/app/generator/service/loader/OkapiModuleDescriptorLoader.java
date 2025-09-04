@@ -1,7 +1,6 @@
 package org.folio.app.generator.service.loader;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
@@ -60,7 +59,6 @@ public class OkapiModuleDescriptorLoader implements ModuleDescriptorLoader {
     return RegistryType.OKAPI;
   }
 
-  @SneakyThrows
   private Optional<Map<String, Object>> loadModuleDescriptor(String url, ModuleDefinition module) {
     var request = prepareHttpRequest(url, module);
     var moduleId = module.getId();
@@ -84,7 +82,8 @@ public class OkapiModuleDescriptorLoader implements ModuleDescriptorLoader {
     return Optional.of(searchResult.get(0));
   }
 
-  private HttpResponse<InputStream> retryLoad(HttpRequest request) throws IOException, InterruptedException {
+  @SneakyThrows
+  private HttpResponse<InputStream> retryLoad(HttpRequest request) {
     var attemptsCount = 0;
     var response = httpClient.send(request, BodyHandlers.ofInputStream());
     while (RETRYABLE_STATUS_CODES.contains(response.statusCode()) && attemptsCount++ < RETRYABLE_ATTEMPTS_NUMBER) {
