@@ -1,20 +1,14 @@
 package org.folio.app.generator.service.loader;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpClient.Version;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.conditions.SimpleCondition;
@@ -27,16 +21,12 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(SimpleCondition.class)
-public class SimpleModuleDescriptorLoader implements ModuleDescriptorLoader {
+public class SimpleModuleDescriptorLoader extends HttpModuleDescriptorLoader {
 
-  private static final Set<Integer> RETRYABLE_STATUS_CODES = Set.of(504);
-  private static final int RETRYABLE_ATTEMPTS_NUMBER = 5;
-
-  private final Log log;
-  private final HttpClient httpClient;
-  private final JsonConverter jsonConverter;
+  public SimpleModuleDescriptorLoader(HttpClient httpClient, Log log, JsonConverter jsonConverter) {
+    super(httpClient, log, jsonConverter);
+  }
 
   @Override
   public Optional<LoaderResultContainer> findModuleDescriptor(ModuleRegistry registry,
@@ -84,16 +74,6 @@ public class SimpleModuleDescriptorLoader implements ModuleDescriptorLoader {
     }
 
     return Optional.empty();
-  }
-
-  private HttpResponse<InputStream> retryLoad(HttpRequest request) throws IOException, InterruptedException {
-    var attemptsCount = 0;
-    var response = httpClient.send(request, BodyHandlers.ofInputStream());
-    while (RETRYABLE_STATUS_CODES.contains(response.statusCode()) && attemptsCount++ < RETRYABLE_ATTEMPTS_NUMBER) {
-      response = httpClient.send(request, BodyHandlers.ofInputStream());
-    }
-
-    return response;
   }
 
   @SneakyThrows
