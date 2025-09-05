@@ -38,11 +38,10 @@
     <spring-boot.version>3.3.9</spring-boot.version>
     <spring-context.version>6.1.17</spring-context.version>
 
-
     <sonar.exclusions>
-      src/main/java/**/ApplicationDescriptorService.java
-      src/main/java/**/model/*
-      src/main/java/**/ModuleDescriptorService.java
+      **/ApplicationDescriptorService.class
+      **/ModuleDefinition.class
+      **/ModuleDescriptorService.class
     </sonar.exclusions>
   </properties>
 
@@ -366,9 +365,9 @@
 
       <properties>
         <sonar.exclusions>
-          src/main/java/**/ApplicationDescriptorService.java
-          src/main/java/**/model/*
-          src/main/java/**/ModuleDescriptorService.java
+          **/ApplicationDescriptorService.class
+          **/ModuleDefinition.class
+          **/ModuleDescriptorService.class
         </sonar.exclusions>
         <sonar.coverage.jacoco.xmlReportPaths>
           target/site/jacoco-aggregate/jacoco.xml
