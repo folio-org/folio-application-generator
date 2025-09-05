@@ -32,7 +32,7 @@ public class ModuleDescriptorLoaderFacade {
    * @param module - {@link ModuleDefinition} object with required information to find a module
    * @return {@link Optional} of {@link Map} as module descriptor
    */
-  public Optional<Map<String, Object>> find(ModuleRegistry registry, ModuleDefinition module) {
+  public Optional<LoaderResultContainer> find(ModuleRegistry registry, ModuleDefinition module) {
     var moduleDescriptorLoader = loadersMap.get(registry.getType());
     if (moduleDescriptorLoader == null) {
       log.warn("Failed to find module descriptor loader for a registry: " + registry.getClass().getSimpleName());

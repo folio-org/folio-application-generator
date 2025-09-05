@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class ApplicationDescriptorService {
-
   private final MavenProject mavenProject;
   private final PluginConfig pluginParameters;
   private final ModuleDescriptorService moduleDescriptorService;
@@ -41,14 +40,19 @@ public class ApplicationDescriptorService {
     var modulesLoadResult = moduleDescriptorService.loadModules(BE, modules);
     var uiModulesLoadResult = moduleDescriptorService.loadModules(UI, uiModules);
 
-    return baseAppDescriptor
+    baseAppDescriptor
       .description(defaultIfBlank(template.getDescription(), mavenProject.getDescription()))
       .platform(defaultIfBlank(template.getPlatform(), "base"))
       .modules(modulesLoadResult.artifacts())
       .uiModules(uiModulesLoadResult.artifacts())
-      .dependencies(emptyIfNull(template.getDependencies()))
-      .moduleDescriptors(modulesLoadResult.descriptors())
-      .uiModuleDescriptors(uiModulesLoadResult.descriptors());
+      .dependencies(emptyIfNull(template.getDependencies()));
+
+    if (!pluginParameters.isModuleUrlsOnly()) {
+      baseAppDescriptor
+        .moduleDescriptors(modulesLoadResult.descriptors())
+        .uiModuleDescriptors(uiModulesLoadResult.descriptors());
+    }
+    return baseAppDescriptor;
   }
 
   private ApplicationDescriptor buildDescriptor() {

@@ -226,6 +226,7 @@ mvn install -DbuildNumber="123" -DawsRegion=us-east-1
 | registries               |               | Comma-separated list of custom module-descriptor registries in formats: `s3::{{bucket-name}}:{{path-to-folder}}`, `okapi::{{okapi-base}}`, `simple::{{okapi-base}}`
 | beRegistries             |               | Comma-separated list of custom back-end module-descriptor registries in the same format as `registries` parameter
 | uiRegistries             |               | Comma-separated list of custom ui module-descriptor registries in the same format as `registries` parameter
+| moduleUrlsOnly           | false         | If `true` only URLs of modules will be included to the modules. Modules descriptors will be empty.
 | appDescriptorPath        |               | File path of the application descriptor to update
 | modules                  |               | Comma-separated list of BE module ids to be updated in format: `module1-1.1.0,module2-2.1.0`
 | uiModules                |               | Comma-separated list of UI module ids to be updated in the same format as `modules` parameter

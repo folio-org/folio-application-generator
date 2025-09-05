@@ -13,13 +13,13 @@ import java.io.InputStream;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.ModuleDefinition;
-import org.folio.app.generator.model.registry.SimpleModuleRegistry;
+import org.folio.app.generator.model.registry.OkapiModuleRegistry;
 import org.folio.app.generator.model.types.RegistryType;
 import org.folio.app.generator.support.UnitTest;
 import org.folio.app.generator.utils.JsonConverter;
@@ -37,11 +37,11 @@ import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
 
 @UnitTest
 @ExtendWith(MockitoExtension.class)
-class SimpleModuleDescriptorLoaderTest {
+class OkapiModuleDescriptorLoaderTest {
 
-  private static final String URL = "http://localhost/mod-foo-1.0.0";
+  private static final String URL = "http://localhost/_/proxy/modules/mod-foo-1.0.0";
   
-  @InjectMocks private SimpleModuleDescriptorLoader loader;
+  @InjectMocks private OkapiModuleDescriptorLoader loader;
   @Mock private Log log;
   @Mock private HttpClient httpClient;
   @Mock private HttpResponse<Object> httpResponse;
@@ -54,7 +54,7 @@ class SimpleModuleDescriptorLoaderTest {
 
   @Test
   void getType_positive() {
-    assertThat(loader.getType()).isEqualTo(RegistryType.SIMPLE);
+    assertThat(loader.getType()).isEqualTo(RegistryType.OKAPI);
   }
 
   @ParameterizedTest(name = "[{index}] retry = {0}, extraPath = {1}")
@@ -63,12 +63,12 @@ class SimpleModuleDescriptorLoaderTest {
       throws IOException, InterruptedException {
 
     mockStatusResponse(200, retry);
-    mockPayloadResponse(new HashMap<String, Object>());
+    mockPayloadResponse(List.of());
 
-    var result = loader.findModuleDescriptor(simpleRegistry(extraPath), fooModule("1.0.0"));
+    var result = loader.findModuleDescriptor(okapiRegistry(extraPath), fooModule("1.0.0"));
 
     assertEmptyAndWarnLog(result,
-      "Module descriptor 'mod-foo-1.0.0' is not found in http://localhost/mod-foo-1.0.0");
+      "Module descriptor 'mod-foo-1.0.0' is not found in http://localhost");
   }
 
   @ParameterizedTest(name = "[{index}] retry = {0}, extraPath = {1}")
@@ -79,15 +79,15 @@ class SimpleModuleDescriptorLoaderTest {
     var expectedModuleDescriptor = fooModuleDescriptor("1.0.0");
 
     mockStatusResponse(200, retry);
-    mockPayloadResponse(expectedModuleDescriptor);
+    mockPayloadResponse(List.of(expectedModuleDescriptor));
 
-    var result = loader.findModuleDescriptor(simpleRegistry(extraPath), fooModule("1.0.0"));
+    var result = loader.findModuleDescriptor(okapiRegistry(extraPath), fooModule("1.0.0"));
 
     assertTrue(result.isPresent());
     assertThat(result.get().getModuleDescriptor()).containsAllEntriesOf(expectedModuleDescriptor);
     assertThat(result.get().getSourceUrl().toString()).isEqualTo(URL);
 
-    verify(log).info("Module descriptor 'mod-foo-1.0.0' loaded from http://localhost/mod-foo-1.0.0");
+    verify(log).info("Module descriptor 'mod-foo-1.0.0' loaded from http://localhost");
   }
 
   @ParameterizedTest(name = "[{index}] statusCode = {0}, retry = {1}, extraPath = {2}")
@@ -97,10 +97,10 @@ class SimpleModuleDescriptorLoaderTest {
 
     mockStatusResponse(statusCode, retry);
 
-    var result = loader.findModuleDescriptor(simpleRegistry(extraPath), fooModule("1.0.0"));
+    var result = loader.findModuleDescriptor(okapiRegistry(extraPath), fooModule("1.0.0"));
 
     assertEmptyAndWarnLog(result,
-      "Failed to load module descriptor 'mod-foo-1.0.0' from http://localhost/mod-foo-1.0.0: " + statusCode);
+      "Failed to load module descriptor 'mod-foo-1.0.0' from http://localhost: " + statusCode);
   }
 
   @Test
@@ -110,11 +110,11 @@ class SimpleModuleDescriptorLoaderTest {
     var exception = new IOException("This is a mocked exception.");
     when(httpClient.send(any(HttpRequest.class), any())).thenThrow(exception);
 
-    var result = loader.findModuleDescriptor(simpleRegistry(""), fooModule("1.0.0"));
+    var result = loader.findModuleDescriptor(okapiRegistry(""), fooModule("1.0.0"));
 
     assertThat(result).isEmpty();
     verify(log)
-      .warn("Failed to load module descriptor 'mod-foo-1.0.0' from http://localhost/mod-foo-1.0.0", exception);
+      .warn("Failed to load module descriptor 'mod-foo-1.0.0' from http://localhost", exception);
   }
 
   public static Stream<Arguments> statusPathRetryFailSource() {
@@ -124,13 +124,7 @@ class SimpleModuleDescriptorLoaderTest {
       arguments(204, 1, ""),
       arguments(404, 1, ""),
       arguments(204, 6, ""),
-      arguments(404, 6, ""),
-      arguments(204, 0, "/"),
-      arguments(404, 0, "/"),
-      arguments(204, 1, "/"),
-      arguments(404, 1, "/"),
-      arguments(204, 6, "/"),
-      arguments(404, 6, "/")
+      arguments(404, 6, "")
     );
   }
 
@@ -138,10 +132,7 @@ class SimpleModuleDescriptorLoaderTest {
     return Stream.of(
       arguments(0, ""),
       arguments(1, ""),
-      arguments(6, ""),
-      arguments(0, "/"),
-      arguments(1, "/"),
-      arguments(6, "/")
+      arguments(6, "")
     );
   }
 
@@ -159,7 +150,6 @@ class SimpleModuleDescriptorLoaderTest {
       when(httpResponse.statusCode()).thenReturn(504);
     }
 
-    when(httpResponse.statusCode()).thenReturn(statusCode);
     when(httpResponse.statusCode()).thenReturn(statusCode);
   }
 
@@ -180,8 +170,8 @@ class SimpleModuleDescriptorLoaderTest {
     return new ModuleDefinition().id("mod-foo-" + version).name("mod-foo").version(version);
   }
 
-  private static SimpleModuleRegistry simpleRegistry(String extra) {
-    return new SimpleModuleRegistry()
+  private static OkapiModuleRegistry okapiRegistry(String extra) {
+    return new OkapiModuleRegistry()
       .url("http://localhost" + extra)
       .withGeneratedFields();
   }
