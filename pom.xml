@@ -383,9 +383,9 @@
             <version>0.8.13</version>
             <configuration>
               <excludes>
-                <exclude>src/main/java/**/ApplicationDescriptorService.class</exclude>
-                <exclude>src/main/java/**/model/*</exclude>
-                <exclude>src/main/java/**/ModuleDescriptorService.class</exclude>
+                <exclude>**/ApplicationDescriptorService.class</exclude>
+                <exclude>**/ModuleDefinition.class</exclude>
+                <exclude>**/ModuleDescriptorService.class</exclude>
               </excludes>
             </configuration>
             <executions>
