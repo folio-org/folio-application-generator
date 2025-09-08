@@ -52,9 +52,9 @@ public class ApplicationDescriptorService {
         .moduleDescriptors(modulesLoadResult.descriptors())
         .uiModuleDescriptors(uiModulesLoadResult.descriptors());
       emptyIfNull(baseAppDescriptor.getModules())
-        .forEach(md-> md.setUrl(null));
+        .forEach(md -> md.setUrl(null));
       emptyIfNull(baseAppDescriptor.getUiModules())
-        .forEach(md-> md.setUrl(null));
+        .forEach(md -> md.setUrl(null));
     }
     return baseAppDescriptor;
   }
