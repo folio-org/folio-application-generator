@@ -32,6 +32,14 @@ Version 2.0. See the file "[LICENSE](LICENSE)" for more information.
   </configuration>
 </plugin>
 ```
+To build application descriptor without module descriptors use the following configuration
+```xml
+<configuration>
+    <moduleUrlsOnly>true</moduleUrlsOnly>
+    ...
+  </configuration>
+```
+By setting `moduleUrlsOnly` to `true`, the generated application descriptor will include only the URLs of the modules, leaving the module descriptors empty.
 
 #### Extending configuration with dedicated registries for BE and UI modules:
 
