@@ -48,7 +48,7 @@ public abstract class AbstractGeneratorMojo extends AbstractMojo {
   @Parameter(name = "uiModuleRegistries")
   protected List<ConfigModuleRegistry> uiModuleRegistries;
 
-  @Parameter(name = "moduleUrlsOnly", defaultValue = "false")
+  @Parameter(name = "moduleUrlsOnly", property = "moduleUrlsOnly", defaultValue = "false")
   protected String moduleUrlsOnly;
 
   @Parameter(defaultValue = "${awsRegion}")
