@@ -16,6 +16,7 @@ import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
 import org.folio.app.generator.model.Dependency;
+import org.folio.app.generator.model.PreReleaseFilter;
 import org.semver4j.RangesListFactory;
 import org.semver4j.Semver;
 import org.springframework.stereotype.Component;
@@ -26,7 +27,7 @@ public class ApplicationDependencyValidator {
 
   private final Log log;
   private final MavenProject mavenProject;
-  private final Set<String> reservedVersionKeywords = Set.of("latest");
+  private final Set<String> reservedVersionKeywords = Set.of("");
 
   /**
    * Validates that all dependencies satisfies specific release and declared in a right way.
@@ -49,12 +50,10 @@ public class ApplicationDependencyValidator {
 
   private List<String> validateModules(Semver projectVersion, List<Dependency> dependencies) {
     var errors = new ArrayList<String>();
-    boolean isProjectHasFixVersion = projectVersion.getPreRelease().isEmpty();
-    log.debug("Is pre-release application descriptor: " + isProjectHasFixVersion);
 
     for (int i = 0; i < dependencies.size(); i++) {
       var dependency = dependencies.get(i);
-      var validationError = validateModuleDefinition(dependency, i, isProjectHasFixVersion);
+      var validationError = validateModuleDefinition(dependency, i);
       if (validationError != null) {
         errors.add(validationError);
       }
@@ -63,27 +62,37 @@ public class ApplicationDependencyValidator {
     return errors;
   }
 
-  private String validateModuleDefinition(Dependency dependency, int idx, boolean isProjectHasFixVersion) {
+  private String validateModuleDefinition(Dependency dependency, int idx) {
     var name = dependency.getName();
     if (StringUtils.isBlank(name)) {
       return "Module name cannot be empty at index: " + idx;
     }
 
     var version = dependency.getVersion();
-    var parsedVersion = Semver.parse(version);
 
-    if (parsedVersion == null) {
-      if (!reservedVersionKeywords.contains(version)) {
-        return format("Module '%s' version '%s' must satisfy semver", name, version);
-      }
-
-      if (isProjectHasFixVersion) {
-        return format("Module '%s' version '%s' must be stable for a stable release", name, version);
-      }
+    if (reservedVersionKeywords.contains(version)) {
+      return null;
     }
 
-    if (isProjectHasFixVersion && !parsedVersion.getPreRelease().isEmpty()) {
-      return format("Module '%s' version '%s' must be stable for a stable release", name, version);
+    var rangesList = RangesListFactory.create(version).get();
+    if (rangesList.isEmpty()) {
+      return format("Module '%s' version '%s' must be a valid semver version or constraint", name, version);
+    }
+
+    var parsed = Semver.parse(version);
+    if (parsed == null) {
+      return null;
+    }
+
+    var preRelease = dependency.getPreRelease() == null ? PreReleaseFilter.FALSE : dependency.getPreRelease();
+    boolean isPre = !parsed.getPreRelease().isEmpty();
+
+    if (!isPre && preRelease != PreReleaseFilter.FALSE) {
+      return format("Module '%s' version '%s' must be stable", name, version);
+    }
+
+    if (isPre && preRelease == PreReleaseFilter.FALSE) {
+      return format("Module '%s' version '%s' must be pre release", name, version);
     }
 
     return null;
