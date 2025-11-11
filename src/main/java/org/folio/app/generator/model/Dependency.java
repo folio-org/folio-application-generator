@@ -18,4 +18,10 @@ public class Dependency {
    * Dependency version.
    */
   private String version;
+
+  /**
+   * Pre-release filter (optional).
+   * Determines whether to include pre-release versions when resolving dependencies.
+   */
+  private PreReleaseFilter preRelease;
 }
