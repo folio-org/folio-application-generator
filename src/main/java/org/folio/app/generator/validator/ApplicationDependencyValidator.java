@@ -17,6 +17,7 @@ import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
 import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.PreReleaseFilter;
+import org.folio.app.generator.utils.SemverUtils;
 import org.semver4j.RangesListFactory;
 import org.semver4j.Semver;
 import org.springframework.stereotype.Component;
@@ -79,7 +80,7 @@ public class ApplicationDependencyValidator {
       return format("Module '%s' version '%s' must be a valid semver version or constraint", name, version);
     }
 
-    var parsed = Semver.parse(version);
+    var parsed = SemverUtils.parse(version);
     if (parsed == null) {
       return null;
     }
