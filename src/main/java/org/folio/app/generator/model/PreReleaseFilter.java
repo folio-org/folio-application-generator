@@ -33,6 +33,10 @@ public enum PreReleaseFilter {
     return value;
   }
 
+  public boolean isPreRelease() {
+    return this == ONLY || this == TRUE;
+  }
+
   @JsonCreator
   public static PreReleaseFilter fromValue(String value) {
     if (value == null) {
