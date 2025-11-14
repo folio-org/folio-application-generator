@@ -1,5 +1,13 @@
 package org.folio.app.generator.service.resolver;
 
+import static java.lang.Boolean.TRUE;
+import static java.lang.String.format;
+import static org.folio.app.generator.utils.PluginUtils.createModuleDefinitionFromId;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.maven.plugin.logging.Log;
@@ -16,15 +24,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.S3Object;
-
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-
-import static java.lang.Boolean.TRUE;
-import static java.lang.String.format;
-import static org.folio.app.generator.utils.PluginUtils.createModuleDefinitionFromId;
 
 @Component
 @Conditional(AwsCondition.class)
@@ -52,7 +51,8 @@ public class S3ModuleVersionResolver implements ModuleVersionResolver {
       try {
         result = s3Client.listObjectsV2(request);
       } catch (Exception e) {
-        log.warn(format("Failed to list versions for module '%s' in s3 bucket: %s", moduleName, getBucketPath(s3Registry)), e);
+        log.warn(format("Failed to list versions for module '%s' in s3 bucket: %s",
+              moduleName, getBucketPath(s3Registry)), e);
         return Optional.empty();
       }
 
@@ -60,7 +60,7 @@ public class S3ModuleVersionResolver implements ModuleVersionResolver {
         Pair<String, Semver> parsed = parseS3ObjectKey(s3Object, s3Registry.getPath());
 
         if (parsed != null && parsed.getLeft().equals(moduleName)) {
-          if(parsed.getRight() != null && !parsed.getRight().getPreRelease().isEmpty() == isPreRelease) {
+          if (parsed.getRight() != null && !parsed.getRight().getPreRelease().isEmpty() == isPreRelease) {
             collected.add(parsed);
           }
         }
@@ -74,9 +74,10 @@ public class S3ModuleVersionResolver implements ModuleVersionResolver {
       return Optional.empty();
     }
 
-    collected.sort(Comparator.comparing(Pair<String, Semver>::getRight).reversed());
-    log.info(format("Found %d versions for module '%s' in s3 bucket: %s", collected.size(), moduleName, getBucketPath(s3Registry)));
+    log.info(format("Found %d versions for module '%s' in s3 bucket: %s", collected.size(),
+          moduleName, getBucketPath(s3Registry)));
 
+    collected.sort(Comparator.comparing(Pair<String, Semver>::getRight).reversed());
     return Optional.of(collected.stream().map(Pair::getLeft).toList());
   }
 
