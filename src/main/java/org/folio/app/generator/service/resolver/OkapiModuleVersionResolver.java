@@ -1,6 +1,15 @@
 package org.folio.app.generator.service.resolver;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpClient.Version;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.conditions.OkapiCondition;
@@ -12,16 +21,6 @@ import org.folio.app.generator.utils.JsonConverter;
 import org.folio.app.generator.utils.PluginUtils;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpClient.Version;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 @Component
 @Conditional(OkapiCondition.class)
