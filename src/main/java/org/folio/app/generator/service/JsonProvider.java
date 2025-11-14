@@ -48,7 +48,9 @@ public class JsonProvider {
     }
 
     try {
-      var content = Files.readString(file.toPath(), StandardCharsets.UTF_8);
+      var content = Files.readString(file.toPath(), StandardCharsets.UTF_8)
+        .replace("\r\n", "\n")
+        .replace("\r", "\n");
       if (useSubstitution) {
         content = performSubstitution(content);
       }
