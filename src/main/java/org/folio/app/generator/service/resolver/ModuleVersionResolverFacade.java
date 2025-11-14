@@ -1,18 +1,17 @@
 package org.folio.app.generator.service.resolver;
 
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toMap;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.registry.ModuleRegistry;
 import org.folio.app.generator.model.types.RegistryType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.toMap;
 
 @Component
 public class ModuleVersionResolverFacade {
