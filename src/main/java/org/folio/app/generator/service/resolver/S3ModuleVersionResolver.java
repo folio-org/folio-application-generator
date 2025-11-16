@@ -15,6 +15,7 @@ import org.folio.app.generator.conditions.AwsCondition;
 import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.registry.ModuleRegistry;
 import org.folio.app.generator.model.registry.S3ModuleRegistry;
+import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.model.types.RegistryType;
 import org.folio.app.generator.utils.PluginConfig;
 import org.semver4j.Semver;
@@ -37,7 +38,7 @@ public class S3ModuleVersionResolver implements ModuleVersionResolver {
   private final PluginConfig pluginConfig;
 
   @Override
-  public Optional<List<String>> getAvailableVersions(ModuleRegistry registry, Dependency dependency) {
+  public Optional<List<String>> getAvailableVersions(ModuleRegistry registry, Dependency dependency, ModuleType type) {
     var s3Registry = (S3ModuleRegistry) registry;
     var moduleName = dependency.getName();
     var isPreRelease = dependency.getPreRelease() != null && dependency.getPreRelease().isPreRelease();

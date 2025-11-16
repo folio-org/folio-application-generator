@@ -16,6 +16,7 @@ import org.folio.app.generator.conditions.OkapiCondition;
 import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.registry.ModuleRegistry;
 import org.folio.app.generator.model.registry.OkapiModuleRegistry;
+import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.model.types.RegistryType;
 import org.folio.app.generator.utils.JsonConverter;
 import org.folio.app.generator.utils.PluginUtils;
@@ -32,11 +33,11 @@ public class OkapiModuleVersionResolver implements ModuleVersionResolver {
   private final JsonConverter jsonConverter;
 
   @Override
-  public Optional<List<String>> getAvailableVersions(ModuleRegistry registry, Dependency module) {
+  public Optional<List<String>> getAvailableVersions(ModuleRegistry registry, Dependency module, ModuleType type) {
     var okapiRegistry = (OkapiModuleRegistry) registry;
     var url = okapiRegistry.getUrl();
     try {
-      return getVersions(url, module);
+      return getVersions(url, module, type);
     } catch (Exception e) {
       log.warn(String.format("Failed to fetch versions for module '%s' from %s", module.getName(), url), e);
       return Optional.empty();
@@ -48,8 +49,8 @@ public class OkapiModuleVersionResolver implements ModuleVersionResolver {
     return RegistryType.OKAPI;
   }
 
-  private Optional<List<String>> getVersions(String url, Dependency module) throws Exception {
-    var request = prepareHttpRequest(url, module);
+  private Optional<List<String>> getVersions(String url, Dependency module, ModuleType type) throws Exception {
+    var request = prepareHttpRequest(url, module, type);
     var moduleName = module.getName();
 
     var response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
@@ -74,7 +75,7 @@ public class OkapiModuleVersionResolver implements ModuleVersionResolver {
       return Optional.empty();
     }
 
-    log.info(String.format("Module '%s' version fetched from %s", moduleName, url));
+    log.debug(String.format("Module '%s' versions fetched from %s", moduleName, url));
     return Optional.of(versions);
   }
 
@@ -82,23 +83,24 @@ public class OkapiModuleVersionResolver implements ModuleVersionResolver {
     return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
   }
 
-  private static HttpRequest prepareHttpRequest(String url, Dependency module) {
+  private static HttpRequest prepareHttpRequest(String url, Dependency module, ModuleType type) {
     var baseUrl = cleanUrl(url);
     return HttpRequest.newBuilder()
       .GET()
-      .uri(URI.create(prepareUriString(baseUrl, module)))
+      .uri(URI.create(prepareUriString(baseUrl, module, type)))
       .timeout(Duration.ofMinutes(5))
       .version(Version.HTTP_1_1)
       .build();
   }
 
-  private static String prepareUriString(String baseUrl, Dependency module) {
+  private static String prepareUriString(String baseUrl, Dependency module, ModuleType type) {
     var moduleName = module.getName();
     var preRelease = module.getPreRelease();
+    var preReleaseFilter = type == ModuleType.UI ? "&npmSnapshot=" : "&preRelease=";
 
     return baseUrl + "/_/proxy/modules"
       + "?filter=" + moduleName
-      + "&preRelease=" + (preRelease == null ? "false" : preRelease.getValue())
+      + preReleaseFilter + (preRelease == null ? "false" : preRelease.getValue())
       + "&orderBy=id"
       + "&order=desc";
   }
