@@ -14,6 +14,7 @@ import org.folio.app.generator.model.ApplicationDescriptor;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
 import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.ModuleDefinition;
+import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.utils.PluginConfig;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +24,7 @@ public class ApplicationDescriptorService {
   private final MavenProject mavenProject;
   private final PluginConfig pluginParameters;
   private final ModuleDescriptorService moduleDescriptorService;
+  private final ModuleVersionService moduleVersionService;
 
   /**
    * Creates {@link ApplicationDescriptor} based on template and project metadata.
@@ -35,8 +37,12 @@ public class ApplicationDescriptorService {
     var version = template.getVersion();
     var baseAppDescriptor = name == null && version == null ? buildDescriptor() : buildDescriptor(template);
 
-    var modules = convertToArtifacts(template.getModules());
-    var uiModules = convertToArtifacts(template.getUiModules());
+    var resolvedModules = resolveConstraints(template.getModules(), BE);
+    var resolvedUiModules = resolveConstraints(template.getUiModules(), UI);
+
+    var modules = convertToArtifacts(resolvedModules);
+    var uiModules = convertToArtifacts(resolvedUiModules);
+
     var modulesLoadResult = moduleDescriptorService.loadModules(BE, modules);
     var uiModulesLoadResult = moduleDescriptorService.loadModules(UI, uiModules);
 
@@ -57,6 +63,11 @@ public class ApplicationDescriptorService {
         .forEach(md -> md.setUrl(null));
     }
     return baseAppDescriptor;
+  }
+
+  private List<Dependency> resolveConstraints(List<Dependency> dependencies, ModuleType type)
+    throws MojoExecutionException {
+    return moduleVersionService.resolveModulesConstraints(emptyIfNull(dependencies), type);
   }
 
   private ApplicationDescriptor buildDescriptor() {
