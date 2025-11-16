@@ -44,7 +44,7 @@ public class PluginUtils {
       if (moduleId.charAt(i) == '-' && Character.isDigit(moduleId.charAt(i + 1))) {
         var name = moduleId.substring(0, i);
         var version = moduleId.substring(i + 1);
-        return Optional.of(new Dependency(name, version));
+        return Optional.of(Dependency.builder().name(name).version(version).build());
       }
     }
     return Optional.empty();
