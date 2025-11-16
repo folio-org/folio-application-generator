@@ -44,13 +44,13 @@ class ApplicationDescriptorUpdateServiceTest {
   @Captor private ArgumentCaptor<List<ModuleDefinition>> uiDescriptorsCaptor;
   @InjectMocks private ApplicationDescriptorUpdateService updateService;
 
-    @BeforeEach
-    void setUp() throws Exception {
-      when(moduleVersionService.resolveModulesConstraints(anyList(), eq(BE)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
-      when(moduleVersionService.resolveModulesConstraints(anyList(), eq(UI)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
-    }
+  @BeforeEach
+  void setUp() throws Exception {
+    when(moduleVersionService.resolveModulesConstraints(anyList(), eq(BE)))
+      .thenAnswer(invocation -> invocation.getArgument(0));
+    when(moduleVersionService.resolveModulesConstraints(anyList(), eq(UI)))
+      .thenAnswer(invocation -> invocation.getArgument(0));
+  }
 
   @Test
   @SneakyThrows
