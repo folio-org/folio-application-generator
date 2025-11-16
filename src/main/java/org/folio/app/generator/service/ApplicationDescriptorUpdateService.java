@@ -19,10 +19,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
-import org.folio.app.generator.model.ApplicationDescriptor;
-import org.folio.app.generator.model.Dependency;
-import org.folio.app.generator.model.ModuleDefinition;
-import org.folio.app.generator.model.ModulesLoadResult;
+import org.folio.app.generator.model.*;
 import org.folio.app.generator.model.types.ModuleType;
 import org.semver4j.Semver;
 import org.springframework.stereotype.Component;
@@ -36,6 +33,7 @@ public class ApplicationDescriptorUpdateService {
   private final MavenProject mavenProject;
   private final JsonProvider jsonProvider;
   private final ModuleDescriptorService moduleDescriptorService;
+  private final ModuleVersionService moduleVersionService;
 
   /**
    * Update application descriptor with new versions of modules.
@@ -87,8 +85,12 @@ public class ApplicationDescriptorUpdateService {
   }
 
   private List<ModuleDefinition> getModuleDefinitions(Map<String, String> moduleNameVersion) {
-    return convertToArtifacts(moduleNameVersion.entrySet()
-      .stream().map(entry -> new Dependency(entry.getKey(), entry.getValue())).toList());
+    return convertToArtifacts(moduleNameVersion.entrySet().stream()
+      .map(entry -> Dependency.builder()
+        .name(entry.getKey())
+        .version(entry.getValue())
+        .build())
+      .toList());
   }
 
   private List<ModuleDefinition> updateModules(List<ModuleDefinition> modules, ModulesLoadResult modulesLoadResult) {
@@ -124,7 +126,11 @@ public class ApplicationDescriptorUpdateService {
 
     var invalid = updateModuleNameVersion.entrySet().stream()
       .filter(entry -> isInvalidModule(entry.getKey(), entry.getValue(), moduleNameVersion))
-      .map(entry -> new Dependency(entry.getKey(), entry.getValue())).toList();
+      .map(entry -> Dependency.builder()
+        .name(entry.getKey())
+        .version(entry.getValue())
+        .build())
+      .toList();
 
     if (!invalid.isEmpty()) {
       throw new IllegalArgumentException("Invalid input modules to update:\n"
@@ -175,7 +181,7 @@ public class ApplicationDescriptorUpdateService {
   private Optional<Dependency> parseModuleId(String moduleId) {
     if (moduleId.contains(LATEST_VERSION)) {
       var name = moduleId.substring(0, moduleId.indexOf(':'));
-      return Optional.of(new Dependency(name, LATEST_VERSION));
+      return Optional.of(new Dependency(name, LATEST_VERSION, PreReleaseFilter.TRUE));
     }
     return splitModuleId(moduleId);
   }
