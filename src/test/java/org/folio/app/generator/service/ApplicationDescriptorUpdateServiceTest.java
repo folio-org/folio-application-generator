@@ -21,6 +21,7 @@ import org.folio.app.generator.model.ApplicationDescriptor;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.ModulesLoadResult;
 import org.folio.app.generator.support.UnitTest;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -37,12 +38,22 @@ class ApplicationDescriptorUpdateServiceTest {
   @Mock private MavenProject mavenProject;
   @Mock private JsonProvider jsonProvider;
   @Mock private ModuleDescriptorService moduleDescriptorService;
+  @Mock private ModuleVersionService moduleVersionService;
   @Captor private ArgumentCaptor<ApplicationDescriptor> applicationCaptor;
   @Captor private ArgumentCaptor<List<ModuleDefinition>> descriptorsCaptor;
   @Captor private ArgumentCaptor<List<ModuleDefinition>> uiDescriptorsCaptor;
   @InjectMocks private ApplicationDescriptorUpdateService updateService;
 
+    @BeforeEach
+    void setUp() throws Exception {
+      when(moduleVersionService.resolveModulesConstraints(anyList(), eq(BE)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+      when(moduleVersionService.resolveModulesConstraints(anyList(), eq(UI)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    }
+
   @Test
+  @SneakyThrows
   void update_negative_invalidModuleVersion() {
     List<Map<String, Object>> modules = List.of(
       Map.of("id", "module1-1.0.0"),
