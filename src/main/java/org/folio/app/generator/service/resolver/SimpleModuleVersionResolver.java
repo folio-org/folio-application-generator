@@ -57,7 +57,10 @@ public class SimpleModuleVersionResolver implements ModuleVersionResolver {
         return Optional.empty();
       }
 
-      var modules = jsonConverter.parse(response.body(), new TypeReference<List<Map<String, Object>>>() {});
+      List<Map<String, Object>> modules;
+      try (var inputStream = response.body()) {
+        modules = jsonConverter.parse(inputStream, new TypeReference<>() {});
+      }
 
       var versions = modules.stream()
         .map(md -> (String) md.get("id"))
