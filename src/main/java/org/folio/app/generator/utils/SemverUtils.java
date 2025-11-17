@@ -1,5 +1,6 @@
 package org.folio.app.generator.utils;
 
+import java.util.regex.Pattern;
 import lombok.experimental.UtilityClass;
 import org.semver4j.RangesList;
 import org.semver4j.RangesListFactory;
@@ -26,6 +27,8 @@ public class SemverUtils {
    * Matches Okapi's SemVer.hasNpmSnapshot() logic: returns true if patch.length() >= 5
    */
   private static final int UI_SNAPSHOT_THRESHOLD = 5;
+
+  private static final Pattern DIGITS_PATTERN = Pattern.compile("\\d+");
 
   /**
    * Normalize FOLIO module version for semver4j compatibility.
@@ -54,7 +57,7 @@ public class SemverUtils {
     }
 
     String patch = parts[2];
-    if (!patch.matches("\\d+")) {
+    if (!DIGITS_PATTERN.matcher(patch).matches()) {
       return version;
     }
 
@@ -103,6 +106,9 @@ public class SemverUtils {
    */
   public static boolean satisfies(String version, String constraint, boolean includePreRelease) {
     Semver semver = parse(version);
+    if (semver == null) {
+      return false;
+    }
     RangesList ranges = RangesListFactory.create(constraint, includePreRelease);
     return ranges.isSatisfiedBy(semver);
   }
