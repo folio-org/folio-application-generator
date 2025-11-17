@@ -66,7 +66,7 @@ public class SimpleModuleVersionResolver implements ModuleVersionResolver {
         .filter(dep -> moduleName.equals(dep.getName()))
         .map(Dependency::getVersion)
         .filter(version -> matchesPreReleaseFilter(version, preRelease))
-        .sorted(Comparator.comparing((String v) -> SemverUtils.parse(v)).reversed())
+        .sorted(Comparator.comparing(SemverUtils::parse).reversed())
         .toList();
 
       if (versions.isEmpty()) {
