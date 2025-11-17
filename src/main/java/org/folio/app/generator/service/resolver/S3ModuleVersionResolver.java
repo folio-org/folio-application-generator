@@ -60,10 +60,9 @@ public class S3ModuleVersionResolver implements ModuleVersionResolver {
       for (S3Object s3Object : result.contents()) {
         Pair<String, Semver> parsed = parseS3ObjectKey(s3Object, s3Registry.getPath());
 
-        if (parsed != null && parsed.getLeft().equals(moduleName)) {
-          if (parsed.getRight() != null && !parsed.getRight().getPreRelease().isEmpty() == isPreRelease) {
-            collected.add(parsed);
-          }
+        if (parsed != null && parsed.getLeft().equals(moduleName)
+            && parsed.getRight() != null && !parsed.getRight().getPreRelease().isEmpty() == isPreRelease) {
+          collected.add(parsed);
         }
       }
 
