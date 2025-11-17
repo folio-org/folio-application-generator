@@ -76,6 +76,10 @@ public class SimpleModuleVersionResolver implements ModuleVersionResolver {
 
       log.info(String.format("Found %d versions for module '%s' in Simple registry", versions.size(), moduleName));
       return Optional.of(versions);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      log.warn(String.format("Failed to fetch versions for module '%s' from Simple registry", moduleName), e);
+      return Optional.empty();
     } catch (Exception e) {
       log.warn(String.format("Failed to fetch versions for module '%s' from Simple registry", moduleName), e);
       return Optional.empty();
@@ -90,7 +94,7 @@ public class SimpleModuleVersionResolver implements ModuleVersionResolver {
   private boolean matchesPreReleaseFilter(String version, PreReleaseFilter filter) {
     var effective = filter == null ? PreReleaseFilter.FALSE : filter;
     var semver = SemverUtils.parse(version);
-    var isPreRelease = semver.getPreRelease() != null && !semver.getPreRelease().isEmpty();
+    var isPreRelease = !semver.getPreRelease().isEmpty();
 
     return switch (effective) {
       case TRUE -> true;
