@@ -36,9 +36,9 @@ public class ApplicationDependencyValidator {
    * @param template - {@link ApplicationDescriptorTemplate} to analyze
    */
   public void validateDependencies(ApplicationDescriptorTemplate template) {
-    var projectVersion = validateAndGetProjectVersion(template);
+    validateAndGetProjectVersion(template);
     var errors = Stream.of(emptyIfNull(template.getModules()))
-      .map(moduleDependencies -> validateModules(projectVersion, moduleDependencies))
+      .map(this::validateModules)
       .flatMap(Collection::stream)
       .collect(toList());
 
@@ -49,7 +49,7 @@ public class ApplicationDependencyValidator {
     }
   }
 
-  private List<String> validateModules(Semver projectVersion, List<Dependency> dependencies) {
+  private List<String> validateModules(List<Dependency> dependencies) {
     var errors = new ArrayList<String>();
 
     for (int i = 0; i < dependencies.size(); i++) {
