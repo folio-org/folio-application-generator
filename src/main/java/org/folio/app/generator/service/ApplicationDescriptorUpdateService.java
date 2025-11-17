@@ -95,15 +95,6 @@ public class ApplicationDescriptorUpdateService {
       .flatMap(descriptor -> splitModuleId(getModuleId(descriptor)).stream()).toList();
   }
 
-  private List<ModuleDefinition> getModuleDefinitions(Map<String, String> moduleNameVersion) {
-    return convertToArtifacts(moduleNameVersion.entrySet().stream()
-      .map(entry -> Dependency.builder()
-        .name(entry.getKey())
-        .version(entry.getValue())
-        .build())
-      .toList());
-  }
-
   private List<ModuleDefinition> updateModules(List<ModuleDefinition> modules, ModulesLoadResult modulesLoadResult) {
     return modules.stream()
       .map(old -> modulesLoadResult.artifacts().stream()
