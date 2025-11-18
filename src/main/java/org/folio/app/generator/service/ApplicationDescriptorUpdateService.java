@@ -91,6 +91,10 @@ public class ApplicationDescriptorUpdateService {
   }
 
   private List<Dependency> getDescriptorModuleIds(List<Map<String, Object>> descriptors) {
+    if (descriptors == null) {
+      return emptyList();
+    }
+    
     return descriptors.stream()
       .flatMap(descriptor -> splitModuleId(getModuleId(descriptor)).stream()).toList();
   }
