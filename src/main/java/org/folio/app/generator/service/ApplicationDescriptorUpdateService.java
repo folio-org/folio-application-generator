@@ -109,6 +109,9 @@ public class ApplicationDescriptorUpdateService {
 
   private List<Map<String, Object>> updateDescriptors(ModulesLoadResult modulesLoadResult,
                                                       List<Map<String, Object>> descriptors) {
+    if (descriptors == null) {
+      return null;
+    }
 
     Map<String, Map<String, Object>> loadResults = modulesLoadResult.descriptors().stream()
       .map(descriptor -> parseModuleId(getModuleId(descriptor))
