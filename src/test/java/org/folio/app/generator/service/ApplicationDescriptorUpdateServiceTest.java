@@ -59,10 +59,44 @@ class ApplicationDescriptorUpdateServiceTest {
       Map.of("id", "module1-1.0.0"),
       Map.of("id", "module2-2.0.0"),
       Map.of("id", "module3:latest"));
-    var application = new ApplicationDescriptor().moduleDescriptors(modules);
+
+    List<Map<String, Object>> uiModules = List.of(
+      Map.of("id", "module-u1-1.0.0"),
+      Map.of("id", "module-u2-2.0.10010000000000158"),
+      Map.of("id", "module-u3:latest"));
+
+    var application = new ApplicationDescriptor().moduleDescriptors(modules).uiModuleDescriptors(uiModules);
 
     assertThrows(IllegalArgumentException.class,
-      () -> updateService.update(application, "module1-1.1.0,module2-2.0.0,module3:latest", null));
+      () -> updateService.update(application, "module1-1.1.0,module2-2.0.0,module3:latest",
+        "module-u1-1.1.0,module-u2-2.0.10010000000000158,module-u3:latest"));
+  }
+
+  @Test
+  @SneakyThrows
+  void update_negative_downgradeModule() {
+    List<Map<String, Object>> modules = List.of(Map.of("id", "module1-2.0.0"));
+    List<Map<String, Object>> uiModules = List.of(Map.of("id", "module-u1-2.0.0"));
+    var application = new ApplicationDescriptor().moduleDescriptors(modules).uiModuleDescriptors(uiModules);
+
+    assertThrows(IllegalArgumentException.class,
+      () -> updateService.update(application, "module1-1.0.0", "module-u1-1.0.0"));
+  }
+
+  @Test
+  @SneakyThrows
+  void update_negative_moduleNotInDescriptor() {
+    List<Map<String, Object>> modules = List.of(
+      Map.of("id", "module1-1.0.0"),
+      Map.of("id", "module2-2.0.0"));
+
+    List<Map<String, Object>> uiModules = List.of(
+      Map.of("id", "module-u1-1.0.0"),
+      Map.of("id", "module-u2-2.0.0"));
+    var application = new ApplicationDescriptor().moduleDescriptors(modules).uiModuleDescriptors(uiModules);
+
+    assertThrows(IllegalArgumentException.class,
+      () -> updateService.update(application, "module3-1.0.0", "module-u3-1.0.0"));
   }
 
   @Test
@@ -70,10 +104,14 @@ class ApplicationDescriptorUpdateServiceTest {
   void update_positive() {
     List<Map<String, Object>> modules = List.of(Map.of("id", "module1-1.0.0"), Map.of("id", "module2-2.0.0"),
       Map.of("id", "module3-1.1.0"));
-    List<Map<String, Object>> uiModules = List.of(Map.of("id", "uiModule1-1.0.0"));
+    List<Map<String, Object>> uiModules = List.of(
+      Map.of("id", "uiModule1-1.0.0"),
+      Map.of("id", "uiModule2-1.0.10010000000158"));
     var build = new Build();
     build.setDirectory("dir");
-    var uiModuleDefinitions = List.of(new ModuleDefinition().id("uiModule1-1.0.1").name("uiModule1").version("1.0.1"));
+    var uiModuleDefinitions = List.of(
+      new ModuleDefinition().id("uiModule1-1.0.1").name("uiModule1").version("1.0.1"),
+      new ModuleDefinition().id("uiModule2-1.0.10010000000158").name("uiModule2").version("1.0.10010000000158"));
 
     final var application = new ApplicationDescriptor()
       .id("name-1.0.0-SNAPSHOT")
@@ -91,19 +129,22 @@ class ApplicationDescriptorUpdateServiceTest {
         List.of(Map.of("id", "module1-1.1.0"), Map.of("id", "module2:latest"))));
     when(moduleDescriptorService.loadModules(eq(UI), uiDescriptorsCaptor.capture()))
       .thenReturn(
-        new ModulesLoadResult(List.of(new ModuleDefinition().id("uiModule1-1.0.1").name("uiModule1").version("1.0.1")),
-          List.of(Map.of("id", "uiModule1-1.0.1"))));
+        new ModulesLoadResult(List.of(
+          new ModuleDefinition().id("uiModule1-1.0.1").name("uiModule1").version("1.0.1"),
+          new ModuleDefinition().id("uiModule2-1.0.10010000000200").name("uiModule2").version("1.0.10010000000200")),
+          List.of(Map.of("id", "uiModule1-1.0.1"), Map.of("id", "uiModule2-1.0.10010000000200"))));
 
     when(mavenProject.getBuild()).thenReturn(build);
     doNothing().when(jsonProvider).writeApplication(applicationCaptor.capture(), any());
 
-    updateService.update(application, "module1-1.1.0,module2:latest", "uiModule1-1.0.1");
+    updateService.update(application, "module1-1.1.0,module2:latest", "uiModule1-1.0.1,uiModule2-1.0.10010000000200");
 
     assertThat(descriptorsCaptor.getValue()).isEqualTo(
       List.of(new ModuleDefinition().id("module1-1.1.0").name("module1").version("1.1.0"),
         new ModuleDefinition().id("module2-latest").name("module2").version("latest")));
     assertThat(uiDescriptorsCaptor.getValue()).isEqualTo(
-      List.of(new ModuleDefinition().id("uiModule1-1.0.1").name("uiModule1").version("1.0.1")));
+      List.of(new ModuleDefinition().id("uiModule1-1.0.1").name("uiModule1").version("1.0.1"),
+        new ModuleDefinition().id("uiModule2-1.0.10010000000200").name("uiModule2").version("1.0.10010000000200")));
 
     assertThat(applicationCaptor.getValue().getId()).isEqualTo("name-1.0.1-SNAPSHOT");
     assertThat(applicationCaptor.getValue().getVersion()).isEqualTo("1.0.1-SNAPSHOT");
@@ -112,12 +153,14 @@ class ApplicationDescriptorUpdateServiceTest {
       List.of(new ModuleDefinition().id("module1-1.1.0").name("module1").version("1.1.0"),
         new ModuleDefinition().id("module2-latest").name("module2").version("latest"),
         new ModuleDefinition().id("module3-1.1.0").name("module3").version("1.1.0")));
-    assertThat(applicationCaptor.getValue().getUiModules()).isEqualTo(uiModuleDefinitions);
+    assertThat(applicationCaptor.getValue().getUiModules()).isEqualTo(
+      List.of(new ModuleDefinition().id("uiModule1-1.0.1").name("uiModule1").version("1.0.1"),
+        new ModuleDefinition().id("uiModule2-1.0.10010000000200").name("uiModule2").version("1.0.10010000000200")));
 
     assertThat(applicationCaptor.getValue().getModuleDescriptors()).isEqualTo(
       List.of(Map.of("id", "module1-1.1.0"), Map.of("id", "module2:latest"), Map.of("id", "module3-1.1.0")));
     assertThat(applicationCaptor.getValue().getUiModuleDescriptors())
-      .isEqualTo(List.of(Map.of("id", "uiModule1-1.0.1")));
+      .isEqualTo(List.of(Map.of("id", "uiModule1-1.0.1"), Map.of("id", "uiModule2-1.0.10010000000200")));
 
     verify(moduleDescriptorService).loadModules(eq(BE), anyList());
     verify(moduleDescriptorService).loadModules(eq(UI), anyList());
