@@ -25,6 +25,7 @@ import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.ModulesLoadResult;
 import org.folio.app.generator.model.PreReleaseFilter;
 import org.folio.app.generator.model.types.ModuleType;
+import org.folio.app.generator.utils.SemverUtils;
 import org.semver4j.Semver;
 import org.springframework.stereotype.Component;
 
@@ -94,7 +95,7 @@ public class ApplicationDescriptorUpdateService {
     if (descriptors == null) {
       return emptyList();
     }
-    
+
     return descriptors.stream()
       .flatMap(descriptor -> splitModuleId(getModuleId(descriptor)).stream()).toList();
   }
@@ -148,8 +149,9 @@ public class ApplicationDescriptorUpdateService {
     if (oldVersion == null) {
       return true;
     }
-    var old = Semver.parse(oldVersion);
-    return old != null && old.isGreaterThanOrEqualTo(newVersion);
+    var old = SemverUtils.parse(oldVersion);
+    var newSemver = SemverUtils.parse(newVersion);
+    return old == null || newSemver == null || old.isGreaterThanOrEqualTo(newSemver);
   }
 
   private List<ModuleDefinition> convertToArtifacts(List<Dependency> dependencies) {
