@@ -207,6 +207,17 @@ class ApplicationDescriptorUpdateServiceTest {
 
   @Test
   @SneakyThrows
+  void update_negative_invalidNewVersionFormat() {
+    var application = new ApplicationDescriptor()
+      .moduleDescriptors(List.of(Map.of("id", "module1-1.0.0")))
+      .uiModuleDescriptors(List.of(Map.of("id", "uiModule1-1.0.0")));
+
+    assertThrows(IllegalArgumentException.class,
+      () -> updateService.update(application, "module1-invalid", "uiModule1-1.0.1"));
+  }
+
+  @Test
+  @SneakyThrows
   void update_positive_blankModulesInput() {
     List<Map<String, Object>> modules = List.of(Map.of("id", "module1-1.0.0"));
     List<Map<String, Object>> uiModules = List.of(Map.of("id", "uiModule1-1.0.0"));
