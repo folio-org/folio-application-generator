@@ -17,7 +17,6 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.model.ApplicationDescriptor;
 import org.folio.app.generator.model.Dependency;
@@ -34,7 +33,6 @@ import org.springframework.stereotype.Component;
 public class ApplicationDescriptorUpdateService {
 
   private static final String LATEST_VERSION = "latest";
-  private final Log log;
   private final MavenProject mavenProject;
   private final JsonProvider jsonProvider;
   private final ModuleDescriptorService moduleDescriptorService;
@@ -172,12 +170,7 @@ public class ApplicationDescriptorUpdateService {
   }
 
   private List<Dependency> parseModuleIdsToUpdate(String modules) {
-    if (isBlank(modules)) {
-      log.warn("Input modules to update cannot be blank");
-      return emptyList();
-    }
-
-    return stream(modules.split(","))
+    return isBlank(modules) ? emptyList() : stream(modules.split(","))
       .map(String::trim)
       .map(this::parseModuleId)
       .filter(Optional::isPresent)
