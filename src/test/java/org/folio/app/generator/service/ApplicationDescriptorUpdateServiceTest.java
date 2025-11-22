@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.SneakyThrows;
 import org.apache.maven.model.Build;
-import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.model.ApplicationDescriptor;
 import org.folio.app.generator.model.ModuleDefinition;
@@ -34,7 +33,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ApplicationDescriptorUpdateServiceTest {
 
-  @Mock private Log log;
   @Mock private MavenProject mavenProject;
   @Mock private JsonProvider jsonProvider;
   @Mock private ModuleDescriptorService moduleDescriptorService;
@@ -194,5 +192,16 @@ class ApplicationDescriptorUpdateServiceTest {
 
     assertThrows(IllegalArgumentException.class,
       () -> updateService.update(application, "module1-1.1.0", "uiModule1-1.0.1"));
+  }
+
+  @Test
+  @SneakyThrows
+  void update_negative_invalidVersionFormat() {
+    var application = new ApplicationDescriptor()
+      .moduleDescriptors(List.of(Map.of("id", "module1-invalid")))
+      .uiModuleDescriptors(List.of(Map.of("id", "uiModule1-1.0.0")));
+
+    assertThrows(IllegalArgumentException.class,
+      () -> updateService.update(application, "module1-2.0.0", "uiModule1-1.0.1"));
   }
 }
