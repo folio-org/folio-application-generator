@@ -204,4 +204,37 @@ class ApplicationDescriptorUpdateServiceTest {
     assertThrows(IllegalArgumentException.class,
       () -> updateService.update(application, "module1-2.0.0", "uiModule1-1.0.1"));
   }
+
+  @Test
+  @SneakyThrows
+  void update_positive_blankModulesInput() {
+    List<Map<String, Object>> modules = List.of(Map.of("id", "module1-1.0.0"));
+    List<Map<String, Object>> uiModules = List.of(Map.of("id", "uiModule1-1.0.0"));
+    var build = new Build();
+    build.setDirectory("dir");
+
+    final var application = new ApplicationDescriptor()
+      .id("name-1.0.0-SNAPSHOT")
+      .name("name")
+      .version("1.0.0-SNAPSHOT")
+      .modules(List.of(new ModuleDefinition().id("module1-1.0.0").name("module1").version("1.0.0")))
+      .uiModules(List.of(new ModuleDefinition().id("uiModule1-1.0.0").name("uiModule1").version("1.0.0")))
+      .moduleDescriptors(modules)
+      .uiModuleDescriptors(uiModules);
+
+    when(moduleDescriptorService.loadModules(eq(BE), anyList()))
+      .thenReturn(new ModulesLoadResult(List.of(), List.of()));
+    when(moduleDescriptorService.loadModules(eq(UI), anyList()))
+      .thenReturn(new ModulesLoadResult(List.of(), List.of()));
+    when(mavenProject.getBuild()).thenReturn(build);
+    doNothing().when(jsonProvider).writeApplication(applicationCaptor.capture(), any());
+
+    updateService.update(application, "", "");
+
+    assertThat(applicationCaptor.getValue().getVersion()).isEqualTo("1.0.1-SNAPSHOT");
+    assertThat(applicationCaptor.getValue().getModules()).isEqualTo(
+      List.of(new ModuleDefinition().id("module1-1.0.0").name("module1").version("1.0.0")));
+    assertThat(applicationCaptor.getValue().getUiModules()).isEqualTo(
+      List.of(new ModuleDefinition().id("uiModule1-1.0.0").name("uiModule1").version("1.0.0")));
+  }
 }
