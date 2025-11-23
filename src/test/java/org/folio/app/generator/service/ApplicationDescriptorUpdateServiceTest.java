@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -44,9 +45,9 @@ class ApplicationDescriptorUpdateServiceTest {
 
   @BeforeEach
   void setUp() throws Exception {
-    when(moduleVersionService.resolveModulesConstraints(anyList(), eq(BE)))
+    lenient().when(moduleVersionService.resolveModulesConstraints(anyList(), eq(BE)))
       .thenAnswer(invocation -> invocation.getArgument(0));
-    when(moduleVersionService.resolveModulesConstraints(anyList(), eq(UI)))
+    lenient().when(moduleVersionService.resolveModulesConstraints(anyList(), eq(UI)))
       .thenAnswer(invocation -> invocation.getArgument(0));
   }
 
@@ -206,14 +207,11 @@ class ApplicationDescriptorUpdateServiceTest {
   }
 
   @Test
-  @SneakyThrows
-  void update_negative_invalidNewVersionFormat() {
-    var application = new ApplicationDescriptor()
-      .moduleDescriptors(List.of(Map.of("id", "module1-1.0.0")))
-      .uiModuleDescriptors(List.of(Map.of("id", "uiModule1-1.0.0")));
+  void update_negative_invalidModuleIdFormat() {
+    var application = new ApplicationDescriptor();
 
     assertThrows(IllegalArgumentException.class,
-      () -> updateService.update(application, "module1-invalid", "uiModule1-1.0.1"));
+      () -> updateService.update(application, "invalid-module-format", ""));
   }
 
   @Test
