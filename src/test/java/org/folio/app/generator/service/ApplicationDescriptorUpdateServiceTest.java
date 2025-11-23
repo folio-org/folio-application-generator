@@ -229,6 +229,21 @@ class ApplicationDescriptorUpdateServiceTest {
 
   @Test
   @SneakyThrows
+  void update_negative_mixedValidAndInvalidModules() {
+    List<Map<String, Object>> modules = List.of(
+      Map.of("id", "module1-1.0.0"),
+      Map.of("id", "module2-2.0.0"));
+    List<Map<String, Object>> uiModules = List.of(Map.of("id", "uiModule1-1.0.0"));
+    var application = new ApplicationDescriptor()
+      .moduleDescriptors(modules)
+      .uiModuleDescriptors(uiModules);
+
+    assertThrows(IllegalArgumentException.class,
+      () -> updateService.update(application, "module1-2.0.0,module2-1.0.0", "uiModule1-1.0.0"));
+  }
+
+  @Test
+  @SneakyThrows
   void update_positive_blankModulesInput() {
     List<Map<String, Object>> modules = List.of(Map.of("id", "module1-1.0.0"));
     List<Map<String, Object>> uiModules = List.of(Map.of("id", "uiModule1-1.0.0"));
