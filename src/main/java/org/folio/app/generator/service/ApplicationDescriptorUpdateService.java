@@ -172,9 +172,8 @@ public class ApplicationDescriptorUpdateService {
   private List<Dependency> parseModuleIdsToUpdate(String modules) {
     return isBlank(modules) ? emptyList() : stream(modules.split(","))
       .map(String::trim)
-      .map(this::parseModuleId)
-      .filter(Optional::isPresent)
-      .map(Optional::get)
+      .map(moduleId -> parseModuleId(moduleId)
+        .orElseThrow(() -> new IllegalArgumentException("Invalid module id format: " + moduleId)))
       .toList();
   }
 
