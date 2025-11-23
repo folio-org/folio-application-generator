@@ -216,6 +216,19 @@ class ApplicationDescriptorUpdateServiceTest {
 
   @Test
   @SneakyThrows
+  void update_negative_invalidNewSemverVersion() {
+    List<Map<String, Object>> modules = List.of(Map.of("id", "module1-1.0.0"));
+    List<Map<String, Object>> uiModules = List.of(Map.of("id", "uiModule1-1.0.0"));
+    var application = new ApplicationDescriptor()
+      .moduleDescriptors(modules)
+      .uiModuleDescriptors(uiModules);
+
+    assertThrows(IllegalArgumentException.class,
+      () -> updateService.update(application, "module1-1.x.0", ""));
+  }
+
+  @Test
+  @SneakyThrows
   void update_positive_blankModulesInput() {
     List<Map<String, Object>> modules = List.of(Map.of("id", "module1-1.0.0"));
     List<Map<String, Object>> uiModules = List.of(Map.of("id", "uiModule1-1.0.0"));
