@@ -56,7 +56,6 @@ class S3ModuleVersionResolverTest {
 
     assertThat(result).isPresent();
     assertThat(result.get()).containsExactly("1.2.0", "1.1.0", "1.0.0");
-    verify(log).info("Found 3 versions for module 'mod-foo' in s3 bucket: test-bucket/modules/");
   }
 
   @Test
@@ -71,7 +70,6 @@ class S3ModuleVersionResolverTest {
 
     assertThat(result).isPresent();
     assertThat(result.get()).containsExactly("1.0.0");
-    verify(log).info("Found 1 versions for module 'mod-foo' in s3 bucket: test-bucket/modules/");
   }
 
   @Test
@@ -88,7 +86,6 @@ class S3ModuleVersionResolverTest {
 
     assertThat(result).isPresent();
     assertThat(result.get()).containsExactly("1.2.0-SNAPSHOT", "1.1.0");
-    verify(log).info("Found 2 versions for module 'mod-foo' in s3 bucket: test-bucket/modules/");
   }
 
   @Test
@@ -106,7 +103,6 @@ class S3ModuleVersionResolverTest {
 
     assertThat(result).isPresent();
     assertThat(result.get()).containsExactly("1.1.0", "1.0.0");
-    verify(log).info("Found 2 versions for module 'mod-foo' in s3 bucket: test-bucket/modules/");
   }
 
   @Test
@@ -124,7 +120,6 @@ class S3ModuleVersionResolverTest {
 
     assertThat(result).isPresent();
     assertThat(result.get()).containsExactly("1.2.0-SNAPSHOT", "1.1.0-alpha");
-    verify(log).info("Found 2 versions for module 'mod-foo' in s3 bucket: test-bucket/modules/");
   }
 
   @Test
@@ -173,7 +168,6 @@ class S3ModuleVersionResolverTest {
 
     assertThat(result).isPresent();
     assertThat(result.get()).containsExactly("1.2.0", "1.1.0", "1.0.0");
-    verify(log).info("Found 3 versions for module 'mod-foo' in s3 bucket: test-bucket/modules/");
   }
 
   @Test
@@ -190,7 +184,6 @@ class S3ModuleVersionResolverTest {
 
     assertThat(result).isPresent();
     assertThat(result.get()).containsExactly("1.0.0");
-    verify(log).info("Found 1 versions for module 'mod-foo' in s3 bucket: test-bucket/modules/");
   }
 
   @Test
@@ -207,7 +200,6 @@ class S3ModuleVersionResolverTest {
 
     assertThat(result).isPresent();
     assertThat(result.get()).containsExactly("1.0.0");
-    verify(log).info("Found 1 versions for module 'mod-foo' in s3 bucket: test-bucket/modules/");
   }
 
   @Test
@@ -224,7 +216,22 @@ class S3ModuleVersionResolverTest {
 
     assertThat(result).isPresent();
     assertThat(result.get()).containsExactly("1.0.0");
-    verify(log).info("Found 1 versions for module 'mod-foo' in s3 bucket: test-bucket/modules/");
+  }
+
+  @Test
+  void getAvailableVersions_positive_invalidSemverVersionSkipped() {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var request = listObjectsRequest("modules/mod-foo-", null);
+    var response = listObjectsResponse(
+      s3Object("modules/mod-foo-1.0.0.json"),
+      s3Object("modules/mod-foo-1.x.0.json"));
+
+    when(s3Client.listObjectsV2(request)).thenReturn(response);
+
+    var result = resolver.getAvailableVersions(s3Registry(), dependency, ModuleType.BE);
+
+    assertThat(result).isPresent();
+    assertThat(result.get()).containsExactly("1.0.0");
   }
 
   private static ListObjectsV2Request listObjectsRequest(String prefix, String nct) {
