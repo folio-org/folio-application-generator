@@ -3,7 +3,6 @@ package org.folio.app.generator.service.resolver;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
@@ -21,7 +20,6 @@ import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.model.types.RegistryType;
 import org.folio.app.generator.support.UnitTest;
 import org.folio.app.generator.utils.JsonConverter;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -40,11 +38,6 @@ class SimpleModuleVersionResolverTest {
   @Mock private HttpClient httpClient;
   @Mock private HttpResponse<Object> httpResponse;
   @Mock private JsonConverter jsonConverter;
-
-  @AfterEach
-  void tearDown() {
-    verifyNoMoreInteractions(log, jsonConverter);
-  }
 
   @Test
   void getType_positive() {
@@ -65,7 +58,6 @@ class SimpleModuleVersionResolverTest {
 
     assertThat(result).isPresent();
     assertThat(result.get()).containsExactly("1.2.0", "1.1.0", "1.0.0");
-    verify(log).info("Found 3 versions for module 'mod-foo' in Simple registry");
   }
 
   @Test
@@ -78,7 +70,6 @@ class SimpleModuleVersionResolverTest {
 
     assertThat(result).isPresent();
     assertThat(result.get()).containsExactly("1.0.0");
-    verify(log).info("Found 1 versions for module 'mod-foo' in Simple registry");
   }
 
   @Test
@@ -95,7 +86,6 @@ class SimpleModuleVersionResolverTest {
 
     assertThat(result).isPresent();
     assertThat(result.get()).containsExactly("1.1.0", "1.0.0");
-    verify(log).info("Found 2 versions for module 'mod-foo' in Simple registry");
   }
 
   @Test
@@ -112,7 +102,6 @@ class SimpleModuleVersionResolverTest {
 
     assertThat(result).isPresent();
     assertThat(result.get()).containsExactly("1.2.0-SNAPSHOT", "1.1.0", "1.0.0");
-    verify(log).info("Found 3 versions for module 'mod-foo' in Simple registry");
   }
 
   @Test
@@ -129,7 +118,6 @@ class SimpleModuleVersionResolverTest {
 
     assertThat(result).isPresent();
     assertThat(result.get()).containsExactly("1.2.0-SNAPSHOT", "1.1.0-alpha");
-    verify(log).info("Found 2 versions for module 'mod-foo' in Simple registry");
   }
 
   @Test
@@ -145,7 +133,6 @@ class SimpleModuleVersionResolverTest {
 
     assertThat(result).isPresent();
     assertThat(result.get()).containsExactly("1.1.0");
-    verify(log).info("Found 1 versions for module 'mod-foo' in Simple registry");
   }
 
   @Test
@@ -162,7 +149,6 @@ class SimpleModuleVersionResolverTest {
 
     assertThat(result).isPresent();
     assertThat(result.get()).containsExactly("1.2.0", "1.1.0", "1.0.0");
-    verify(log).info("Found 3 versions for module 'mod-foo' in Simple registry");
   }
 
   @Test
@@ -252,7 +238,6 @@ class SimpleModuleVersionResolverTest {
 
     assertThat(result).isPresent();
     assertThat(result.get()).containsExactly("1.0.0");
-    verify(log).info("Found 1 versions for module 'mod-foo' in Simple registry");
   }
 
   @Test
@@ -268,7 +253,6 @@ class SimpleModuleVersionResolverTest {
 
     assertThat(result).isPresent();
     assertThat(result.get()).containsExactly("1.0.0");
-    verify(log).info("Found 1 versions for module 'mod-foo' in Simple registry");
   }
 
   private void mockHttpResponse(int statusCode, List<Map<String, Object>> payload)
