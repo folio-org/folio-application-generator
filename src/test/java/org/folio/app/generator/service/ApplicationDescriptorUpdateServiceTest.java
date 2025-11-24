@@ -199,7 +199,7 @@ class ApplicationDescriptorUpdateServiceTest {
   @SneakyThrows
   void update_negative_invalidVersionFormat() {
     var application = new ApplicationDescriptor()
-      .moduleDescriptors(List.of(Map.of("id", "module1-invalid")))
+      .moduleDescriptors(List.of(Map.of("id", "module1-1.x.0")))
       .uiModuleDescriptors(List.of(Map.of("id", "uiModule1-1.0.0")));
 
     assertThrows(IllegalArgumentException.class,
