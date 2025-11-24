@@ -13,6 +13,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.conditions.AwsCondition;
 import org.folio.app.generator.model.Dependency;
+import org.folio.app.generator.model.PreReleaseFilter;
 import org.folio.app.generator.model.registry.ModuleRegistry;
 import org.folio.app.generator.model.registry.S3ModuleRegistry;
 import org.folio.app.generator.model.types.ModuleType;
@@ -41,7 +42,7 @@ public class S3ModuleVersionResolver implements ModuleVersionResolver {
   public Optional<List<String>> getAvailableVersions(ModuleRegistry registry, Dependency dependency, ModuleType type) {
     var s3Registry = (S3ModuleRegistry) registry;
     var moduleName = dependency.getName();
-    var isPreRelease = dependency.getPreRelease() != null && dependency.getPreRelease().isPreRelease();
+    var preReleaseFilter = dependency.getPreRelease();
     var prefix = s3Registry.getPath() + moduleName + "-";
 
     var request = buildListObjectsRequest(s3Registry, prefix, null);
@@ -61,7 +62,7 @@ public class S3ModuleVersionResolver implements ModuleVersionResolver {
         Pair<String, Semver> parsed = parseS3ObjectKey(s3Object, s3Registry.getPath());
 
         if (parsed != null && parsed.getLeft().equals(moduleName)
-            && parsed.getRight() != null && !parsed.getRight().getPreRelease().isEmpty() == isPreRelease) {
+            && parsed.getRight() != null && matchesPreReleaseFilter(parsed.getRight(), preReleaseFilter)) {
           collected.add(parsed);
         }
       }
@@ -78,7 +79,7 @@ public class S3ModuleVersionResolver implements ModuleVersionResolver {
           moduleName, getBucketPath(s3Registry)));
 
     collected.sort(Comparator.comparing(Pair<String, Semver>::getRight).reversed());
-    return Optional.of(collected.stream().map(Pair::getLeft).toList());
+    return Optional.of(collected.stream().map(p -> p.getRight().getVersion()).toList());
   }
 
   @Override
@@ -113,5 +114,16 @@ public class S3ModuleVersionResolver implements ModuleVersionResolver {
 
   private static String getBucketPath(S3ModuleRegistry s3ModuleRegistry) {
     return s3ModuleRegistry.getBucket() + "/" + s3ModuleRegistry.getPath();
+  }
+
+  private static boolean matchesPreReleaseFilter(Semver semver, PreReleaseFilter filter) {
+    var effective = filter == null ? PreReleaseFilter.FALSE : filter;
+    var isPreRelease = !semver.getPreRelease().isEmpty();
+
+    return switch (effective) {
+      case TRUE -> true;
+      case ONLY -> isPreRelease;
+      case FALSE -> !isPreRelease;
+    };
   }
 }
