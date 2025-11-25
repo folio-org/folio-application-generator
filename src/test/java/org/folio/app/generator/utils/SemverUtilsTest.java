@@ -2,8 +2,12 @@ package org.folio.app.generator.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.stream.Stream;
 import org.folio.app.generator.support.UnitTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @UnitTest
 class SemverUtilsTest {
@@ -65,13 +69,6 @@ class SemverUtilsTest {
   }
 
   @Test
-  void satisfies_negative_versionBelowConstraint() {
-    var result = SemverUtils.satisfies("0.9.0", "^1.0.0", false);
-
-    assertThat(result).isFalse();
-  }
-
-  @Test
   void satisfies_positive_tildeConstraint() {
     var result = SemverUtils.satisfies("1.2.5", "~1.2.0", false);
 
@@ -93,13 +90,6 @@ class SemverUtilsTest {
   }
 
   @Test
-  void satisfies_negative_preReleaseWithoutFlag() {
-    var result = SemverUtils.satisfies("1.2.3-alpha", "^1.0.0", false);
-
-    assertThat(result).isFalse();
-  }
-
-  @Test
   void satisfies_positive_preReleaseWithFlag() {
     var result = SemverUtils.satisfies("1.2.3-alpha", "^1.0.0", true);
 
@@ -107,23 +97,26 @@ class SemverUtilsTest {
   }
 
   @Test
-  void satisfies_negative_invalidVersion() {
-    var result = SemverUtils.satisfies("invalid", "^1.0.0", false);
-
-    assertThat(result).isFalse();
-  }
-
-  @Test
-  void satisfies_negative_nullVersion() {
-    var result = SemverUtils.satisfies(null, "^1.0.0", false);
-
-    assertThat(result).isFalse();
-  }
-
-  @Test
   void satisfies_positive_versionWithBuildMetadata() {
     var result = SemverUtils.satisfies("1.2.3+build.123", "^1.0.0", false);
 
     assertThat(result).isTrue();
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("provideUnsatisfiedVersions")
+  void satisfies_negative(String testName, String version, String constraint, boolean includePreRelease) {
+    var result = SemverUtils.satisfies(version, constraint, includePreRelease);
+
+    assertThat(result).isFalse();
+  }
+
+  private static Stream<Arguments> provideUnsatisfiedVersions() {
+    return Stream.of(
+      Arguments.of("version below constraint", "0.9.0", "^1.0.0", false),
+      Arguments.of("pre-release without flag", "1.2.3-alpha", "^1.0.0", false),
+      Arguments.of("invalid version", "invalid", "^1.0.0", false),
+      Arguments.of("null version", null, "^1.0.0", false)
+    );
   }
 }
