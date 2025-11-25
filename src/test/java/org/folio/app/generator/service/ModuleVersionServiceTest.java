@@ -298,6 +298,21 @@ class ModuleVersionServiceTest {
         .hasMessage("No version matching constraint '^2.0.0' found for BE module 'mod-foo' in any registry");
   }
 
+  @Test
+  void resolveModulesConstraints_positive_filtersInvalidSemverVersions() throws MojoExecutionException {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var registry = okapiRegistry();
+
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
+    when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE))
+        .thenReturn(Optional.of(List.of("1.5.0", "invalid-version", "1.2.0", "bad.version", "1.0.0")));
+
+    var result = service.resolveModulesConstraints(List.of(dependency), ModuleType.BE);
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getVersion()).isEqualTo("1.5.0");
+  }
+
   private static OkapiModuleRegistry okapiRegistry() {
     return new OkapiModuleRegistry().url("http://localhost").withGeneratedFields();
   }
