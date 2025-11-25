@@ -270,6 +270,34 @@ class ModuleVersionServiceTest {
     assertThat(result.get(0).getPreRelease()).isEqualTo(PreReleaseFilter.ONLY);
   }
 
+  @Test
+  void resolveModulesConstraints_negative_emptyVersionsList() {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var registry = okapiRegistry();
+
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
+    when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE))
+        .thenReturn(Optional.of(List.of()));
+
+    assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
+        .isInstanceOf(MojoExecutionException.class)
+        .hasMessage("No version matching constraint '^1.0.0' found for BE module 'mod-foo' in any registry");
+  }
+
+  @Test
+  void resolveModulesConstraints_negative_noVersionMatchesConstraint() {
+    var dependency = new Dependency("mod-foo", "^2.0.0", PreReleaseFilter.FALSE);
+    var registry = okapiRegistry();
+
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
+    when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE))
+        .thenReturn(Optional.of(List.of("1.0.0", "1.5.0")));
+
+    assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
+        .isInstanceOf(MojoExecutionException.class)
+        .hasMessage("No version matching constraint '^2.0.0' found for BE module 'mod-foo' in any registry");
+  }
+
   private static OkapiModuleRegistry okapiRegistry() {
     return new OkapiModuleRegistry().url("http://localhost").withGeneratedFields();
   }
