@@ -207,6 +207,25 @@ class S3ModuleVersionResolverTest {
     assertThat(result.get()).containsExactly("1.0.0");
   }
 
+  @Test
+  void getAvailableVersions_positive_mixedValidAndFilteredEntries() {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var request = listObjectsRequest("modules/mod-foo-", null);
+    var response = listObjectsResponse(
+      s3Object("modules/mod-foo-1.2.0.json"),
+      s3Object("modules/mod-foo-1.1.0-SNAPSHOT.json"),
+      s3Object("modules/mod-bar-1.0.0.json"),
+      s3Object("modules/mod-foo-1.0.0.json"),
+      s3Object("modules/mod-foo-invalid"));
+
+    when(s3Client.listObjectsV2(request)).thenReturn(response);
+
+    var result = resolver.getAvailableVersions(s3Registry(), dependency, ModuleType.BE);
+
+    assertThat(result).isPresent();
+    assertThat(result.get()).containsExactly("1.2.0", "1.0.0");
+  }
+
   private static Stream<Arguments> provideInvalidS3Objects() {
     return Stream.of(
       Arguments.of("invalid module ID", "modules/mod-foo-invalid"),
