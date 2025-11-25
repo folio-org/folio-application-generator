@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
@@ -13,6 +14,9 @@ import org.folio.app.generator.support.UnitTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -141,60 +145,31 @@ class ApplicationDependencyValidatorTest {
     validator.validateDependencies(template);
   }
 
-  @Test
-  void validateDependencies_negative_emptyModuleName() {
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("provideInvalidModuleDependencies")
+  void validateDependencies_negative_invalidModule(String testName, String moduleName,
+                                                    String version, String expectedErrorFragment) {
     var template = new ApplicationDescriptorTemplate();
     template.setModules(List.of(
-      new Dependency("", "1.0.0", PreReleaseFilter.FALSE)));
+      new Dependency(moduleName, version, PreReleaseFilter.FALSE)));
 
     when(mavenProject.getVersion()).thenReturn("1.0.0");
 
     assertThatThrownBy(() -> validator.validateDependencies(template))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Invalid dependencies found")
-        .hasMessageContaining("Module name cannot be empty at index: 0");
+        .hasMessageContaining(expectedErrorFragment);
   }
 
-  @Test
-  void validateDependencies_negative_nullModuleName() {
-    var template = new ApplicationDescriptorTemplate();
-    template.setModules(List.of(
-      new Dependency(null, "1.0.0", PreReleaseFilter.FALSE)));
-
-    when(mavenProject.getVersion()).thenReturn("1.0.0");
-
-    assertThatThrownBy(() -> validator.validateDependencies(template))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Invalid dependencies found")
-        .hasMessageContaining("Module name cannot be empty at index: 0");
-  }
-
-  @Test
-  void validateDependencies_negative_invalidModuleVersion() {
-    var template = new ApplicationDescriptorTemplate();
-    template.setModules(List.of(
-      new Dependency("mod-foo", "invalid", PreReleaseFilter.FALSE)));
-
-    when(mavenProject.getVersion()).thenReturn("1.0.0");
-
-    assertThatThrownBy(() -> validator.validateDependencies(template))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Invalid dependencies found")
-        .hasMessageContaining("Module 'mod-foo' version 'invalid' must be a valid semver version or constraint");
-  }
-
-  @Test
-  void validateDependencies_negative_preReleaseVersionWithFalseFilter() {
-    var template = new ApplicationDescriptorTemplate();
-    template.setModules(List.of(
-      new Dependency("mod-foo", "1.0.0-SNAPSHOT", PreReleaseFilter.FALSE)));
-
-    when(mavenProject.getVersion()).thenReturn("1.0.0");
-
-    assertThatThrownBy(() -> validator.validateDependencies(template))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Invalid dependencies found")
-        .hasMessageContaining("Module 'mod-foo' version '1.0.0-SNAPSHOT' must be pre release");
+  private static Stream<Arguments> provideInvalidModuleDependencies() {
+    return Stream.of(
+      Arguments.of("empty module name", "", "1.0.0", "Module name cannot be empty at index: 0"),
+      Arguments.of("null module name", null, "1.0.0", "Module name cannot be empty at index: 0"),
+      Arguments.of("invalid module version", "mod-foo", "invalid",
+        "Module 'mod-foo' version 'invalid' must be a valid semver version or constraint"),
+      Arguments.of("pre-release version with FALSE filter", "mod-foo", "1.0.0-SNAPSHOT",
+        "Module 'mod-foo' version '1.0.0-SNAPSHOT' must be pre release")
+    );
   }
 
   @Test
