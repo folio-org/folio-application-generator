@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.stream.Stream;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.PreReleaseFilter;
@@ -14,6 +15,9 @@ import org.folio.app.generator.support.UnitTest;
 import org.folio.app.generator.utils.PluginConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -186,13 +190,14 @@ class S3ModuleVersionResolverTest {
     assertThat(result.get()).containsExactly("1.0.0");
   }
 
-  @Test
-  void getAvailableVersions_positive_invalidModuleIdSkipped() {
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("provideInvalidS3Objects")
+  void getAvailableVersions_positive_filtersInvalidEntries(String testName, String invalidObjectKey) {
     var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
     var request = listObjectsRequest("modules/mod-foo-", null);
     var response = listObjectsResponse(
       s3Object("modules/mod-foo-1.0.0.json"),
-      s3Object("modules/mod-foo-invalid"));
+      s3Object(invalidObjectKey));
 
     when(s3Client.listObjectsV2(request)).thenReturn(response);
 
@@ -202,36 +207,12 @@ class S3ModuleVersionResolverTest {
     assertThat(result.get()).containsExactly("1.0.0");
   }
 
-  @Test
-  void getAvailableVersions_positive_differentModulesWithSamePrefix() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
-    var request = listObjectsRequest("modules/mod-foo-", null);
-    var response = listObjectsResponse(
-      s3Object("modules/mod-foo-1.0.0.json"),
-      s3Object("modules/mod-foo-storage-1.0.0.json"));
-
-    when(s3Client.listObjectsV2(request)).thenReturn(response);
-
-    var result = resolver.getAvailableVersions(s3Registry(), dependency, ModuleType.BE);
-
-    assertThat(result).isPresent();
-    assertThat(result.get()).containsExactly("1.0.0");
-  }
-
-  @Test
-  void getAvailableVersions_positive_invalidSemverVersionSkipped() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
-    var request = listObjectsRequest("modules/mod-foo-", null);
-    var response = listObjectsResponse(
-      s3Object("modules/mod-foo-1.0.0.json"),
-      s3Object("modules/mod-foo-1.x.0.json"));
-
-    when(s3Client.listObjectsV2(request)).thenReturn(response);
-
-    var result = resolver.getAvailableVersions(s3Registry(), dependency, ModuleType.BE);
-
-    assertThat(result).isPresent();
-    assertThat(result.get()).containsExactly("1.0.0");
+  private static Stream<Arguments> provideInvalidS3Objects() {
+    return Stream.of(
+      Arguments.of("invalid module ID", "modules/mod-foo-invalid"),
+      Arguments.of("different module with same prefix", "modules/mod-foo-storage-1.0.0.json"),
+      Arguments.of("invalid semver version", "modules/mod-foo-1.x.0.json")
+    );
   }
 
   private static ListObjectsV2Request listObjectsRequest(String prefix, String nct) {
