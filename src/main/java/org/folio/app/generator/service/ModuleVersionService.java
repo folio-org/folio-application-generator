@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.Dependency;
-import org.folio.app.generator.model.PreReleaseFilter;
 import org.folio.app.generator.model.registry.ModuleRegistries;
 import org.folio.app.generator.model.registry.ModuleRegistry;
 import org.folio.app.generator.model.types.ModuleType;
@@ -120,9 +119,7 @@ public class ModuleVersionService {
     var availableVersions = availableVersionsOpt.get();
     var moduleName = dependency.getName();
     var constraint = dependency.getVersion();
-    boolean includePreRelease =
-      dependency.getPreRelease() == PreReleaseFilter.TRUE
-        || dependency.getPreRelease() == PreReleaseFilter.ONLY;
+    boolean includePreRelease = dependency.getPreRelease().isPreRelease();
 
     var rangeList = RangesListFactory.create(SemverUtils.normalizeVersion(constraint), includePreRelease);
 
