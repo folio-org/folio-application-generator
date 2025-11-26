@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -36,6 +37,8 @@ import org.springframework.stereotype.Component;
 public class ApplicationDescriptorUpdateService {
 
   private static final String LATEST_VERSION = "latest";
+  private static final Pattern DIGITS_PATTERN = Pattern.compile("\\d+");
+
   private final MavenProject mavenProject;
   private final PluginConfig pluginConfig;
   private final JsonProvider jsonProvider;
@@ -127,7 +130,7 @@ public class ApplicationDescriptorUpdateService {
     var preReleaseParts = new ArrayList<>(version.getPreRelease());
     var lastPart = preReleaseParts.get(preReleaseParts.size() - 1);
 
-    if (lastPart.matches("\\d+")) {
+    if (DIGITS_PATTERN.matcher(lastPart).matches()) {
       preReleaseParts.set(preReleaseParts.size() - 1, buildNumber);
     } else {
       preReleaseParts.add(buildNumber);
