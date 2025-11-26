@@ -65,4 +65,32 @@ class PreReleaseFilterTest {
     assertThat(PreReleaseFilter.TRUE.isPreRelease()).isTrue();
     assertThat(PreReleaseFilter.FALSE.isPreRelease()).isFalse();
   }
+
+  @Test
+  void fromVersion_positive_preReleaseVersion() {
+    var result = PreReleaseFilter.fromVersion("1.0.0-SNAPSHOT");
+
+    assertThat(result).isEqualTo(PreReleaseFilter.TRUE);
+  }
+
+  @Test
+  void fromVersion_positive_releaseVersion() {
+    var result = PreReleaseFilter.fromVersion("1.0.0");
+
+    assertThat(result).isEqualTo(PreReleaseFilter.FALSE);
+  }
+
+  @Test
+  void fromVersion_positive_null() {
+    var result = PreReleaseFilter.fromVersion(null);
+
+    assertThat(result).isEqualTo(PreReleaseFilter.FALSE);
+  }
+
+  @Test
+  void fromVersion_positive_buildMetadata() {
+    var result = PreReleaseFilter.fromVersion("1.0.0-SNAPSHOT.124");
+
+    assertThat(result).isEqualTo(PreReleaseFilter.TRUE);
+  }
 }
