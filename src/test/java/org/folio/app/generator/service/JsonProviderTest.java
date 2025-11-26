@@ -25,7 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class JsonProviderTest {
 
   private static final String PATH = "src/test/resources/json/";
-  private static final String APPLICATION_JSON = "{ \"id\": \"app-consortia-1.0.0-SNAPSHOT\" }\n";
+  private static final String APPLICATION_JSON = "{ \"id\": \"app-consortia-1.0.0-SNAPSHOT\" }";
   private final JsonConverter jsonConverter = mock(JsonConverter.class);
   private final JsonProvider jsonProvider = new JsonProvider(mock(Log.class), jsonConverter, getMavenProject());
 

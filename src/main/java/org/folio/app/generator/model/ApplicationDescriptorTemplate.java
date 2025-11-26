@@ -28,11 +28,6 @@ public class ApplicationDescriptorTemplate {
   private String description;
 
   /**
-   * A version of application.
-   */
-  private String platform;
-
-  /**
    * A list with modules to be resolved.
    */
   @JsonProperty("modules")

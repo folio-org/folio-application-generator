@@ -88,7 +88,6 @@ By setting `moduleUrlsOnly` to `true`, the generated application descriptor will
   "name": "${project.name}",
   "version": "${project.version}",
   "description": "${project.description}",
-  "platform": "base",
   "dependencies": [
     {
       "name": "app-foo",
