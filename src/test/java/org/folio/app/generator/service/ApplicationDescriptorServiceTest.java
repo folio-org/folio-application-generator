@@ -66,7 +66,6 @@ class ApplicationDescriptorServiceTest {
       new ModulesLoadResult(
         List.of(new ModuleDefinition().id("folio_test-2.0.0").name("folio_test").version("2.0.0")),
         List.of(Map.of("id", "folio_test-2.0.0"))));
-    when(pluginConfig.isModuleUrlsOnly()).thenReturn(true);
 
     var result = service.create(template);
 
@@ -78,8 +77,8 @@ class ApplicationDescriptorServiceTest {
     assertThat(result.getModules()).hasSize(1);
     assertThat(result.getUiModules()).hasSize(1);
     assertThat(result.getDependencies()).hasSize(1);
-    assertThat(result.getModuleDescriptors()).isNull();
-    assertThat(result.getUiModuleDescriptors()).isNull();
+    assertThat(result.getModuleDescriptors()).hasSize(1);
+    assertThat(result.getUiModuleDescriptors()).hasSize(1);
   }
 
   @Test
@@ -97,7 +96,6 @@ class ApplicationDescriptorServiceTest {
         List.of()));
     when(moduleDescriptorService.loadModules(eq(UI), anyList())).thenReturn(
       new ModulesLoadResult(List.of(), List.of()));
-    when(pluginConfig.isModuleUrlsOnly()).thenReturn(true);
 
     var result = service.create(template);
 
@@ -121,7 +119,6 @@ class ApplicationDescriptorServiceTest {
       new ModulesLoadResult(List.of(), List.of()));
     when(moduleDescriptorService.loadModules(eq(UI), anyList())).thenReturn(
       new ModulesLoadResult(List.of(), List.of()));
-    when(pluginConfig.isModuleUrlsOnly()).thenReturn(true);
 
     var result = service.create(template);
 
@@ -142,7 +139,6 @@ class ApplicationDescriptorServiceTest {
       new ModulesLoadResult(List.of(), List.of()));
     when(moduleDescriptorService.loadModules(eq(UI), anyList())).thenReturn(
       new ModulesLoadResult(List.of(), List.of()));
-    when(pluginConfig.isModuleUrlsOnly()).thenReturn(true);
 
     var result = service.create(template);
 
@@ -152,7 +148,7 @@ class ApplicationDescriptorServiceTest {
 
   @Test
   @SneakyThrows
-  void create_positive_withModuleDescriptors() {
+  void create_positive_withModuleDescriptorsAndUrls() {
     var template = new ApplicationDescriptorTemplate()
       .name("test-app")
       .version("1.0.0")
@@ -168,14 +164,13 @@ class ApplicationDescriptorServiceTest {
       new ModulesLoadResult(List.of(beModule), List.of(Map.of("id", "mod-test-1.0.0"))));
     when(moduleDescriptorService.loadModules(eq(UI), anyList())).thenReturn(
       new ModulesLoadResult(List.of(uiModule), List.of(Map.of("id", "folio_test-2.0.0"))));
-    when(pluginConfig.isModuleUrlsOnly()).thenReturn(false);
 
     var result = service.create(template);
 
     assertThat(result.getModuleDescriptors()).isEqualTo(List.of(Map.of("id", "mod-test-1.0.0")));
     assertThat(result.getUiModuleDescriptors()).isEqualTo(List.of(Map.of("id", "folio_test-2.0.0")));
-    assertThat(result.getModules().get(0).getUrl()).isNull();
-    assertThat(result.getUiModules().get(0).getUrl()).isNull();
+    assertThat(result.getModules().get(0).getUrl()).isEqualTo("http://registry/mod-test");
+    assertThat(result.getUiModules().get(0).getUrl()).isEqualTo("http://registry/folio_test");
   }
 
   @Test
@@ -201,7 +196,6 @@ class ApplicationDescriptorServiceTest {
       new ModulesLoadResult(List.of(), List.of()));
     when(moduleDescriptorService.loadModules(eq(UI), anyList())).thenReturn(
       new ModulesLoadResult(List.of(), List.of()));
-    when(pluginConfig.isModuleUrlsOnly()).thenReturn(true);
 
     var result = service.create(template);
 
@@ -219,7 +213,6 @@ class ApplicationDescriptorServiceTest {
       new ModulesLoadResult(List.of(), List.of()));
     when(moduleDescriptorService.loadModules(eq(UI), anyList())).thenReturn(
       new ModulesLoadResult(List.of(), List.of()));
-    when(pluginConfig.isModuleUrlsOnly()).thenReturn(true);
 
     var result = service.create(template);
 
@@ -240,7 +233,6 @@ class ApplicationDescriptorServiceTest {
       new ModulesLoadResult(List.of(), List.of()));
     when(moduleDescriptorService.loadModules(eq(UI), anyList())).thenReturn(
       new ModulesLoadResult(List.of(), List.of()));
-    when(pluginConfig.isModuleUrlsOnly()).thenReturn(true);
 
     var result = service.create(template);
 
@@ -261,7 +253,6 @@ class ApplicationDescriptorServiceTest {
       new ModulesLoadResult(List.of(), List.of()));
     when(moduleDescriptorService.loadModules(eq(UI), anyList())).thenReturn(
       new ModulesLoadResult(List.of(), List.of()));
-    when(pluginConfig.isModuleUrlsOnly()).thenReturn(true);
 
     var result = service.create(template);
 
@@ -280,7 +271,6 @@ class ApplicationDescriptorServiceTest {
       new ModulesLoadResult(List.of(), List.of()));
     when(moduleDescriptorService.loadModules(eq(UI), anyList())).thenReturn(
       new ModulesLoadResult(List.of(), List.of()));
-    when(pluginConfig.isModuleUrlsOnly()).thenReturn(true);
 
     var result = service.create(template);
 
@@ -300,7 +290,6 @@ class ApplicationDescriptorServiceTest {
       new ModulesLoadResult(List.of(), List.of()));
     when(moduleDescriptorService.loadModules(eq(UI), anyList())).thenReturn(
       new ModulesLoadResult(List.of(), List.of()));
-    when(pluginConfig.isModuleUrlsOnly()).thenReturn(true);
 
     var result = service.create(template);
 
@@ -319,10 +308,30 @@ class ApplicationDescriptorServiceTest {
       new ModulesLoadResult(List.of(), List.of()));
     when(moduleDescriptorService.loadModules(eq(UI), anyList())).thenReturn(
       new ModulesLoadResult(List.of(), List.of()));
-    when(pluginConfig.isModuleUrlsOnly()).thenReturn(true);
 
     var result = service.create(template);
 
     assertThat(result.getDependencies()).isEmpty();
+  }
+
+  @Test
+  @SneakyThrows
+  void create_positive_templateWithNameAndIdButNullVersion() {
+    var template = new ApplicationDescriptorTemplate()
+      .name("test-app")
+      .id("test-app-2.0.0")
+      .modules(List.of());
+
+    when(mavenProject.getVersion()).thenReturn("2.0.0");
+    when(moduleDescriptorService.loadModules(eq(BE), anyList())).thenReturn(
+      new ModulesLoadResult(List.of(), List.of()));
+    when(moduleDescriptorService.loadModules(eq(UI), anyList())).thenReturn(
+      new ModulesLoadResult(List.of(), List.of()));
+
+    var result = service.create(template);
+
+    assertThat(result.getId()).isEqualTo("test-app-2.0.0");
+    assertThat(result.getName()).isEqualTo("test-app");
+    assertThat(result.getVersion()).isEqualTo("2.0.0");
   }
 }
