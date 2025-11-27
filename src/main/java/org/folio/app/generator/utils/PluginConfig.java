@@ -5,6 +5,7 @@ import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 import org.folio.app.generator.model.registry.ConfigModuleRegistry;
+import org.folio.app.generator.model.types.ModuleUrlsMode;
 import software.amazon.awssdk.regions.Region;
 
 @Data
@@ -21,7 +22,8 @@ public class PluginConfig {
   private final String beCmdRegistryString;
   private final String uiCmdRegistryString;
 
-  private final boolean moduleUrlsOnly;
+  @Builder.Default
+  private final ModuleUrlsMode moduleUrlsMode = ModuleUrlsMode.FALSE;
   private final boolean overrideConfigRegistries;
 
   private final Region awsRegion;
