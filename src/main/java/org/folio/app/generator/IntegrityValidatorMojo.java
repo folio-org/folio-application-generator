@@ -12,6 +12,7 @@ import org.folio.app.generator.configuration.ApplicationContextBuilder;
 import org.folio.app.generator.service.ApplicationDescriptorService;
 import org.folio.app.generator.service.ApplicationModulesIntegrityValidator;
 import org.folio.app.generator.service.ModuleRegistryProvider;
+import org.folio.app.generator.utils.PluginConfig;
 
 @Mojo(name = "validateIntegrity", defaultPhase = LifecyclePhase.COMPILE, requiresDependencyResolution = RUNTIME)
 public class IntegrityValidatorMojo extends JsonGenerator {
@@ -35,11 +36,19 @@ public class IntegrityValidatorMojo extends JsonGenerator {
     var ctx = buildApplicationContext();
     var applicationDescriptorService = ctx.getBean(ApplicationDescriptorService.class);
     var applicationModulesValidator = ctx.getBean(ApplicationModulesIntegrityValidator.class);
+    var pluginConfig = ctx.getBean(PluginConfig.class);
 
     var template = readTemplate();
-    var application = applicationDescriptorService.create(template);
+    var resolved = applicationDescriptorService.create(template);
+    var mode = pluginConfig.getModuleUrlsMode();
 
-    applicationModulesValidator.validateApplication(application, baseUrl, token);
+    if (mode.needFullDescriptor()) {
+      applicationModulesValidator.validateApplication(resolved.toFullDescriptor(), baseUrl, token);
+    }
+
+    if (mode.needDescriptorUrl()) {
+      applicationModulesValidator.validateApplication(resolved.toUrlOnlyDescriptor(), baseUrl, token);
+    }
   }
 
   private void prevalidateParameters() throws MojoExecutionException {
