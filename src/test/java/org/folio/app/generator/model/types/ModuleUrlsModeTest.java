@@ -4,13 +4,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.folio.app.generator.support.UnitTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @UnitTest
 class ModuleUrlsModeTest {
 
-  @Test
-  void fromString_positive_false() {
-    var result = ModuleUrlsMode.fromString("false");
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = {"false", "invalid", "unknown"})
+  void fromString_positive_returnsFalse(String input) {
+    var result = ModuleUrlsMode.fromString(input);
 
     assertThat(result).isEqualTo(ModuleUrlsMode.FALSE);
   }
@@ -34,20 +39,6 @@ class ModuleUrlsModeTest {
     assertThat(ModuleUrlsMode.fromString("FALSE")).isEqualTo(ModuleUrlsMode.FALSE);
     assertThat(ModuleUrlsMode.fromString("True")).isEqualTo(ModuleUrlsMode.TRUE);
     assertThat(ModuleUrlsMode.fromString("BOTH")).isEqualTo(ModuleUrlsMode.BOTH);
-  }
-
-  @Test
-  void fromString_positive_null() {
-    var result = ModuleUrlsMode.fromString(null);
-
-    assertThat(result).isEqualTo(ModuleUrlsMode.FALSE);
-  }
-
-  @Test
-  void fromString_positive_invalidValue() {
-    var result = ModuleUrlsMode.fromString("invalid");
-
-    assertThat(result).isEqualTo(ModuleUrlsMode.FALSE);
   }
 
   @Test
