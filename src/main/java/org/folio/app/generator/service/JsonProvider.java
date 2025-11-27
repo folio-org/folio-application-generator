@@ -69,12 +69,25 @@ public class JsonProvider {
    */
   public void writeApplication(ApplicationDescriptor application, String path)
     throws MojoExecutionException {
+    writeApplication(application, path, application.getId() + ".json");
+  }
+
+  /**
+   * Writes {@link ApplicationDescriptor} object to the specific directory with a custom filename.
+   *
+   * @param application - object to store
+   * @param path - directory path where to store object
+   * @param filename - the filename to use for the output file
+   * @throws MojoExecutionException for any issues related to parse and write operations
+   */
+  public void writeApplication(ApplicationDescriptor application, String path, String filename)
+    throws MojoExecutionException {
     var file = new File(path);
     if (!file.exists() && !file.mkdirs()) {
       throw new MojoExecutionException("Could not create target directory: " + file);
     }
 
-    var applicationFile = new File(file, application.getId() + ".json");
+    var applicationFile = new File(file, filename);
     jsonConverter.writeValue(applicationFile, application);
   }
 
