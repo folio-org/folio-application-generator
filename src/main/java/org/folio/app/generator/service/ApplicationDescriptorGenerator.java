@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
+import org.folio.app.generator.utils.PluginConfig;
 import org.folio.app.generator.validator.ApplicationDependencyValidator;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
 public class ApplicationDescriptorGenerator {
 
   private final MavenProject mavenProject;
+  private final PluginConfig pluginConfig;
   private final JsonProvider jsonProvider;
   private final ApplicationDescriptorService applicationDescriptorService;
   private final ApplicationDependencyValidator applicationDependencyValidator;
@@ -24,8 +26,20 @@ public class ApplicationDescriptorGenerator {
    */
   public void generate(ApplicationDescriptorTemplate template) throws MojoExecutionException {
     applicationDependencyValidator.validateDependencies(template);
-    var application = applicationDescriptorService.create(template);
+    var resolved = applicationDescriptorService.create(template);
 
-    jsonProvider.writeApplication(application, mavenProject.getBuild().getDirectory());
+    var outputDir = mavenProject.getBuild().getDirectory();
+    var mode = pluginConfig.getModuleUrlsMode();
+
+    if (mode.needFullDescriptor()) {
+      jsonProvider.writeApplication(resolved.toFullDescriptor(), outputDir);
+    }
+
+    if (mode.needDescriptorUrl()) {
+      var filename = mode.needBoth()
+        ? resolved.getId() + ".url.json"
+        : resolved.getId() + ".json";
+      jsonProvider.writeApplication(resolved.toUrlOnlyDescriptor(), outputDir, filename);
+    }
   }
 }
