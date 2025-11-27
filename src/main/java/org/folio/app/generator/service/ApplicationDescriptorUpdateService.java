@@ -20,12 +20,12 @@ import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.model.ApplicationDescriptor;
 import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.ModulesLoadResult;
 import org.folio.app.generator.model.PreReleaseFilter;
+import org.folio.app.generator.model.ResolvedApplicationDescriptor;
 import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.utils.PluginConfig;
 import org.folio.app.generator.utils.SemverUtils;
@@ -39,9 +39,7 @@ public class ApplicationDescriptorUpdateService {
   private static final String LATEST_VERSION = "latest";
   private static final Pattern DIGITS_PATTERN = Pattern.compile("\\d+");
 
-  private final MavenProject mavenProject;
   private final PluginConfig pluginConfig;
-  private final JsonProvider jsonProvider;
   private final ModuleDescriptorService moduleDescriptorService;
   private final ModuleVersionService moduleVersionService;
 
@@ -51,9 +49,10 @@ public class ApplicationDescriptorUpdateService {
    * @param application  - old application descriptor {@link ApplicationDescriptor} object to update
    * @param modulesIds   - input BE module ids to update
    * @param uiModulesIds - input UI module ids to update
+   * @return updated {@link ResolvedApplicationDescriptor} that can be converted to final format
    * @throws MojoExecutionException if application description was failed to be updated
    */
-  public void update(ApplicationDescriptor application, String modulesIds, String uiModulesIds)
+  public ResolvedApplicationDescriptor update(ApplicationDescriptor application, String modulesIds, String uiModulesIds)
     throws MojoExecutionException {
     if (isBlank(modulesIds) && isBlank(uiModulesIds)) {
       throw new IllegalArgumentException(
@@ -76,15 +75,18 @@ public class ApplicationDescriptorUpdateService {
     var uiModulesLoadResult = moduleDescriptorService.loadModules(UI, uiModules);
 
     var version = getUpdatedVersion(application.getVersion());
-    application.setId(getId(application.getName(), version));
-    application.setVersion(version);
-    application.setModules(updateModules(application.getModules(), modulesLoadResult));
-    application.setUiModules(updateModules(application.getUiModules(), uiModulesLoadResult));
-
-    application.setModuleDescriptors(updateDescriptors(modulesLoadResult, application.getModuleDescriptors()));
-    application.setUiModuleDescriptors(updateDescriptors(uiModulesLoadResult, application.getUiModuleDescriptors()));
-
-    jsonProvider.writeApplication(application, mavenProject.getBuild().getDirectory());
+    return ResolvedApplicationDescriptor.builder()
+      .id(getId(application.getName(), version))
+      .name(application.getName())
+      .version(version)
+      .description(application.getDescription())
+      .platform(application.getPlatform())
+      .dependencies(application.getDependencies())
+      .modules(updateModules(application.getModules(), modulesLoadResult))
+      .uiModules(updateModules(application.getUiModules(), uiModulesLoadResult))
+      .moduleDescriptors(updateDescriptors(modulesLoadResult, application.getModuleDescriptors()))
+      .uiModuleDescriptors(updateDescriptors(uiModulesLoadResult, application.getUiModuleDescriptors()))
+      .build();
   }
 
   private void validateModules(List<Dependency> modulesToUpdate, List<ModuleDefinition> modulesList) {
