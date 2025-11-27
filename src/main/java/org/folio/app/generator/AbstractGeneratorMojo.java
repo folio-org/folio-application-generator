@@ -11,6 +11,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.configuration.ApplicationContextBuilder;
 import org.folio.app.generator.model.registry.ConfigModuleRegistry;
+import org.folio.app.generator.model.types.ModuleUrlsMode;
 import org.folio.app.generator.service.ModuleRegistryProvider;
 import org.folio.app.generator.utils.PluginConfig;
 import org.springframework.context.support.GenericApplicationContext;
@@ -73,7 +74,7 @@ public abstract class AbstractGeneratorMojo extends AbstractMojo {
       .beCmdRegistryString(cmdBeRegistriesString)
       .uiCmdRegistryString(cmdUiRegistriesString)
       .overrideConfigRegistries(parseBoolean(overrideConfigRegistries))
-      .moduleUrlsOnly(parseBoolean(moduleUrlsOnly))
+      .moduleUrlsMode(ModuleUrlsMode.fromString(moduleUrlsOnly))
       .awsRegion(isNotBlank(awsRegion) ? Region.of(awsRegion) : Region.US_EAST_1)
       .build();
 
