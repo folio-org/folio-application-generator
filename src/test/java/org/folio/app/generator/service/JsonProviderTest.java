@@ -5,9 +5,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import lombok.SneakyThrows;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
@@ -18,6 +23,7 @@ import org.folio.app.generator.support.UnitTest;
 import org.folio.app.generator.utils.JsonConverter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @UnitTest
@@ -54,12 +60,71 @@ class JsonProviderTest {
   }
 
   @Test
+  void readJsonFromFile_negative_pathIsDirectory() {
+    var message = assertThrows(MojoExecutionException.class,
+      () -> jsonProvider.readJsonFromFile(PATH, ApplicationDescriptor.class, true))
+      .getMessage();
+    assertThat(message).contains("ApplicationDescriptor is not found");
+  }
+
+  @Test
   @SneakyThrows
   void writeApplication_positive() {
     var application = new ApplicationDescriptor().id("test-app");
     jsonProvider.writeApplication(application, PATH);
 
     verify(jsonConverter).writeValue(any(File.class), eq(application));
+  }
+
+  @Test
+  @SneakyThrows
+  void readJsonFromFile_positive_withoutSubstitution() {
+    jsonProvider.readJsonFromFile(PATH + "application.json", ApplicationDescriptor.class, false);
+
+    verify(jsonConverter).parse(APPLICATION_JSON, ApplicationDescriptor.class);
+  }
+
+  @Test
+  void readJsonFromFile_negative_ioException() {
+    var filePath = PATH + "application.json";
+    var file = new File(filePath);
+
+    try (var mockedFiles = mockStatic(Files.class)) {
+      mockedFiles.when(() -> Files.readString(eq(file.toPath()), eq(StandardCharsets.UTF_8)))
+        .thenThrow(new IOException("Simulated IO error"));
+
+      var exception = assertThrows(MojoExecutionException.class,
+        () -> jsonProvider.readJsonFromFile(filePath, ApplicationDescriptor.class, true));
+
+      assertThat(exception.getMessage()).contains("Failed to read file:");
+      assertThat(exception.getCause()).isInstanceOf(IOException.class);
+    }
+  }
+
+  @Test
+  @SneakyThrows
+  void writeApplication_positive_createsDirectory(@TempDir Path tempDir) {
+    var newDir = tempDir.resolve("newdir").toString();
+    var application = new ApplicationDescriptor().id("test-app");
+
+    jsonProvider.writeApplication(application, newDir);
+
+    verify(jsonConverter).writeValue(any(File.class), eq(application));
+    assertThat(new File(newDir)).exists().isDirectory();
+  }
+
+  @Test
+  @SneakyThrows
+  void writeApplication_negative_cannotCreateDirectory(@TempDir Path tempDir) {
+    var blockingFile = tempDir.resolve("blocking-file");
+    Files.createFile(blockingFile);
+    var targetPath = blockingFile.resolve("subdir").toString();
+    var application = new ApplicationDescriptor().id("test-app");
+
+    var exception = assertThrows(MojoExecutionException.class,
+      () -> jsonProvider.writeApplication(application, targetPath));
+
+    assertThat(exception.getMessage()).contains("Could not create target directory:");
   }
 
   private static MavenProject getMavenProject() {
