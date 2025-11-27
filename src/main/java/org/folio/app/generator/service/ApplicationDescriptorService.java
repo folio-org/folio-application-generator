@@ -10,10 +10,10 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
-import org.folio.app.generator.model.ApplicationDescriptor;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
 import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.ModuleDefinition;
+import org.folio.app.generator.model.ResolvedApplicationDescriptor;
 import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.utils.PluginConfig;
 import org.springframework.stereotype.Service;
@@ -21,21 +21,26 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class ApplicationDescriptorService {
+
   private final MavenProject mavenProject;
   private final PluginConfig pluginParameters;
   private final ModuleDescriptorService moduleDescriptorService;
   private final ModuleVersionService moduleVersionService;
 
   /**
-   * Creates {@link ApplicationDescriptor} based on template and project metadata.
+   * Creates {@link ResolvedApplicationDescriptor} based on template and project metadata.
    *
    * @param template - application descriptor template {@link ApplicationDescriptorTemplate}
-   * @return created {@link ApplicationDescriptor} with all fields.
+   * @return created {@link ResolvedApplicationDescriptor} that can be converted to final format
+   * @throws MojoExecutionException if application descriptor creation fails
    */
-  public ApplicationDescriptor create(ApplicationDescriptorTemplate template) throws MojoExecutionException {
-    var name = template.getName();
-    var version = template.getVersion();
-    var baseAppDescriptor = name == null && version == null ? buildDescriptor() : buildDescriptor(template);
+  public ResolvedApplicationDescriptor create(ApplicationDescriptorTemplate template) throws MojoExecutionException {
+    var name = template.getName() != null ? template.getName() : mavenProject.getName();
+    var version = template.getVersion() != null
+      ? getVersionWithBuildNumber(template.getVersion())
+      : getVersionWithBuildNumber(mavenProject.getVersion());
+
+    validateTemplateId(template, name);
 
     var resolvedModules = resolveConstraints(template.getModules(), BE);
     var resolvedUiModules = resolveConstraints(template.getUiModules(), UI);
@@ -46,57 +51,32 @@ public class ApplicationDescriptorService {
     var modulesLoadResult = moduleDescriptorService.loadModules(BE, modules);
     var uiModulesLoadResult = moduleDescriptorService.loadModules(UI, uiModules);
 
-    baseAppDescriptor
+    return ResolvedApplicationDescriptor.builder()
+      .id(name + "-" + version)
+      .name(name)
+      .version(version)
       .description(defaultIfBlank(template.getDescription(), mavenProject.getDescription()))
       .platform(defaultIfBlank(template.getPlatform(), "base"))
       .modules(modulesLoadResult.artifacts())
       .uiModules(uiModulesLoadResult.artifacts())
-      .dependencies(emptyIfNull(template.getDependencies()));
+      .moduleDescriptors(modulesLoadResult.descriptors())
+      .uiModuleDescriptors(uiModulesLoadResult.descriptors())
+      .dependencies(emptyIfNull(template.getDependencies()))
+      .build();
+  }
 
-    if (!pluginParameters.isModuleUrlsOnly()) {
-      baseAppDescriptor
-        .moduleDescriptors(modulesLoadResult.descriptors())
-        .uiModuleDescriptors(uiModulesLoadResult.descriptors());
-      emptyIfNull(baseAppDescriptor.getModules())
-        .forEach(md -> md.setUrl(null));
-      emptyIfNull(baseAppDescriptor.getUiModules())
-        .forEach(md -> md.setUrl(null));
+  private void validateTemplateId(ApplicationDescriptorTemplate template, String name) throws MojoExecutionException {
+    if (template.getName() != null && template.getVersion() != null && template.getId() != null) {
+      var generatedId = name + "-" + template.getVersion();
+      if (!generatedId.equals(template.getId())) {
+        throw new MojoExecutionException("Invalid application id provided in template");
+      }
     }
-    return baseAppDescriptor;
   }
 
   private List<Dependency> resolveConstraints(List<Dependency> dependencies, ModuleType type)
     throws MojoExecutionException {
     return moduleVersionService.resolveModulesConstraints(emptyIfNull(dependencies), type);
-  }
-
-  private ApplicationDescriptor buildDescriptor() {
-    var applicationDescriptor = new ApplicationDescriptor();
-    var name = mavenProject.getName();
-    var version = getVersionWithBuildNumber(mavenProject.getVersion());
-
-    applicationDescriptor.setId(name + "-" + version);
-    applicationDescriptor.setName(name);
-    applicationDescriptor.setVersion(version);
-
-    return applicationDescriptor;
-  }
-
-  private ApplicationDescriptor buildDescriptor(ApplicationDescriptorTemplate template) throws MojoExecutionException {
-    var name = template.getName();
-    var version = getVersionWithBuildNumber(template.getVersion());
-
-    var applicationDescriptor = new ApplicationDescriptor();
-    applicationDescriptor.setName(name);
-    applicationDescriptor.setVersion(version);
-
-    var generatedId = name + "-" + template.getVersion();
-    if (template.getId() != null && !generatedId.equals(template.getId())) {
-      throw new MojoExecutionException("Invalid application id provided in template");
-    }
-
-    applicationDescriptor.setId(name + "-" + version);
-    return applicationDescriptor;
   }
 
   private List<ModuleDefinition> convertToArtifacts(List<Dependency> dependencies) {
