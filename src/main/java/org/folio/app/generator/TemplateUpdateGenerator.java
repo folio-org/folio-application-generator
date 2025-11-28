@@ -26,13 +26,13 @@ public class TemplateUpdateGenerator extends AbstractGeneratorMojo {
   @Parameter(name = "templatePath", defaultValue = "${basedir}/application-template.json")
   String templatePath;
 
-  @Parameter(name = "allowDowngrade", defaultValue = "true")
+  @Parameter(name = "allowDowngrade", property = "allowDowngrade", defaultValue = "true")
   boolean allowDowngrade;
 
-  @Parameter(name = "allowAddModules", defaultValue = "true")
+  @Parameter(name = "allowAddModules", property = "allowAddModules", defaultValue = "true")
   boolean allowAddModules;
 
-  @Parameter(name = "removeUnlistedModules", defaultValue = "true")
+  @Parameter(name = "removeUnlistedModules", property = "removeUnlistedModules", defaultValue = "true")
   boolean removeUnlistedModules;
 
   @Inject
