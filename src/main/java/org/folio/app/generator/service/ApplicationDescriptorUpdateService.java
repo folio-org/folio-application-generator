@@ -119,14 +119,33 @@ public class ApplicationDescriptorUpdateService {
                                             ModuleProcessResult modulesResult,
                                             ModuleProcessResult uiModulesResult) {
     if (pluginConfig.isModuleUrlsOnly()) {
-      application.setModuleDescriptors(List.of());
-      application.setUiModuleDescriptors(List.of());
+      application.setModuleDescriptors(
+        filterDescriptorsForUnchanged(application.getModuleDescriptors(), modulesResult));
+      application.setUiModuleDescriptors(
+        filterDescriptorsForUnchanged(application.getUiModuleDescriptors(), uiModulesResult));
     } else {
       application.setModuleDescriptors(
         mergeDescriptors(modulesLoadResult, application.getModuleDescriptors(), modulesResult));
       application.setUiModuleDescriptors(
         mergeDescriptors(uiModulesLoadResult, application.getUiModuleDescriptors(), uiModulesResult));
     }
+  }
+
+  private List<Map<String, Object>> filterDescriptorsForUnchanged(List<Map<String, Object>> existingDescriptors,
+                                                                   ModuleProcessResult processResult) {
+    if (existingDescriptors == null) {
+      return List.of();
+    }
+    var unchangedModuleNames = processResult.unchangedModules().stream()
+      .map(ModuleDefinition::getName)
+      .collect(Collectors.toSet());
+
+    return existingDescriptors.stream()
+      .filter(descriptor -> {
+        var moduleIdOpt = parseModuleId(getModuleId(descriptor));
+        return moduleIdOpt.isPresent() && unchangedModuleNames.contains(moduleIdOpt.get().getName());
+      })
+      .toList();
   }
 
   private List<ModuleDefinition> clearUrls(List<ModuleDefinition> modules) {
