@@ -75,15 +75,15 @@ public class ApplicationDescriptorUpdateService {
       return;
     }
 
-    var modulesLoadResult = moduleDescriptorService.loadModules(BE, modulesResult.modules());
-    var uiModulesLoadResult = moduleDescriptorService.loadModules(UI, uiModulesResult.modules());
+    var modulesLoadResult = moduleDescriptorService.loadModules(BE, modulesResult.changedModules());
+    var uiModulesLoadResult = moduleDescriptorService.loadModules(UI, uiModulesResult.changedModules());
 
     var version = getUpdatedVersion(application.getVersion());
 
     application.setId(getId(application.getName(), version));
     application.setVersion(version);
 
-    updateApplicationModules(application, modulesLoadResult, uiModulesLoadResult);
+    updateApplicationModules(application, modulesLoadResult, modulesResult, uiModulesLoadResult, uiModulesResult);
     updateApplicationDescriptors(application, modulesLoadResult, uiModulesLoadResult, modulesResult, uiModulesResult);
 
     jsonProvider.writeApplication(application, mavenProject.getBuild().getDirectory());
@@ -91,14 +91,26 @@ public class ApplicationDescriptorUpdateService {
 
   private void updateApplicationModules(ApplicationDescriptor application,
                                         ModulesLoadResult modulesLoadResult,
-                                        ModulesLoadResult uiModulesLoadResult) {
+                                        ModuleProcessResult modulesProcessResult,
+                                        ModulesLoadResult uiModulesLoadResult,
+                                        ModuleProcessResult uiModulesProcessResult) {
     if (pluginConfig.isModuleUrlsOnly()) {
-      application.setModules(modulesLoadResult.artifacts());
-      application.setUiModules(uiModulesLoadResult.artifacts());
+      application.setModules(mergeModules(modulesLoadResult.artifacts(), modulesProcessResult.unchangedModules()));
+      application.setUiModules(
+        mergeModules(uiModulesLoadResult.artifacts(), uiModulesProcessResult.unchangedModules()));
     } else {
-      application.setModules(clearUrls(modulesLoadResult.artifacts()));
-      application.setUiModules(clearUrls(uiModulesLoadResult.artifacts()));
+      application.setModules(mergeModules(clearUrls(modulesLoadResult.artifacts()),
+        modulesProcessResult.unchangedModules()));
+      application.setUiModules(mergeModules(clearUrls(uiModulesLoadResult.artifacts()),
+        uiModulesProcessResult.unchangedModules()));
     }
+  }
+
+  private List<ModuleDefinition> mergeModules(List<ModuleDefinition> changedModules,
+                                              List<ModuleDefinition> unchangedModules) {
+    var result = new ArrayList<>(changedModules);
+    result.addAll(unchangedModules);
+    return result;
   }
 
   private void updateApplicationDescriptors(ApplicationDescriptor application,
@@ -135,6 +147,8 @@ public class ApplicationDescriptorUpdateService {
       .collect(Collectors.toSet());
 
     List<ModuleDefinition> resultModules = new ArrayList<>();
+    List<ModuleDefinition> changedModules = new ArrayList<>();
+    List<ModuleDefinition> unchangedModules = new ArrayList<>();
     List<String> upgraded = new ArrayList<>();
     List<String> downgraded = new ArrayList<>();
     List<String> added = new ArrayList<>();
@@ -149,7 +163,9 @@ public class ApplicationDescriptorUpdateService {
 
       if (existingModule == null) {
         if (config.isAllowAddModules()) {
-          resultModules.add(toModuleDefinition(update));
+          var newModule = toModuleDefinition(update);
+          resultModules.add(newModule);
+          changedModules.add(newModule);
           added.add(moduleName + "-" + updateVersion);
         } else {
           errors.add(String.format("Module '%s' not found in descriptor (use -DallowAddModules=true to add)",
@@ -160,11 +176,15 @@ public class ApplicationDescriptorUpdateService {
         var comparison = compareVersions(existingVersion, updateVersion);
 
         if (comparison < 0) {
-          resultModules.add(toModuleDefinition(update));
+          var newModule = toModuleDefinition(update);
+          resultModules.add(newModule);
+          changedModules.add(newModule);
           upgraded.add(moduleName + " (" + existingVersion + " -> " + updateVersion + ")");
         } else if (comparison > 0) {
           if (config.isAllowDowngrade()) {
-            resultModules.add(toModuleDefinition(update));
+            var newModule = toModuleDefinition(update);
+            resultModules.add(newModule);
+            changedModules.add(newModule);
             downgraded.add(moduleName + " (" + existingVersion + " -> " + updateVersion + ")");
           } else {
             errors.add(String.format("Cannot downgrade '%s' from %s to %s (use -DallowDowngrade=true)",
@@ -172,6 +192,7 @@ public class ApplicationDescriptorUpdateService {
           }
         } else {
           resultModules.add(existingModule);
+          unchangedModules.add(existingModule);
           unchanged.add(moduleName + "-" + updateVersion);
         }
       }
@@ -183,6 +204,7 @@ public class ApplicationDescriptorUpdateService {
           removed.add(existing.getId());
         } else {
           resultModules.add(existing);
+          unchangedModules.add(existing);
           unchanged.add(existing.getId());
         }
       }
@@ -197,7 +219,8 @@ public class ApplicationDescriptorUpdateService {
     boolean hasChanges = !added.isEmpty() || !upgraded.isEmpty() || !downgraded.isEmpty() || !removed.isEmpty();
     boolean hasStructuralChanges = !added.isEmpty() || !removed.isEmpty();
 
-    return new ModuleProcessResult(resultModules, hasChanges, hasStructuralChanges, updateModuleNames);
+    return new ModuleProcessResult(resultModules, changedModules, unchangedModules,
+      hasChanges, hasStructuralChanges, updateModuleNames);
   }
 
   private void logChanges(ModuleType type, List<String> added, List<String> upgraded,
@@ -293,8 +316,7 @@ public class ApplicationDescriptorUpdateService {
       var newDescriptor = newDescriptorsMap.remove(moduleName);
       if (newDescriptor != null) {
         mergedDescriptors.add(newDescriptor);
-      } else if (!processResult.updateModuleNames().contains(moduleName)
-        || processResult.modules().stream().anyMatch(m -> m.getName().equals(moduleName))) {
+      } else if (processResult.modules().stream().anyMatch(m -> m.getName().equals(moduleName))) {
         mergedDescriptors.add(existing);
       }
     }
@@ -336,6 +358,8 @@ public class ApplicationDescriptorUpdateService {
 
   private record ModuleProcessResult(
     List<ModuleDefinition> modules,
+    List<ModuleDefinition> changedModules,
+    List<ModuleDefinition> unchangedModules,
     boolean hasChanges,
     boolean hasStructuralChanges,
     Set<String> updateModuleNames
