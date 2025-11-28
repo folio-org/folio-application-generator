@@ -26,13 +26,13 @@ public class UpdateGenerator extends AbstractGeneratorMojo {
   @Parameter(defaultValue = "${uiModules}")
   String cmdUiModulesString;
 
-  @Parameter(name = "allowDowngrade", defaultValue = "false")
+  @Parameter(name = "allowDowngrade", property = "allowDowngrade", defaultValue = "false")
   boolean allowDowngrade;
 
-  @Parameter(name = "allowAddModules", defaultValue = "false")
+  @Parameter(name = "allowAddModules", property = "allowAddModules", defaultValue = "false")
   boolean allowAddModules;
 
-  @Parameter(name = "removeUnlistedModules", defaultValue = "false")
+  @Parameter(name = "removeUnlistedModules", property = "removeUnlistedModules", defaultValue = "false")
   boolean removeUnlistedModules;
 
   @Inject
