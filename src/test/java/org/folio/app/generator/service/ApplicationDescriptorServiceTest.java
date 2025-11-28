@@ -78,8 +78,8 @@ class ApplicationDescriptorServiceTest {
     assertThat(result.getModules()).hasSize(1);
     assertThat(result.getUiModules()).hasSize(1);
     assertThat(result.getDependencies()).hasSize(1);
-    assertThat(result.getModuleDescriptors()).isNull();
-    assertThat(result.getUiModuleDescriptors()).isNull();
+    assertThat(result.getModuleDescriptors()).isEmpty();
+    assertThat(result.getUiModuleDescriptors()).isEmpty();
   }
 
   @Test
@@ -324,5 +324,14 @@ class ApplicationDescriptorServiceTest {
     var result = service.create(template);
 
     assertThat(result.getDependencies()).isEmpty();
+  }
+
+  @Test
+  void create_negative_templateWithNameNullAndVersionNotNull() {
+    var template = new ApplicationDescriptorTemplate()
+      .version("1.0.0")
+      .modules(List.of());
+
+    assertThrows(NullPointerException.class, () -> service.create(template));
   }
 }
