@@ -3,8 +3,12 @@ package org.folio.app.generator.model;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.stream.Stream;
 import org.folio.app.generator.support.UnitTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @UnitTest
 class PreReleaseFilterTest {
@@ -74,30 +78,25 @@ class PreReleaseFilterTest {
   }
 
   @Test
-  void fromVersion_positive_releaseVersion() {
-    var result = PreReleaseFilter.fromVersion("1.0.0");
-
-    assertThat(result).isEqualTo(PreReleaseFilter.FALSE);
-  }
-
-  @Test
-  void fromVersion_positive_null() {
-    var result = PreReleaseFilter.fromVersion(null);
-
-    assertThat(result).isEqualTo(PreReleaseFilter.FALSE);
-  }
-
-  @Test
   void fromVersion_positive_buildMetadata() {
     var result = PreReleaseFilter.fromVersion("1.0.0-SNAPSHOT.124");
 
     assertThat(result).isEqualTo(PreReleaseFilter.TRUE);
   }
 
-  @Test
-  void fromVersion_positive_invalidSemver() {
-    var result = PreReleaseFilter.fromVersion("invalid-version");
+  @ParameterizedTest
+  @MethodSource("fromVersionFalseDataProvider")
+  void fromVersion_positive_returnsFalse(String version) {
+    var result = PreReleaseFilter.fromVersion(version);
 
     assertThat(result).isEqualTo(PreReleaseFilter.FALSE);
+  }
+
+  private static Stream<Arguments> fromVersionFalseDataProvider() {
+    return Stream.of(
+      Arguments.of((String) null),
+      Arguments.of("1.0.0"),
+      Arguments.of("invalid-version")
+    );
   }
 }
