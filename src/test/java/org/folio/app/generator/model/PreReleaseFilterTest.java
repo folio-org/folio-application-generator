@@ -93,4 +93,11 @@ class PreReleaseFilterTest {
 
     assertThat(result).isEqualTo(PreReleaseFilter.TRUE);
   }
+
+  @Test
+  void fromVersion_positive_invalidSemver() {
+    var result = PreReleaseFilter.fromVersion("invalid-version");
+
+    assertThat(result).isEqualTo(PreReleaseFilter.FALSE);
+  }
 }
