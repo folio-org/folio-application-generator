@@ -9,6 +9,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.folio.app.generator.configuration.ApplicationContextBuilder;
 import org.folio.app.generator.model.ApplicationDescriptor;
+import org.folio.app.generator.model.UpdateConfig;
 import org.folio.app.generator.service.ApplicationDescriptorUpdateService;
 import org.folio.app.generator.service.JsonProvider;
 import org.folio.app.generator.service.ModuleRegistryProvider;
@@ -25,6 +26,15 @@ public class UpdateGenerator extends AbstractGeneratorMojo {
   @Parameter(defaultValue = "${uiModules}")
   String cmdUiModulesString;
 
+  @Parameter(name = "allowDowngrade", defaultValue = "false")
+  boolean allowDowngrade;
+
+  @Parameter(name = "allowAddModules", defaultValue = "false")
+  boolean allowAddModules;
+
+  @Parameter(name = "removeUnlistedModules", defaultValue = "false")
+  boolean removeUnlistedModules;
+
   @Inject
   public UpdateGenerator(ModuleRegistryProvider registryProvider, ApplicationContextBuilder contextBuilder) {
     super(registryProvider, contextBuilder);
@@ -38,6 +48,11 @@ public class UpdateGenerator extends AbstractGeneratorMojo {
     var application = jsonProvider.readJsonFromFile(appDescriptorPath, ApplicationDescriptor.class, false);
 
     var descriptorUpdateService = ctx.getBean(ApplicationDescriptorUpdateService.class);
-    descriptorUpdateService.update(application, cmdModulesString, cmdUiModulesString);
+    var updateConfig = UpdateConfig.builder()
+      .allowDowngrade(allowDowngrade)
+      .allowAddModules(allowAddModules)
+      .removeUnlistedModules(removeUnlistedModules)
+      .build();
+    descriptorUpdateService.update(application, cmdModulesString, cmdUiModulesString, updateConfig);
   }
 }
