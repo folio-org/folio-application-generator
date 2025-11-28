@@ -364,9 +364,10 @@ public class ApplicationDescriptorUpdateService {
   }
 
   private Optional<Dependency> parseModuleId(String moduleId) {
-    if (moduleId.contains(":" + LATEST_VERSION)) {
+    if (moduleId.contains(":")) {
       var name = moduleId.substring(0, moduleId.indexOf(':'));
-      return Optional.of(new Dependency(name, LATEST_VERSION, PreReleaseFilter.TRUE));
+      var version = moduleId.substring(moduleId.indexOf(':') + 1);
+      return Optional.of(new Dependency(name, version, PreReleaseFilter.TRUE));
     }
     return splitModuleId(moduleId);
   }
