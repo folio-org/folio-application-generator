@@ -51,7 +51,7 @@ public class ApplicationDescriptorService {
       .platform(defaultIfBlank(template.getPlatform(), "base"))
       .modules(modulesLoadResult.artifacts())
       .uiModules(uiModulesLoadResult.artifacts())
-      .dependencies(emptyIfNull(template.getDependencies()));
+      .dependencies(stripPreRelease(template.getDependencies()));
 
     if (pluginParameters.isModuleUrlsOnly()) {
       baseAppDescriptor
@@ -120,5 +120,11 @@ public class ApplicationDescriptorService {
 
   private void clearModuleUrls(List<ModuleDefinition> modules) {
     emptyIfNull(modules).forEach(md -> md.setUrl(null));
+  }
+
+  private List<Dependency> stripPreRelease(List<Dependency> dependencies) {
+    return emptyIfNull(dependencies).stream()
+      .map(dep -> Dependency.builder().name(dep.getName()).version(dep.getVersion()).build())
+      .toList();
   }
 }
