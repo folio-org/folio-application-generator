@@ -267,14 +267,11 @@ public class ApplicationDescriptorUpdateService {
     if (LATEST_VERSION.equals(updateVersion)) {
       return -1;
     }
+
     var existingSemver = SemverUtils.parse(existingVersion);
     var updateSemver = SemverUtils.parse(updateVersion);
 
-    if (existingSemver == null || updateSemver == null) {
-      return existingVersion.compareTo(updateVersion);
-    }
-
-    return existingSemver.compareTo(updateSemver);
+    return updateSemver == null || existingSemver == null ? 0 : existingSemver.compareTo(updateSemver);
   }
 
   private List<Dependency> resolveConstraints(List<Dependency> dependencies, ModuleType type)
