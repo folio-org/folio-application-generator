@@ -32,14 +32,21 @@ Version 2.0. See the file "[LICENSE](LICENSE)" for more information.
   </configuration>
 </plugin>
 ```
-To build application descriptor without module descriptors use the following configuration
+#### moduleUrlsOnly mode
+
+To build application descriptor without full module descriptors use the following configuration:
 ```xml
 <configuration>
     <moduleUrlsOnly>true</moduleUrlsOnly>
     ...
   </configuration>
 ```
-By setting `moduleUrlsOnly` to `true`, the generated application descriptor will include only the URLs of the modules, leaving the module descriptors empty.
+
+Or via command-line: `-DmoduleUrlsOnly=true`
+
+**Behavior:**
+- **Generate goals** (`generateFromJson`, `generateFromConfiguration`): Modules will include URLs pointing to their descriptors instead of embedding full descriptor content. The `moduleDescriptors` and `uiModuleDescriptors` arrays will be empty.
+- **Update goals** (`updateFromJson`, `updateFromTemplate`): Changed modules will include URLs, while unchanged modules retain their existing descriptors from the original application descriptor. This optimizes updates by not re-fetching descriptors for modules that haven't changed.
 
 #### Extending configuration with dedicated registries for BE and UI modules:
 
@@ -180,11 +187,46 @@ mvn folio-application-generator:generateFromConfiguration
 
 ### Update application descriptor
 
-To run the operation an app descriptor needs to be specified via `appDescriptorPath` parameter or by default locate in
-`${basedir}/application-descriptor.json`
+#### updateFromJson
+
+Updates an existing application descriptor with specified module versions. The descriptor needs to be specified via `appDescriptorPath` parameter or by default located in `${basedir}/application-descriptor.json`.
+
 ```shell
-mvn org.folio:folio-application-generator:0.0.1-SNAPSHOT:updateFromJson
--Dmodules="mod-consortia-keycloak-1.4.4" -DuiModules="folio_consortia-settings:latest" -Dregistries="okapi::https://folio-registry.dev.folio.org"
+mvn org.folio:folio-application-generator:updateFromJson \
+  -DappDescriptorPath="${basedir}/application-descriptor.json" \
+  -Dmodules="mod-consortia-keycloak-1.4.4" \
+  -DuiModules="folio_consortia-settings:latest" \
+  -Dregistries="okapi::https://folio-registry.dev.folio.org"
+```
+
+#### updateFromTemplate
+
+Synchronizes an existing application descriptor based on a template file. This goal compares the template with the existing descriptor and applies updates according to the configured options.
+
+```shell
+mvn org.folio:folio-application-generator:updateFromTemplate \
+  -DtemplatePath="${basedir}/template.json" \
+  -DappDescriptorPath="${basedir}/application-descriptor.json" \
+  -Dregistries="okapi::https://folio-registry.dev.folio.org"
+```
+
+#### Update configuration options
+
+Both `updateFromJson` and `updateFromTemplate` goals support the following configuration options:
+
+| Parameter             | Default | Description                                                                 |
+|-----------------------|---------|-----------------------------------------------------------------------------|
+| allowDowngrade        | false   | Allow downgrading module versions (by default, only upgrades are allowed)   |
+| allowAddModules       | false   | Allow adding new modules not present in the original descriptor             |
+| removeUnlistedModules | false   | Remove modules from descriptor that are not in the update list/template     |
+
+Example with options:
+```shell
+mvn org.folio:folio-application-generator:updateFromTemplate \
+  -DtemplatePath="${basedir}/template.json" \
+  -DallowDowngrade=true \
+  -DallowAddModules=true \
+  -DremoveUnlistedModules=true
 ```
 
 ### Validate Application's Modules Interface Integrity
@@ -246,3 +288,7 @@ mvn install -DbuildNumber="123" -DawsRegion=us-east-1
 | modules                  |               | Comma-separated list of BE module ids to be updated in format: `module1-1.1.0,module2-2.1.0`                                                                        |
 | uiModules                |               | Comma-separated list of UI module ids to be updated in the same format as `modules` parameter                                                                       |
 | overrideConfigRegistries |               | Defines if only command-line specified registries must be used (applies to `registries`, `beRegistries` and `uiRegistries` params)                                  |
+| allowDowngrade           | false         | Allow downgrading module versions during update (applies to `updateFromJson` and `updateFromTemplate` goals)                                                        |
+| allowAddModules          | false         | Allow adding new modules not present in the original descriptor (applies to `updateFromJson` and `updateFromTemplate` goals)                                        |
+| removeUnlistedModules    | false         | Remove modules from descriptor that are not in the update list/template (applies to `updateFromJson` and `updateFromTemplate` goals)                                |
+| templatePath             |               | Path to the template file for `updateFromTemplate` goal (default: `${basedir}/template.json`)                                                                       |
