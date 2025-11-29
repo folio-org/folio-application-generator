@@ -63,9 +63,10 @@ class ApplicationDescriptorUpdateServiceTest {
     var application = new ApplicationDescriptor()
       .modules(List.of(new ModuleDefinition().name("module1").version("2.0.0")))
       .uiModules(List.of(new ModuleDefinition().name("module-u1").version("2.0.0")));
+    var config = UpdateConfig.defaults();
 
     assertThrows(IllegalArgumentException.class,
-      () -> updateService.update(application, "module1-1.0.0", "module-u1-1.0.0", UpdateConfig.defaults()));
+      () -> updateService.update(application, "module1-1.0.0", "module-u1-1.0.0", config));
   }
 
   @Test
@@ -78,9 +79,10 @@ class ApplicationDescriptorUpdateServiceTest {
       .uiModules(List.of(
         new ModuleDefinition().name("module-u1").version("1.0.0"),
         new ModuleDefinition().name("module-u2").version("2.0.0")));
+    var config = UpdateConfig.defaults();
 
     assertThrows(IllegalArgumentException.class,
-      () -> updateService.update(application, "module3-1.0.0", "module-u3-1.0.0", UpdateConfig.defaults()));
+      () -> updateService.update(application, "module3-1.0.0", "module-u3-1.0.0", config));
   }
 
   @Test
@@ -173,9 +175,10 @@ class ApplicationDescriptorUpdateServiceTest {
   @Test
   void update_negative_invalidModuleIdFormat() {
     var application = new ApplicationDescriptor();
+    var config = UpdateConfig.defaults();
 
     assertThrows(IllegalArgumentException.class,
-      () -> updateService.update(application, "invalid-module-format", "", UpdateConfig.defaults()));
+      () -> updateService.update(application, "invalid-module-format", "", config));
   }
 
   @Test
@@ -556,7 +559,7 @@ class ApplicationDescriptorUpdateServiceTest {
     updateService.update(application, "module1-1.1.0", "", UpdateConfig.defaults());
 
     assertThat(applicationCaptor.getValue().getModuleDescriptors()).hasSize(1);
-    assertThat(applicationCaptor.getValue().getModuleDescriptors().get(0).get("id")).isEqualTo("module1-1.1.0");
+    assertThat(applicationCaptor.getValue().getModuleDescriptors().get(0)).containsEntry("id", "module1-1.1.0");
   }
 
   @Test
@@ -590,8 +593,8 @@ class ApplicationDescriptorUpdateServiceTest {
     updateService.update(application, "module1-1.1.0", "", config);
 
     assertThat(applicationCaptor.getValue().getModuleDescriptors()).hasSize(2);
-    assertThat(applicationCaptor.getValue().getModuleDescriptors().get(0).get("id")).isEqualTo("module1-1.1.0");
-    assertThat(applicationCaptor.getValue().getModuleDescriptors().get(1).get("id")).isEqualTo("module2-1.0.0");
+    assertThat(applicationCaptor.getValue().getModuleDescriptors().get(0)).containsEntry("id", "module1-1.1.0");
+    assertThat(applicationCaptor.getValue().getModuleDescriptors().get(1)).containsEntry("id", "module2-1.0.0");
   }
 
   @Test
@@ -627,7 +630,7 @@ class ApplicationDescriptorUpdateServiceTest {
     updateService.update(application, "module1-1.1.0,module2-1.0.0", "", UpdateConfig.defaults());
 
     assertThat(applicationCaptor.getValue().getModuleDescriptors()).hasSize(1);
-    assertThat(applicationCaptor.getValue().getModuleDescriptors().get(0).get("id")).isEqualTo("module2-1.0.0");
+    assertThat(applicationCaptor.getValue().getModuleDescriptors().get(0)).containsEntry("id", "module2-1.0.0");
   }
 
   @Test
@@ -662,7 +665,7 @@ class ApplicationDescriptorUpdateServiceTest {
     updateService.update(application, "module1-1.1.0,module2-1.0.0", "", UpdateConfig.defaults());
 
     assertThat(applicationCaptor.getValue().getModuleDescriptors()).hasSize(2);
-    assertThat(applicationCaptor.getValue().getModuleDescriptors().get(0).get("id")).isEqualTo("module1-1.1.0");
-    assertThat(applicationCaptor.getValue().getModuleDescriptors().get(1).get("id")).isEqualTo("module2-1.0.0");
+    assertThat(applicationCaptor.getValue().getModuleDescriptors().get(0)).containsEntry("id", "module1-1.1.0");
+    assertThat(applicationCaptor.getValue().getModuleDescriptors().get(1)).containsEntry("id", "module2-1.0.0");
   }
 }
