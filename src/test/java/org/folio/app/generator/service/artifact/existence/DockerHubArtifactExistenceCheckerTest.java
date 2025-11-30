@@ -3,7 +3,6 @@ package org.folio.app.generator.service.artifact.existence;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -93,7 +92,7 @@ class DockerHubArtifactExistenceCheckerTest {
     var result = checker.exists(module, registry);
 
     assertThat(result).isTrue();
-    verify(log).debug(eq("Checking Docker image existence: https://custom-registry.io/v2/myorg/mod-users/tags/1.0.0"));
+    verify(log).debug("Checking Docker image existence: https://custom-registry.io/v2/myorg/mod-users/tags/1.0.0");
   }
 
   @Test

@@ -56,9 +56,7 @@ class ApplicationContextBuilderTest {
 
     var properties = context.getEnvironment().getSystemProperties();
     for (var artifactRegistryType : ArtifactRegistryType.values()) {
-      assertThat(properties.get(artifactRegistryType.getPropertyName()))
-        .as("Property %s should be enabled", artifactRegistryType.getPropertyName())
-        .isEqualTo(true);
+      assertThat(properties).containsEntry(artifactRegistryType.getPropertyName(), true);
     }
   }
 
@@ -75,9 +73,7 @@ class ApplicationContextBuilderTest {
 
     var properties = context.getEnvironment().getSystemProperties();
     for (var artifactRegistryType : ArtifactRegistryType.values()) {
-      assertThat(properties.get(artifactRegistryType.getPropertyName()))
-        .as("Property %s should not be set", artifactRegistryType.getPropertyName())
-        .isNull();
+      assertThat(properties).doesNotContainKey(artifactRegistryType.getPropertyName());
     }
   }
 
@@ -94,8 +90,6 @@ class ApplicationContextBuilderTest {
     builder.setSpringContextProperties(context);
 
     var properties = context.getEnvironment().getSystemProperties();
-    assertThat(properties.get(RegistryType.OKAPI.getPropertyName()))
-      .as("Okapi registry property should be enabled")
-      .isEqualTo(true);
+    assertThat(properties).containsEntry(RegistryType.OKAPI.getPropertyName(), true);
   }
 }

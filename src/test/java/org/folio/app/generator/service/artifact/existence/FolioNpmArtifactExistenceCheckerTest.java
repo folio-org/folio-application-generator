@@ -130,20 +130,12 @@ class FolioNpmArtifactExistenceCheckerTest {
     "folio_users, @folio/users",
     "folio_inventory, @folio/inventory",
     "folio_circulation, @folio/circulation",
-    "folio_organizations, @folio/organizations"
-  })
-  void transformModuleNameToPackage_positive_folioPrefix(String moduleName, String expected) {
-    var result = FolioNpmArtifactExistenceChecker.transformModuleNameToPackage(moduleName);
-    assertThat(result).isEqualTo(expected);
-  }
-
-  @ParameterizedTest
-  @CsvSource({
+    "folio_organizations, @folio/organizations",
     "ui_users, @folio/ui-users",
     "ui_inventory, @folio/ui-inventory",
     "platform_core, @folio/platform-core"
   })
-  void transformModuleNameToPackage_positive_otherPrefix(String moduleName, String expected) {
+  void transformModuleNameToPackage_positive(String moduleName, String expected) {
     var result = FolioNpmArtifactExistenceChecker.transformModuleNameToPackage(moduleName);
     assertThat(result).isEqualTo(expected);
   }
