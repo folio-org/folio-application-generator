@@ -11,6 +11,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.configuration.ApplicationContextBuilder;
 import org.folio.app.generator.model.registry.ConfigModuleRegistry;
+import org.folio.app.generator.model.registry.artifact.ConfigArtifactRegistry;
 import org.folio.app.generator.service.ModuleRegistryProvider;
 import org.folio.app.generator.utils.PluginConfig;
 import org.springframework.context.support.GenericApplicationContext;
@@ -54,6 +55,39 @@ public abstract class AbstractGeneratorMojo extends AbstractMojo {
   @Parameter(defaultValue = "${awsRegion}")
   protected String awsRegion;
 
+  @Parameter(name = "validateArtifacts", property = "validateArtifacts", defaultValue = "false")
+  protected String validateArtifacts;
+
+  @Parameter(name = "artifactRegistries")
+  protected List<ConfigArtifactRegistry> artifactRegistries;
+
+  @Parameter(name = "beArtifactRegistries")
+  protected List<ConfigArtifactRegistry> beArtifactRegistries;
+
+  @Parameter(name = "uiArtifactRegistries")
+  protected List<ConfigArtifactRegistry> uiArtifactRegistries;
+
+  @Parameter(name = "bePreReleaseArtifactRegistries")
+  protected List<ConfigArtifactRegistry> bePreReleaseArtifactRegistries;
+
+  @Parameter(name = "uiPreReleaseArtifactRegistries")
+  protected List<ConfigArtifactRegistry> uiPreReleaseArtifactRegistries;
+
+  @Parameter(defaultValue = "${artifactRegistries}")
+  protected String cmdArtifactRegistries;
+
+  @Parameter(defaultValue = "${beArtifactRegistries}")
+  protected String cmdBeArtifactRegistries;
+
+  @Parameter(defaultValue = "${uiArtifactRegistries}")
+  protected String cmdUiArtifactRegistries;
+
+  @Parameter(defaultValue = "${bePreReleaseArtifactRegistries}")
+  protected String cmdBePreReleaseArtifactRegistries;
+
+  @Parameter(defaultValue = "${uiPreReleaseArtifactRegistries}")
+  protected String cmdUiPreReleaseArtifactRegistries;
+
   protected final ModuleRegistryProvider moduleRegistryProvider;
   protected final ApplicationContextBuilder applicationContextBuilder;
 
@@ -75,6 +109,17 @@ public abstract class AbstractGeneratorMojo extends AbstractMojo {
       .overrideConfigRegistries(parseBoolean(overrideConfigRegistries))
       .moduleUrlsOnly(parseBoolean(moduleUrlsOnly))
       .awsRegion(isNotBlank(awsRegion) ? Region.of(awsRegion) : Region.US_EAST_1)
+      .validateArtifacts(parseBoolean(validateArtifacts))
+      .artifactRegistries(artifactRegistries)
+      .beArtifactRegistries(beArtifactRegistries)
+      .uiArtifactRegistries(uiArtifactRegistries)
+      .bePreReleaseArtifactRegistries(bePreReleaseArtifactRegistries)
+      .uiPreReleaseArtifactRegistries(uiPreReleaseArtifactRegistries)
+      .cmdArtifactRegistries(cmdArtifactRegistries)
+      .cmdBeArtifactRegistries(cmdBeArtifactRegistries)
+      .cmdUiArtifactRegistries(cmdUiArtifactRegistries)
+      .cmdBePreReleaseArtifactRegistries(cmdBePreReleaseArtifactRegistries)
+      .cmdUiPreReleaseArtifactRegistries(cmdUiPreReleaseArtifactRegistries)
       .build();
 
     var registries = moduleRegistryProvider.getModuleRegistries(pluginConfig);
