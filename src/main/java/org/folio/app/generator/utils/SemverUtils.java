@@ -112,4 +112,15 @@ public class SemverUtils {
     RangesList ranges = RangesListFactory.create(constraint, includePreRelease);
     return ranges.isSatisfiedBy(semver);
   }
+
+  /**
+   * Check if version is a pre-release version.
+   *
+   * @param version the version string to check
+   * @return true if version has pre-release component, false otherwise
+   */
+  public static boolean isPreRelease(String version) {
+    var semver = parse(version);
+    return semver != null && !semver.getPreRelease().isEmpty();
+  }
 }
