@@ -8,10 +8,13 @@ import lombok.RequiredArgsConstructor;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.Dependency;
+import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.registry.ModuleRegistries;
 import org.folio.app.generator.model.registry.ModuleRegistry;
 import org.folio.app.generator.model.types.ModuleType;
+import org.folio.app.generator.service.artifact.existence.ArtifactExistenceCheckerFacade;
 import org.folio.app.generator.service.resolver.ModuleVersionResolverFacade;
+import org.folio.app.generator.utils.PluginConfig;
 import org.folio.app.generator.utils.SemverUtils;
 import org.semver4j.RangesListFactory;
 import org.semver4j.Semver;
@@ -24,6 +27,9 @@ public class ModuleVersionService {
   private final Log log;
   private final ModuleRegistries moduleRegistries;
   private final ModuleVersionResolverFacade moduleVersionResolverFacade;
+  private final PluginConfig pluginConfig;
+  private final ArtifactExistenceCheckerFacade artifactExistenceCheckerFacade;
+  private final ArtifactRegistryProvider artifactRegistryProvider;
 
   /**
    * Resolves version constraints to exact versions for a list of dependencies.
@@ -103,6 +109,8 @@ public class ModuleVersionService {
 
   /**
    * Get a max matching version for a dependency from a specific registry.
+   * If artifact validation is enabled, iterates through matching versions (highest first)
+   * and returns the first version with an existing artifact.
    *
    * @param registry   the module registry to query
    * @param dependency the dependency with version constraint
@@ -128,11 +136,41 @@ public class ModuleVersionService {
       return Optional.empty();
     }
 
-    return availableVersions.stream()
+    var matchingVersions = availableVersions.stream()
       .map(original -> new VersionCandidate(original, SemverUtils.parse(original)))
       .filter(vc -> vc.semver() != null)
       .filter(vc -> rangeList.isSatisfiedBy(vc.semver()))
-      .max(Comparator.comparing(VersionCandidate::semver));
+      .sorted(Comparator.comparing(VersionCandidate::semver).reversed())
+      .toList();
+
+    if (!pluginConfig.isValidateArtifacts()) {
+      return matchingVersions.stream().findFirst();
+    }
+
+    for (var candidate : matchingVersions) {
+      if (artifactExists(moduleName, candidate, type)) {
+        return Optional.of(candidate);
+      }
+      log.debug(String.format("Artifact not found for %s-%s, trying next version...",
+        moduleName, candidate.original()));
+    }
+    return Optional.empty();
+  }
+
+  private boolean artifactExists(String moduleName, VersionCandidate candidate, ModuleType type) {
+    var registries = artifactRegistryProvider.getArtifactRegistries(pluginConfig);
+    var isPreRelease = SemverUtils.isPreRelease(candidate.original());
+    var artifactRegistries = registries.getRegistries(type, isPreRelease);
+    var module = new ModuleDefinition().name(moduleName).version(candidate.original());
+
+    for (var registry : artifactRegistries) {
+      if (artifactExistenceCheckerFacade.exists(module, registry, type)) {
+        log.info(String.format("Artifact found: %s-%s", moduleName, candidate.original()));
+        return true;
+      }
+    }
+    log.warn(String.format("Artifact not found: %s-%s", moduleName, candidate.original()));
+    return false;
   }
 
   /**
