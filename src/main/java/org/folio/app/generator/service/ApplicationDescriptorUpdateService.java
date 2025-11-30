@@ -30,6 +30,7 @@ import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.ModulesLoadResult;
 import org.folio.app.generator.model.PreReleaseFilter;
 import org.folio.app.generator.model.UpdateConfig;
+import org.folio.app.generator.model.UpdateResult;
 import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.utils.PluginConfig;
 import org.folio.app.generator.utils.SemverUtils;
@@ -86,7 +87,13 @@ public class ApplicationDescriptorUpdateService {
     updateApplicationModules(application, modulesLoadResult, modulesResult, uiModulesLoadResult, uiModulesResult);
     updateApplicationDescriptors(application, modulesLoadResult, uiModulesLoadResult, modulesResult, uiModulesResult);
 
-    jsonProvider.writeApplication(application, mavenProject.getBuild().getDirectory());
+    var outputDir = mavenProject.getBuild().getDirectory();
+    jsonProvider.writeApplication(application, outputDir);
+
+    var updateResult = new UpdateResult(
+      modulesResult.added(), modulesResult.upgraded(), modulesResult.downgraded(), modulesResult.removed(),
+      uiModulesResult.added(), uiModulesResult.upgraded(), uiModulesResult.downgraded(), uiModulesResult.removed());
+    jsonProvider.writeUpdateResult(updateResult, outputDir);
   }
 
   private void updateApplicationModules(ApplicationDescriptor application,
@@ -239,7 +246,7 @@ public class ApplicationDescriptorUpdateService {
     boolean hasStructuralChanges = !added.isEmpty() || !removed.isEmpty();
 
     return new ModuleProcessResult(resultModules, changedModules, unchangedModules,
-      hasChanges, hasStructuralChanges, updateModuleNames);
+      hasChanges, hasStructuralChanges, updateModuleNames, added, upgraded, downgraded, removed);
   }
 
   private void logChanges(ModuleType type, List<String> added, List<String> upgraded,
@@ -379,6 +386,10 @@ public class ApplicationDescriptorUpdateService {
     List<ModuleDefinition> unchangedModules,
     boolean hasChanges,
     boolean hasStructuralChanges,
-    Set<String> updateModuleNames
+    Set<String> updateModuleNames,
+    List<String> added,
+    List<String> upgraded,
+    List<String> downgraded,
+    List<String> removed
   ) {}
 }

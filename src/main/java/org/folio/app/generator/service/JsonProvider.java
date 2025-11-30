@@ -10,6 +10,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.model.ApplicationDescriptor;
+import org.folio.app.generator.model.UpdateResult;
 import org.folio.app.generator.utils.JsonConverter;
 import org.springframework.stereotype.Component;
 
@@ -76,6 +77,17 @@ public class JsonProvider {
 
     var applicationFile = new File(file, application.getId() + ".json");
     jsonConverter.writeValue(applicationFile, application);
+  }
+
+  public void writeUpdateResult(UpdateResult updateResult, String path) throws MojoExecutionException {
+    var file = new File(path);
+    if (!file.exists() && !file.mkdirs()) {
+      throw new MojoExecutionException("Could not create target directory: " + file);
+    }
+
+    var updateResultFile = new File(file, "update-result.json");
+    jsonConverter.writeValue(updateResultFile, updateResult);
+    log.info("Update result saved to: " + updateResultFile.getAbsolutePath());
   }
 
   private String performSubstitution(String content) {
