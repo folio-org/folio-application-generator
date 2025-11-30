@@ -5,7 +5,6 @@ import static org.apache.commons.lang3.StringUtils.removeEnd;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.app.generator.model.registry.artifact.ArtifactRegistry;
 import org.folio.app.generator.model.registry.artifact.DockerHubArtifactRegistry;
@@ -17,7 +16,7 @@ import org.springframework.stereotype.Component;
 public class StringArtifactRegistryParser {
 
   private static final String PATH_DELIMITER = "/";
-  private final Pattern urlWithNamespacePattern = Pattern.compile("(.+)::(.+)");
+  private static final String URL_NAMESPACE_DELIMITER = "::";
 
   public Optional<ArtifactRegistry> parseDocker(String registryString) {
     if (StringUtils.isBlank(registryString)) {
@@ -25,11 +24,11 @@ public class StringArtifactRegistryParser {
     }
 
     var value = registryString.trim();
-    var matcher = urlWithNamespacePattern.matcher(value);
+    var delimiterIndex = value.indexOf(URL_NAMESPACE_DELIMITER);
 
-    if (matcher.matches()) {
-      var baseUrl = checkAndGetUrl(matcher.group(1));
-      var namespace = matcher.group(2).trim();
+    if (delimiterIndex > 0) {
+      var baseUrl = checkAndGetUrl(value.substring(0, delimiterIndex));
+      var namespace = value.substring(delimiterIndex + URL_NAMESPACE_DELIMITER.length()).trim();
       return Optional.of(new DockerHubArtifactRegistry()
         .baseUrl(removeEnd(baseUrl.toString(), PATH_DELIMITER))
         .namespace(namespace));
@@ -44,11 +43,11 @@ public class StringArtifactRegistryParser {
     }
 
     var value = registryString.trim();
-    var matcher = urlWithNamespacePattern.matcher(value);
+    var delimiterIndex = value.indexOf(URL_NAMESPACE_DELIMITER);
 
-    if (matcher.matches()) {
-      var baseUrl = checkAndGetUrl(matcher.group(1));
-      var repository = matcher.group(2).trim();
+    if (delimiterIndex > 0) {
+      var baseUrl = checkAndGetUrl(value.substring(0, delimiterIndex));
+      var repository = value.substring(delimiterIndex + URL_NAMESPACE_DELIMITER.length()).trim();
       return Optional.of(new FolioNpmArtifactRegistry()
         .baseUrl(removeEnd(baseUrl.toString(), PATH_DELIMITER))
         .namespace(repository));
