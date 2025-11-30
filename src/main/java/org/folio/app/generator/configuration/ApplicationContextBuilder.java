@@ -8,6 +8,7 @@ import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.model.registry.ModuleRegistries;
 import org.folio.app.generator.model.registry.ModuleRegistry;
+import org.folio.app.generator.model.types.ArtifactRegistryType;
 import org.folio.app.generator.utils.PluginConfig;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
@@ -81,7 +82,7 @@ public class ApplicationContextBuilder {
     return this;
   }
 
-  private void setSpringContextProperties(GenericApplicationContext context) {
+  void setSpringContextProperties(GenericApplicationContext context) {
     var usedRegistryTypes = Stream.of(moduleRegistries.beRegistries(), moduleRegistries.uiRegistries())
       .filter(Objects::nonNull)
       .flatMap(Collection::stream)
@@ -92,6 +93,12 @@ public class ApplicationContextBuilder {
     var springEnvironment = context.getEnvironment().getSystemProperties();
     for (var usedRegistryType : usedRegistryTypes) {
       springEnvironment.put(usedRegistryType.getPropertyName(), true);
+    }
+
+    if (pluginConfig.isValidateArtifacts()) {
+      for (var artifactRegistryType : ArtifactRegistryType.values()) {
+        springEnvironment.put(artifactRegistryType.getPropertyName(), true);
+      }
     }
   }
 }
