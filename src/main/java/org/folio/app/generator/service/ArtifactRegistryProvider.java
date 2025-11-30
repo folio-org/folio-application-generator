@@ -42,48 +42,6 @@ public class ArtifactRegistryProvider {
     );
   }
 
-  private RegistryProcessingResult processCommandLineRegistries(String registryString, ArtifactRegistryType type) {
-    if (isBlank(registryString)) {
-      return new RegistryProcessingResult(emptyList(), emptyList());
-    }
-
-    var result = new ArrayList<ArtifactRegistry>();
-    var registryStrings = registryString.split(",");
-
-    for (var value : registryStrings) {
-      var registry = artifactRegistryParser.parse(value, type);
-      registry.ifPresent(result::add);
-    }
-
-    return new RegistryProcessingResult(result, emptyList());
-  }
-
-  private RegistryProcessingResult processConfigurationRegistries(List<ConfigArtifactRegistry> registries,
-                                                                  List<String> supportedTypes) {
-    if (registries == null || registries.isEmpty()) {
-      return new RegistryProcessingResult(emptyList(), emptyList());
-    }
-
-    var invalidRegistries = new ArrayList<String>();
-    var result = new ArrayList<ArtifactRegistry>();
-
-    for (var configRegistry : registries) {
-      if (!supportedTypes.contains(lowerCase(configRegistry.getType()))) {
-        invalidRegistries.add(configRegistry.toString());
-        continue;
-      }
-
-      var registry = toArtifactRegistry(configRegistry);
-      if (!registry.isValid()) {
-        invalidRegistries.add(configRegistry.toString());
-      } else {
-        result.add(registry);
-      }
-    }
-
-    return new RegistryProcessingResult(result, invalidRegistries);
-  }
-
   private static void handleInvalidRegistries(List<String> invalidRegistries) {
     if (!invalidRegistries.isEmpty()) {
       var invalidRegistryString = collectToBulletedList(invalidRegistries);
@@ -169,6 +127,48 @@ public class ArtifactRegistryProvider {
       allSupportedTypes.addAll(supportedNpmTypes);
 
       return processConfigurationRegistries(registries, allSupportedTypes);
+    }
+
+    private RegistryProcessingResult processCommandLineRegistries(String registryString, ArtifactRegistryType type) {
+      if (isBlank(registryString)) {
+        return new RegistryProcessingResult(emptyList(), emptyList());
+      }
+
+      var result = new ArrayList<ArtifactRegistry>();
+      var registryStrings = registryString.split(",");
+
+      for (var value : registryStrings) {
+        var registry = artifactRegistryParser.parse(value, type);
+        registry.ifPresent(result::add);
+      }
+
+      return new RegistryProcessingResult(result, emptyList());
+    }
+
+    private RegistryProcessingResult processConfigurationRegistries(List<ConfigArtifactRegistry> registries,
+                                                                    List<String> supportedTypes) {
+      if (registries == null || registries.isEmpty()) {
+        return new RegistryProcessingResult(emptyList(), emptyList());
+      }
+
+      var invalidRegs = new ArrayList<String>();
+      var result = new ArrayList<ArtifactRegistry>();
+
+      for (var configRegistry : registries) {
+        if (!supportedTypes.contains(lowerCase(configRegistry.getType()))) {
+          invalidRegs.add(configRegistry.toString());
+          continue;
+        }
+
+        var registry = toArtifactRegistry(configRegistry);
+        if (!registry.isValid()) {
+          invalidRegs.add(configRegistry.toString());
+        } else {
+          result.add(registry);
+        }
+      }
+
+      return new RegistryProcessingResult(result, invalidRegs);
     }
 
     private List<ArtifactRegistry> processBeRegistries(PluginConfig config) {
