@@ -119,4 +119,39 @@ class SemverUtilsTest {
       Arguments.of("null version", null, "^1.0.0", false)
     );
   }
+
+  @Test
+  void isPreRelease_positive_snapshotVersion() {
+    var result = SemverUtils.isPreRelease("1.0.0-SNAPSHOT");
+
+    assertThat(result).isTrue();
+  }
+
+  @Test
+  void isPreRelease_positive_uiSnapshot() {
+    var result = SemverUtils.isPreRelease("11.0.109900000000247");
+
+    assertThat(result).isTrue();
+  }
+
+  @Test
+  void isPreRelease_negative_stableVersion() {
+    var result = SemverUtils.isPreRelease("1.0.0");
+
+    assertThat(result).isFalse();
+  }
+
+  @Test
+  void isPreRelease_negative_invalidVersion() {
+    var result = SemverUtils.isPreRelease("invalid");
+
+    assertThat(result).isFalse();
+  }
+
+  @Test
+  void isPreRelease_negative_nullVersion() {
+    var result = SemverUtils.isPreRelease(null);
+
+    assertThat(result).isFalse();
+  }
 }
