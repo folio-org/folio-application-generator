@@ -1,9 +1,9 @@
 package org.folio.app.generator.service.artifact.existence;
 
-import java.io.InputStream;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandler;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -15,18 +15,20 @@ public abstract class HttpArtifactExistenceChecker implements ArtifactExistenceC
 
   protected static final Set<Integer> RETRYABLE_STATUS_CODES = Set.of(429, 502, 503, 504);
   protected static final int RETRYABLE_ATTEMPTS_NUMBER = 5;
+  protected static final long RETRY_DELAY_MS = 1000;
 
   protected final HttpClient httpClient;
   protected final Log log;
   protected final JsonConverter jsonConverter;
 
   @SneakyThrows
-  protected HttpResponse<InputStream> retryLoad(HttpRequest request) {
+  protected <T> HttpResponse<T> retryLoad(HttpRequest request, BodyHandler<T> bodyHandler) {
     var attemptsCount = 0;
-    var response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+    var response = httpClient.send(request, bodyHandler);
     while (RETRYABLE_STATUS_CODES.contains(response.statusCode()) && attemptsCount++ < RETRYABLE_ATTEMPTS_NUMBER) {
       log.debug("Retrying request due to status code " + response.statusCode() + " (attempt " + attemptsCount + ")");
-      response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+      Thread.sleep(RETRY_DELAY_MS);
+      response = httpClient.send(request, bodyHandler);
     }
     return response;
   }

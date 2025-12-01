@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.Map;
 import lombok.SneakyThrows;
@@ -41,7 +42,7 @@ public class FolioNpmArtifactExistenceChecker extends HttpArtifactExistenceCheck
       .GET()
       .build();
 
-    var response = retryLoad(request);
+    var response = retryLoad(request, BodyHandlers.ofInputStream());
     var statusCode = response.statusCode();
 
     if (statusCode != SUCCESS_STATUS_CODE) {

@@ -3,6 +3,7 @@ package org.folio.app.generator.service.artifact.existence;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import lombok.SneakyThrows;
 import org.apache.maven.plugin.logging.Log;
@@ -38,7 +39,7 @@ public class DockerHubArtifactExistenceChecker extends HttpArtifactExistenceChec
       .GET()
       .build();
 
-    var response = retryLoad(request);
+    var response = retryLoad(request, BodyHandlers.discarding());
     var statusCode = response.statusCode();
 
     if (statusCode == SUCCESS_STATUS_CODE) {
