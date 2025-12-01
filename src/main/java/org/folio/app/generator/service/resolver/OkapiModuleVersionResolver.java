@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.conditions.OkapiCondition;
 import org.folio.app.generator.model.Dependency;
+import org.folio.app.generator.model.PreReleaseFilter;
 import org.folio.app.generator.model.registry.ModuleRegistry;
 import org.folio.app.generator.model.registry.OkapiModuleRegistry;
 import org.folio.app.generator.model.types.ModuleType;
@@ -99,12 +100,12 @@ public class OkapiModuleVersionResolver implements ModuleVersionResolver {
 
   private static String prepareUriString(String baseUrl, Dependency module, ModuleType type) {
     var moduleName = module.getName();
-    var preRelease = module.getPreRelease();
+    var preRelease = module.getPreRelease() == null ? PreReleaseFilter.TRUE : module.getPreRelease();
     var preReleaseFilter = type == ModuleType.UI ? "&npmSnapshot=" : "&preRelease=";
 
     return baseUrl + "/_/proxy/modules"
       + "?filter=" + moduleName
-      + preReleaseFilter + (preRelease == null ? "false" : preRelease.getValue())
+      + preReleaseFilter + preRelease.getValue()
       + "&orderBy=id"
       + "&order=desc";
   }

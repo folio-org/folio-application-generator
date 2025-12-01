@@ -119,7 +119,8 @@ public class ModuleVersionService {
     var availableVersions = availableVersionsOpt.get();
     var moduleName = dependency.getName();
     var constraint = dependency.getVersion();
-    boolean includePreRelease = dependency.getPreRelease().isPreRelease();
+    var preReleaseFilter = dependency.getPreRelease();
+    boolean includePreRelease = preReleaseFilter == null || preReleaseFilter.isPreRelease();
 
     var rangeList = RangesListFactory.create(SemverUtils.normalizeVersion(constraint), includePreRelease);
 
