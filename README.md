@@ -92,19 +92,26 @@ By setting `moduleUrlsOnly` to `true`, the generated application descriptor will
   "dependencies": [
     {
       "name": "app-foo",
-      "version": "0.5.X"
+      "version": "0.5.X",
+      "preRelease": "true"
     }
   ],
   "modules": [
     {
       "name": "mod-foo",
-      "version": "latest"
+      "version": "latest",
+      "preRelease": "only"
+    },
+    {
+      "name": "mod-foo1",
+      "version": "3.4.2"
     }
   ],
   "uiModules": [
     {
       "name": "folio_foo",
-      "version": "latest"
+      "version": "^1.5.0",
+      "preRelease": "false"
     }
   ]
 }
@@ -182,7 +189,7 @@ mvn org.folio:folio-application-generator:0.0.1-SNAPSHOT:updateFromJson
 
 ### Validate Application's Modules Interface Integrity
 
-The `validateIntegrity` goal is used to validate the integrity of application's modules. 
+The `validateIntegrity` goal is used to validate the integrity of application's modules.
 This validation is performed in mgr-applications via specified URL and requires authentication via a token.
 
 #### Parameters
@@ -227,15 +234,15 @@ These parameters can be specified in the job run using following notation
 mvn install -DbuildNumber="123" -DawsRegion=us-east-1
 ```
 
-| Parameter                | Default Value | Description
-|--------------------------|---------------|-------------------------------------------------------------------------------------------------------------------------------------------
-| awsRegion                | us-east-1     | AWS Region for S3 client
-| buildNumber              |               | Build number from CI tool (will be added for any '-SNAPSHOT' version of generated application
-| registries               |               | Comma-separated list of custom module-descriptor registries in formats: `s3::{{bucket-name}}:{{path-to-folder}}`, `okapi::{{okapi-base}}`, `simple::{{okapi-base}}`
-| beRegistries             |               | Comma-separated list of custom back-end module-descriptor registries in the same format as `registries` parameter
-| uiRegistries             |               | Comma-separated list of custom ui module-descriptor registries in the same format as `registries` parameter
-| moduleUrlsOnly           | false         | If `true` only URLs of modules will be included to the modules. Modules descriptors will be empty.
-| appDescriptorPath        |               | File path of the application descriptor to update
-| modules                  |               | Comma-separated list of BE module ids to be updated in format: `module1-1.1.0,module2-2.1.0`
-| uiModules                |               | Comma-separated list of UI module ids to be updated in the same format as `modules` parameter
-| overrideConfigRegistries |               | Defines if only command-line specified registries must be used (applies to `registries`, `beRegistries` and `uiRegistries` params)
+| Parameter                | Default Value | Description                                                                                                                                                         |
+|--------------------------|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| awsRegion                | us-east-1     | AWS Region for S3 client                                                                                                                                            |
+| buildNumber              |               | Build number from CI tool (will be added for any '-SNAPSHOT' version of generated application                                                                       |
+| registries               |               | Comma-separated list of custom module-descriptor registries in formats: `s3::{{bucket-name}}:{{path-to-folder}}`, `okapi::{{okapi-base}}`, `simple::{{okapi-base}}` |
+| beRegistries             |               | Comma-separated list of custom back-end module-descriptor registries in the same format as `registries` parameter                                                   |
+| uiRegistries             |               | Comma-separated list of custom ui module-descriptor registries in the same format as `registries` parameter                                                         |
+| moduleUrlsOnly           | false         | If `true` only URLs of modules will be included to the modules. Modules descriptors will be empty.                                                                  |
+| appDescriptorPath        |               | File path of the application descriptor to update                                                                                                                   |
+| modules                  |               | Comma-separated list of BE module ids to be updated in format: `module1-1.1.0,module2-2.1.0`                                                                        |
+| uiModules                |               | Comma-separated list of UI module ids to be updated in the same format as `modules` parameter                                                                       |
+| overrideConfigRegistries |               | Defines if only command-line specified registries must be used (applies to `registries`, `beRegistries` and `uiRegistries` params)                                  |

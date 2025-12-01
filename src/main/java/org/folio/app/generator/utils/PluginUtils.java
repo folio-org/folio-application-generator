@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.ModuleDefinition;
+import org.folio.app.generator.model.PreReleaseFilter;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class PluginUtils {
@@ -44,7 +45,10 @@ public class PluginUtils {
       if (moduleId.charAt(i) == '-' && Character.isDigit(moduleId.charAt(i + 1))) {
         var name = moduleId.substring(0, i);
         var version = moduleId.substring(i + 1);
-        return Optional.of(new Dependency(name, version));
+
+        var semver = SemverUtils.parse(version);
+        var preRelease = semver != null ? PreReleaseFilter.fromVersion(version) : PreReleaseFilter.TRUE;
+        return Optional.of(Dependency.builder().name(name).version(version).preRelease(preRelease).build());
       }
     }
     return Optional.empty();

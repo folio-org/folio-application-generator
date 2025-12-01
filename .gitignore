@@ -33,6 +33,14 @@ build/
 ### VS Code ###
 .vscode/
 
+### User-specific AI/development tool artifacts ###
+.cursor/
+.claude/
+.codex/
+.mcp.json
+.cursor*
+claude*
+
 ### OS ###
 .DS_Store
 **/.DS_Store

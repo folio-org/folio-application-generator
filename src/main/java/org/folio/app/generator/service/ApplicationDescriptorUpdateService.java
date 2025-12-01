@@ -1,7 +1,7 @@
 package org.folio.app.generator.service;
 
 import static java.util.Arrays.stream;
-import static java.util.Collections.emptyMap;
+import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -17,13 +17,14 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.model.ApplicationDescriptor;
 import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.ModulesLoadResult;
+import org.folio.app.generator.model.PreReleaseFilter;
 import org.folio.app.generator.model.types.ModuleType;
+import org.folio.app.generator.utils.SemverUtils;
 import org.semver4j.Semver;
 import org.springframework.stereotype.Component;
 
@@ -32,28 +33,35 @@ import org.springframework.stereotype.Component;
 public class ApplicationDescriptorUpdateService {
 
   private static final String LATEST_VERSION = "latest";
-  private final Log log;
   private final MavenProject mavenProject;
   private final JsonProvider jsonProvider;
   private final ModuleDescriptorService moduleDescriptorService;
+  private final ModuleVersionService moduleVersionService;
 
   /**
-   * Update application descriptor with new versions of modules.
+   * Update application descriptor with new versions of modulesIds.
    *
-   * @param application - old application descriptor {@link ApplicationDescriptor} object to update
-   * @param modules - input BE module ids to update
-   * @param uiModules - input UI module ids to update
+   * @param application  - old application descriptor {@link ApplicationDescriptor} object to update
+   * @param modulesIds   - input BE module ids to update
+   * @param uiModulesIds - input UI module ids to update
    * @throws MojoExecutionException if application description was failed to be updated
    */
-  public void update(ApplicationDescriptor application, String modules, String uiModules)
+  public void update(ApplicationDescriptor application, String modulesIds, String uiModulesIds)
     throws MojoExecutionException {
-    var moduleNameVersion = parseModuleIdsToUpdate(modules);
-    var uiModuleNameVersion = parseModuleIdsToUpdate(uiModules);
-    validateModules(moduleNameVersion, application.getModuleDescriptors());
-    validateModules(uiModuleNameVersion, application.getUiModuleDescriptors());
+    var moduleNameVersion = parseModuleIdsToUpdate(modulesIds);
+    var uiModuleNameVersion = parseModuleIdsToUpdate(uiModulesIds);
 
-    var modulesLoadResult = loadModules(moduleNameVersion, BE);
-    var uiModulesLoadResult = loadModules(uiModuleNameVersion, UI);
+    var resolvedModules = resolveConstraints(moduleNameVersion, BE);
+    var resolvedUiModules = resolveConstraints(uiModuleNameVersion, UI);
+
+    validateModules(resolvedModules, application.getModuleDescriptors());
+    validateModules(resolvedUiModules, application.getUiModuleDescriptors());
+
+    var modules = convertToArtifacts(resolvedModules);
+    var uiModules = convertToArtifacts(resolvedUiModules);
+
+    var modulesLoadResult = moduleDescriptorService.loadModules(BE, modules);
+    var uiModulesLoadResult = moduleDescriptorService.loadModules(UI, uiModules);
 
     var version = getVersionWithIncPatch(application.getVersion());
     application.setId(getId(application.getName(), version));
@@ -67,14 +75,14 @@ public class ApplicationDescriptorUpdateService {
     jsonProvider.writeApplication(application, mavenProject.getBuild().getDirectory());
   }
 
-  private void validateModules(Map<String, String> moduleNameVersion, List<Map<String, Object>> descriptors) {
+  private void validateModules(List<Dependency> moduleNameVersion, List<Map<String, Object>> descriptors) {
     var moduleIds = getDescriptorModuleIds(descriptors);
     validate(moduleIds, moduleNameVersion);
   }
 
-  private ModulesLoadResult loadModules(Map<String, String> moduleNameVersion, ModuleType moduleType)
-    throws MojoExecutionException {
-    return moduleDescriptorService.loadModules(moduleType, getModuleDefinitions(moduleNameVersion));
+  private List<Dependency> resolveConstraints(List<Dependency> dependencies, ModuleType type)
+        throws MojoExecutionException {
+    return moduleVersionService.resolveModulesConstraints(emptyIfNull(dependencies), type);
   }
 
   private String getVersionWithIncPatch(String version) {
@@ -82,13 +90,12 @@ public class ApplicationDescriptorUpdateService {
   }
 
   private List<Dependency> getDescriptorModuleIds(List<Map<String, Object>> descriptors) {
+    if (descriptors == null) {
+      return emptyList();
+    }
+
     return descriptors.stream()
       .flatMap(descriptor -> splitModuleId(getModuleId(descriptor)).stream()).toList();
-  }
-
-  private List<ModuleDefinition> getModuleDefinitions(Map<String, String> moduleNameVersion) {
-    return convertToArtifacts(moduleNameVersion.entrySet()
-      .stream().map(entry -> new Dependency(entry.getKey(), entry.getValue())).toList());
   }
 
   private List<ModuleDefinition> updateModules(List<ModuleDefinition> modules, ModulesLoadResult modulesLoadResult) {
@@ -99,7 +106,10 @@ public class ApplicationDescriptorUpdateService {
   }
 
   private List<Map<String, Object>> updateDescriptors(ModulesLoadResult modulesLoadResult,
-    List<Map<String, Object>> descriptors) {
+                                                      List<Map<String, Object>> descriptors) {
+    if (descriptors == null) {
+      return null;
+    }
 
     Map<String, Map<String, Object>> loadResults = modulesLoadResult.descriptors().stream()
       .map(descriptor -> parseModuleId(getModuleId(descriptor))
@@ -118,13 +128,13 @@ public class ApplicationDescriptorUpdateService {
     return descriptor.get("id").toString();
   }
 
-  private void validate(List<Dependency> modules, Map<String, String> updateModuleNameVersion) {
+  private void validate(List<Dependency> modules, List<Dependency> updateModuleNameVersion) {
     var moduleNameVersion = modules.stream().collect(
       toMap(Dependency::getName, Dependency::getVersion, (v1, v2) -> v2));
 
-    var invalid = updateModuleNameVersion.entrySet().stream()
-      .filter(entry -> isInvalidModule(entry.getKey(), entry.getValue(), moduleNameVersion))
-      .map(entry -> new Dependency(entry.getKey(), entry.getValue())).toList();
+    var invalid = updateModuleNameVersion.stream()
+      .filter(dep -> isInvalidModule(dep.getName(), dep.getVersion(), moduleNameVersion))
+      .toList();
 
     if (!invalid.isEmpty()) {
       throw new IllegalArgumentException("Invalid input modules to update:\n"
@@ -140,8 +150,9 @@ public class ApplicationDescriptorUpdateService {
     if (oldVersion == null) {
       return true;
     }
-    var old = Semver.parse(oldVersion);
-    return old != null && old.isGreaterThanOrEqualTo(newVersion);
+    var old = SemverUtils.parse(oldVersion);
+    var newSemver = SemverUtils.parse(newVersion);
+    return old == null || newSemver == null || old.isGreaterThanOrEqualTo(newSemver);
   }
 
   private List<ModuleDefinition> convertToArtifacts(List<Dependency> dependencies) {
@@ -158,24 +169,18 @@ public class ApplicationDescriptorUpdateService {
     return name + "-" + version;
   }
 
-  private Map<String, String> parseModuleIdsToUpdate(String modules) {
-    if (isBlank(modules)) {
-      log.warn("Input modules to update cannot be blank");
-      return emptyMap();
-    }
-
-    return stream(modules.split(","))
+  private List<Dependency> parseModuleIdsToUpdate(String modules) {
+    return isBlank(modules) ? emptyList() : stream(modules.split(","))
       .map(String::trim)
-      .map(this::parseModuleId)
-      .filter(Optional::isPresent)
-      .map(Optional::get)
-      .collect(toMap(Dependency::getName, Dependency::getVersion, (v1, v2) -> v2));
+      .map(moduleId -> parseModuleId(moduleId)
+        .orElseThrow(() -> new IllegalArgumentException("Invalid module id format: " + moduleId)))
+      .toList();
   }
 
   private Optional<Dependency> parseModuleId(String moduleId) {
     if (moduleId.contains(LATEST_VERSION)) {
       var name = moduleId.substring(0, moduleId.indexOf(':'));
-      return Optional.of(new Dependency(name, LATEST_VERSION));
+      return Optional.of(new Dependency(name, LATEST_VERSION, PreReleaseFilter.TRUE));
     }
     return splitModuleId(moduleId);
   }

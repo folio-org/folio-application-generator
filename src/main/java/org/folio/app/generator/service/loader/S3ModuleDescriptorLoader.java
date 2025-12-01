@@ -21,6 +21,7 @@ import org.folio.app.generator.model.registry.S3ModuleRegistry;
 import org.folio.app.generator.model.types.RegistryType;
 import org.folio.app.generator.utils.JsonConverter;
 import org.folio.app.generator.utils.PluginConfig;
+import org.folio.app.generator.utils.SemverUtils;
 import org.semver4j.Semver;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -178,7 +179,7 @@ public class S3ModuleDescriptorLoader implements ModuleDescriptorLoader {
       .orElse(fileName);
 
     return createModuleDefinitionFromId(moduleDescriptorId)
-      .map(md -> Pair.of(md.getName(), Semver.parse(md.getVersion())))
+      .map(md -> Pair.of(md.getName(), SemverUtils.parse(md.getVersion())))
       .filter(pair -> pair.getRight() != null)
       .orElse(null);
   }
@@ -190,11 +191,11 @@ public class S3ModuleDescriptorLoader implements ModuleDescriptorLoader {
   private static boolean match(ModuleDefinition module, Pair<String, Semver> moduleNameToVersionPair) {
     return moduleNameToVersionPair != null
       && moduleNameToVersionPair.getLeft().equals(module.getName())
-      && moduleNameToVersionPair.getRight().equals(Semver.parse(module.getVersion()));
+      && moduleNameToVersionPair.getRight().equals(SemverUtils.parse(module.getVersion()));
   }
 
   private static boolean isStableVersion(ModuleDefinition module) {
-    var parsedVersion = Semver.parse(module.getVersion());
+    var parsedVersion = SemverUtils.parse(module.getVersion());
     return parsedVersion != null && parsedVersion.isStable();
   }
 }
