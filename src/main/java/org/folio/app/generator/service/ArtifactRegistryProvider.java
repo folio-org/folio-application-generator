@@ -2,6 +2,7 @@ package org.folio.app.generator.service;
 
 import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.lowerCase;
 import static org.folio.app.generator.utils.PluginUtils.collectToBulletedList;
 
@@ -27,8 +28,8 @@ import org.springframework.stereotype.Component;
 public class ArtifactRegistryProvider {
 
   private final StringArtifactRegistryParser artifactRegistryParser;
-  private final List<String> supportedDockerTypes = List.of("docker-hub");
-  private final List<String> supportedNpmTypes = List.of("folio-npm");
+  private final List<String> supportedDockerTypes = List.of(ArtifactRegistryType.DOCKER_HUB.getValue());
+  private final List<String> supportedNpmTypes = List.of(ArtifactRegistryType.FOLIO_NPM.getValue());
 
   public ArtifactRegistries getArtifactRegistries(PluginConfig config) {
     var processor = new ArtifactRegistryProcessor(config);
@@ -50,16 +51,16 @@ public class ArtifactRegistryProvider {
   }
 
   private static ArtifactRegistry toArtifactRegistry(ConfigArtifactRegistry registry) {
-    if ("docker-hub".equals(lowerCase(registry.getType()))) {
+    if (ArtifactRegistryType.DOCKER_HUB.getValue().equals(lowerCase(registry.getType()))) {
       var dockerRegistry = new DockerHubArtifactRegistry().namespace(registry.getNamespace());
-      if (registry.getBaseUrl() != null) {
+      if (isNotBlank(registry.getBaseUrl())) {
         dockerRegistry.baseUrl(registry.getBaseUrl());
       }
       return dockerRegistry;
     }
 
     var npmRegistry = new FolioNpmArtifactRegistry().namespace(registry.getNamespace());
-    if (registry.getBaseUrl() != null) {
+    if (isNotBlank(registry.getBaseUrl())) {
       npmRegistry.baseUrl(registry.getBaseUrl());
     }
     return npmRegistry;
