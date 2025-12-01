@@ -175,6 +175,22 @@ class ModuleVersionServiceTest {
   }
 
   @Test
+  void resolveModulesConstraints_positive_preReleaseNull() throws MojoExecutionException {
+    var dependency = new Dependency("mod-foo", "^1.0.0", null);
+    var registry = okapiRegistry();
+
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
+    when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE))
+        .thenReturn(Optional.of(List.of("1.2.0-SNAPSHOT", "1.1.0", "1.0.0")));
+
+    var result = service.resolveModulesConstraints(List.of(dependency), ModuleType.BE);
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getVersion()).isEqualTo("1.2.0-SNAPSHOT");
+    assertThat(result.get(0).getPreRelease()).isNull();
+  }
+
+  @Test
   void resolveModulesConstraints_positive_preReleaseOnly() throws MojoExecutionException {
     var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.ONLY);
     var registry = okapiRegistry();
