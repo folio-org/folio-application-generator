@@ -21,6 +21,7 @@ import org.folio.app.generator.model.ApplicationDescriptor;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.ModulesLoadResult;
 import org.folio.app.generator.support.UnitTest;
+import org.folio.app.generator.utils.PluginConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +36,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ApplicationDescriptorUpdateServiceTest {
 
   @Mock private MavenProject mavenProject;
+  @Mock private PluginConfig pluginConfig;
   @Mock private JsonProvider jsonProvider;
   @Mock private ModuleDescriptorService moduleDescriptorService;
   @Mock private ModuleVersionService moduleVersionService;
@@ -54,17 +56,15 @@ class ApplicationDescriptorUpdateServiceTest {
   @Test
   @SneakyThrows
   void update_negative_invalidModuleVersion() {
-    List<Map<String, Object>> modules = List.of(
-      Map.of("id", "module1-1.0.0"),
-      Map.of("id", "module2-2.0.0"),
-      Map.of("id", "module3:latest"));
-
-    List<Map<String, Object>> uiModules = List.of(
-      Map.of("id", "module-u1-1.0.0"),
-      Map.of("id", "module-u2-2.0.10010000000000158"),
-      Map.of("id", "module-u3:latest"));
-
-    var application = new ApplicationDescriptor().moduleDescriptors(modules).uiModuleDescriptors(uiModules);
+    var application = new ApplicationDescriptor()
+      .modules(List.of(
+        new ModuleDefinition().name("module1").version("1.0.0"),
+        new ModuleDefinition().name("module2").version("2.0.0"),
+        new ModuleDefinition().name("module3").version("latest")))
+      .uiModules(List.of(
+        new ModuleDefinition().name("module-u1").version("1.0.0"),
+        new ModuleDefinition().name("module-u2").version("2.0.10010000000000158"),
+        new ModuleDefinition().name("module-u3").version("latest")));
 
     assertThrows(IllegalArgumentException.class,
       () -> updateService.update(application, "module1-1.1.0,module2-2.0.0,module3:latest",
@@ -74,9 +74,9 @@ class ApplicationDescriptorUpdateServiceTest {
   @Test
   @SneakyThrows
   void update_negative_downgradeModule() {
-    List<Map<String, Object>> modules = List.of(Map.of("id", "module1-2.0.0"));
-    List<Map<String, Object>> uiModules = List.of(Map.of("id", "module-u1-2.0.0"));
-    var application = new ApplicationDescriptor().moduleDescriptors(modules).uiModuleDescriptors(uiModules);
+    var application = new ApplicationDescriptor()
+      .modules(List.of(new ModuleDefinition().name("module1").version("2.0.0")))
+      .uiModules(List.of(new ModuleDefinition().name("module-u1").version("2.0.0")));
 
     assertThrows(IllegalArgumentException.class,
       () -> updateService.update(application, "module1-1.0.0", "module-u1-1.0.0"));
@@ -85,14 +85,13 @@ class ApplicationDescriptorUpdateServiceTest {
   @Test
   @SneakyThrows
   void update_negative_moduleNotInDescriptor() {
-    List<Map<String, Object>> modules = List.of(
-      Map.of("id", "module1-1.0.0"),
-      Map.of("id", "module2-2.0.0"));
-
-    List<Map<String, Object>> uiModules = List.of(
-      Map.of("id", "module-u1-1.0.0"),
-      Map.of("id", "module-u2-2.0.0"));
-    var application = new ApplicationDescriptor().moduleDescriptors(modules).uiModuleDescriptors(uiModules);
+    var application = new ApplicationDescriptor()
+      .modules(List.of(
+        new ModuleDefinition().name("module1").version("1.0.0"),
+        new ModuleDefinition().name("module2").version("2.0.0")))
+      .uiModules(List.of(
+        new ModuleDefinition().name("module-u1").version("1.0.0"),
+        new ModuleDefinition().name("module-u2").version("2.0.0")));
 
     assertThrows(IllegalArgumentException.class,
       () -> updateService.update(application, "module3-1.0.0", "module-u3-1.0.0"));
@@ -120,7 +119,7 @@ class ApplicationDescriptorUpdateServiceTest {
         new ModuleDefinition().id("module2-2.0.0").name("module2").version("2.0.0"),
         new ModuleDefinition().id("module3-1.1.0").name("module3").version("1.1.0")))
       .uiModules(List.of(
-        new ModuleDefinition().id("uiModule1-1.0.1").name("uiModule1").version("1.0.1"),
+        new ModuleDefinition().id("uiModule1-1.0.0").name("uiModule1").version("1.0.0"),
         new ModuleDefinition().id("uiModule2-1.0.10010000000158").name("uiModule2").version("1.0.10010000000158")))
       .moduleDescriptors(modules)
       .uiModuleDescriptors(uiModules);
@@ -199,8 +198,8 @@ class ApplicationDescriptorUpdateServiceTest {
   @SneakyThrows
   void update_negative_invalidVersionFormat() {
     var application = new ApplicationDescriptor()
-      .moduleDescriptors(List.of(Map.of("id", "module1-1.x.0")))
-      .uiModuleDescriptors(List.of(Map.of("id", "uiModule1-1.0.0")));
+      .modules(List.of(new ModuleDefinition().name("module1").version("1.x.0")))
+      .uiModules(List.of(new ModuleDefinition().name("uiModule1").version("1.0.0")));
 
     assertThrows(IllegalArgumentException.class,
       () -> updateService.update(application, "module1-2.0.0", "uiModule1-1.0.1"));
@@ -217,11 +216,9 @@ class ApplicationDescriptorUpdateServiceTest {
   @Test
   @SneakyThrows
   void update_negative_invalidNewSemverVersion() {
-    List<Map<String, Object>> modules = List.of(Map.of("id", "module1-1.0.0"));
-    List<Map<String, Object>> uiModules = List.of(Map.of("id", "uiModule1-1.0.0"));
     var application = new ApplicationDescriptor()
-      .moduleDescriptors(modules)
-      .uiModuleDescriptors(uiModules);
+      .modules(List.of(new ModuleDefinition().name("module1").version("1.0.0")))
+      .uiModules(List.of(new ModuleDefinition().name("uiModule1").version("1.0.0")));
 
     assertThrows(IllegalArgumentException.class,
       () -> updateService.update(application, "module1-1.x.0", ""));
@@ -230,23 +227,56 @@ class ApplicationDescriptorUpdateServiceTest {
   @Test
   @SneakyThrows
   void update_negative_mixedValidAndInvalidModules() {
-    List<Map<String, Object>> modules = List.of(
-      Map.of("id", "module1-1.0.0"),
-      Map.of("id", "module2-2.0.0"));
-    List<Map<String, Object>> uiModules = List.of(Map.of("id", "uiModule1-1.0.0"));
     var application = new ApplicationDescriptor()
-      .moduleDescriptors(modules)
-      .uiModuleDescriptors(uiModules);
+      .modules(List.of(
+        new ModuleDefinition().name("module1").version("1.0.0"),
+        new ModuleDefinition().name("module2").version("2.0.0")))
+      .uiModules(List.of(new ModuleDefinition().name("uiModule1").version("1.0.0")));
 
     assertThrows(IllegalArgumentException.class,
       () -> updateService.update(application, "module1-2.0.0,module2-1.0.0", "uiModule1-1.0.0"));
   }
 
   @Test
+  void update_negative_blankModulesInput() {
+    var application = new ApplicationDescriptor();
+
+    assertThrows(IllegalArgumentException.class,
+      () -> updateService.update(application, "", ""));
+  }
+
+  @Test
   @SneakyThrows
-  void update_positive_blankModulesInput() {
-    List<Map<String, Object>> modules = List.of(Map.of("id", "module1-1.0.0"));
-    List<Map<String, Object>> uiModules = List.of(Map.of("id", "uiModule1-1.0.0"));
+  void update_positive_withBuildNumber_preRelease() {
+    var build = new Build();
+    build.setDirectory("dir");
+
+    final var application = new ApplicationDescriptor()
+      .id("name-1.0.0-SNAPSHOT.124")
+      .name("name")
+      .version("1.0.0-SNAPSHOT.124")
+      .modules(List.of(new ModuleDefinition().name("module1").version("1.0.0")))
+      .uiModules(List.of(new ModuleDefinition().name("uiModule1").version("1.0.0")));
+
+    when(pluginConfig.getBuildNumber()).thenReturn("125");
+    when(moduleDescriptorService.loadModules(eq(BE), anyList()))
+      .thenReturn(new ModulesLoadResult(List.of(), List.of()));
+    when(moduleDescriptorService.loadModules(eq(UI), anyList()))
+      .thenReturn(new ModulesLoadResult(
+          List.of(new ModuleDefinition().id("uiModule1-1.1.0").name("uiModule1").version("1.1.0")),
+          List.of(Map.of("id", "uiModule1-1.1.0"))));
+    when(mavenProject.getBuild()).thenReturn(build);
+    doNothing().when(jsonProvider).writeApplication(applicationCaptor.capture(), any());
+
+    updateService.update(application, "", "uiModule1-1.1.0");
+
+    assertThat(applicationCaptor.getValue().getVersion()).isEqualTo("1.0.0-SNAPSHOT.125");
+    assertThat(applicationCaptor.getValue().getId()).isEqualTo("name-1.0.0-SNAPSHOT.125");
+  }
+
+  @Test
+  @SneakyThrows
+  void update_positive_withBuildNumber_preReleaseNoBuildInVersion() {
     var build = new Build();
     build.setDirectory("dir");
 
@@ -254,24 +284,106 @@ class ApplicationDescriptorUpdateServiceTest {
       .id("name-1.0.0-SNAPSHOT")
       .name("name")
       .version("1.0.0-SNAPSHOT")
-      .modules(List.of(new ModuleDefinition().id("module1-1.0.0").name("module1").version("1.0.0")))
-      .uiModules(List.of(new ModuleDefinition().id("uiModule1-1.0.0").name("uiModule1").version("1.0.0")))
-      .moduleDescriptors(modules)
-      .uiModuleDescriptors(uiModules);
+      .modules(List.of(new ModuleDefinition().name("module1").version("1.0.0")))
+      .uiModules(List.of(new ModuleDefinition().name("uiModule1").version("1.0.0")));
 
+    when(pluginConfig.getBuildNumber()).thenReturn("125");
     when(moduleDescriptorService.loadModules(eq(BE), anyList()))
-      .thenReturn(new ModulesLoadResult(List.of(), List.of()));
+      .thenReturn(new ModulesLoadResult(
+        List.of(new ModuleDefinition().id("module1-1.1.0").name("module1").version("1.1.0")),
+        List.of(Map.of("id", "module1-1.1.0"))));
     when(moduleDescriptorService.loadModules(eq(UI), anyList()))
       .thenReturn(new ModulesLoadResult(List.of(), List.of()));
     when(mavenProject.getBuild()).thenReturn(build);
     doNothing().when(jsonProvider).writeApplication(applicationCaptor.capture(), any());
 
-    updateService.update(application, "", "");
+    updateService.update(application, "module1-1.1.0", "");
 
-    assertThat(applicationCaptor.getValue().getVersion()).isEqualTo("1.0.1-SNAPSHOT");
-    assertThat(applicationCaptor.getValue().getModules()).isEqualTo(
-      List.of(new ModuleDefinition().id("module1-1.0.0").name("module1").version("1.0.0")));
-    assertThat(applicationCaptor.getValue().getUiModules()).isEqualTo(
-      List.of(new ModuleDefinition().id("uiModule1-1.0.0").name("uiModule1").version("1.0.0")));
+    assertThat(applicationCaptor.getValue().getVersion()).isEqualTo("1.0.0-SNAPSHOT.125");
+  }
+
+  @Test
+  @SneakyThrows
+  void update_positive_withBuildNumber_releaseVersion() {
+    var build = new Build();
+    build.setDirectory("dir");
+
+    final var application = new ApplicationDescriptor()
+      .id("name-1.0.0")
+      .name("name")
+      .version("1.0.0")
+      .modules(List.of(new ModuleDefinition().name("module1").version("1.0.0")))
+      .uiModules(List.of(new ModuleDefinition().name("uiModule1").version("1.0.0")));
+
+    when(pluginConfig.getBuildNumber()).thenReturn("125");
+    when(moduleDescriptorService.loadModules(eq(BE), anyList()))
+      .thenReturn(new ModulesLoadResult(
+        List.of(new ModuleDefinition().id("module1-1.1.0").name("module1").version("1.1.0")),
+        List.of(Map.of("id", "module1-1.1.0"))));
+    when(moduleDescriptorService.loadModules(eq(UI), anyList()))
+      .thenReturn(new ModulesLoadResult(List.of(), List.of()));
+    when(mavenProject.getBuild()).thenReturn(build);
+    doNothing().when(jsonProvider).writeApplication(applicationCaptor.capture(), any());
+
+    updateService.update(application, "module1-1.1.0", "");
+
+    assertThat(applicationCaptor.getValue().getVersion()).isEqualTo("1.0.1");
+  }
+
+  @Test
+  @SneakyThrows
+  void update_positive_invalidVersionFormat() {
+    var build = new Build();
+    build.setDirectory("dir");
+
+    final var application = new ApplicationDescriptor()
+      .id("name-invalid")
+      .name("name")
+      .version("invalid")
+      .modules(List.of(new ModuleDefinition().name("module1").version("1.0.0")))
+      .uiModules(List.of(new ModuleDefinition().name("uiModule1").version("1.0.0")));
+
+    when(moduleDescriptorService.loadModules(eq(BE), anyList()))
+      .thenReturn(new ModulesLoadResult(
+        List.of(new ModuleDefinition().id("module1-1.1.0").name("module1").version("1.1.0")),
+        List.of(Map.of("id", "module1-1.1.0"))));
+    when(moduleDescriptorService.loadModules(eq(UI), anyList()))
+      .thenReturn(new ModulesLoadResult(List.of(), List.of()));
+    when(mavenProject.getBuild()).thenReturn(build);
+    doNothing().when(jsonProvider).writeApplication(applicationCaptor.capture(), any());
+
+    updateService.update(application, "module1-1.1.0", "");
+
+    assertThat(applicationCaptor.getValue().getVersion()).isEqualTo("invalid");
+  }
+
+  @Test
+  @SneakyThrows
+  void update_positive_nullModuleDescriptors() {
+    var build = new Build();
+    build.setDirectory("dir");
+
+    final var application = new ApplicationDescriptor()
+      .id("name-1.0.0-SNAPSHOT")
+      .name("name")
+      .version("1.0.0-SNAPSHOT")
+      .modules(List.of(new ModuleDefinition().name("module1").version("1.0.0")))
+      .uiModules(List.of(new ModuleDefinition().name("uiModule1").version("1.0.0")))
+      .moduleDescriptors(null)
+      .uiModuleDescriptors(null);
+
+    when(moduleDescriptorService.loadModules(eq(BE), anyList()))
+      .thenReturn(new ModulesLoadResult(
+        List.of(new ModuleDefinition().id("module1-1.1.0").name("module1").version("1.1.0")),
+        List.of(Map.of("id", "module1-1.1.0"))));
+    when(moduleDescriptorService.loadModules(eq(UI), anyList()))
+      .thenReturn(new ModulesLoadResult(List.of(), List.of()));
+    when(mavenProject.getBuild()).thenReturn(build);
+    doNothing().when(jsonProvider).writeApplication(applicationCaptor.capture(), any());
+
+    updateService.update(application, "module1-1.1.0", "");
+
+    assertThat(applicationCaptor.getValue().getModuleDescriptors()).isNull();
+    assertThat(applicationCaptor.getValue().getUiModuleDescriptors()).isNull();
   }
 }

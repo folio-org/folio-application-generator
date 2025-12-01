@@ -5,15 +5,18 @@ import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.folio.app.generator.model.types.ModuleType.BE;
 import static org.folio.app.generator.model.types.ModuleType.UI;
 import static org.folio.app.generator.utils.PluginUtils.collectToBulletedList;
 import static org.folio.app.generator.utils.PluginUtils.emptyIfNull;
 import static org.folio.app.generator.utils.PluginUtils.splitModuleId;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -24,6 +27,7 @@ import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.ModulesLoadResult;
 import org.folio.app.generator.model.PreReleaseFilter;
 import org.folio.app.generator.model.types.ModuleType;
+import org.folio.app.generator.utils.PluginConfig;
 import org.folio.app.generator.utils.SemverUtils;
 import org.semver4j.Semver;
 import org.springframework.stereotype.Component;
@@ -33,7 +37,10 @@ import org.springframework.stereotype.Component;
 public class ApplicationDescriptorUpdateService {
 
   private static final String LATEST_VERSION = "latest";
+  private static final Pattern DIGITS_PATTERN = Pattern.compile("\\d+");
+
   private final MavenProject mavenProject;
+  private final PluginConfig pluginConfig;
   private final JsonProvider jsonProvider;
   private final ModuleDescriptorService moduleDescriptorService;
   private final ModuleVersionService moduleVersionService;
@@ -48,14 +55,19 @@ public class ApplicationDescriptorUpdateService {
    */
   public void update(ApplicationDescriptor application, String modulesIds, String uiModulesIds)
     throws MojoExecutionException {
+    if (isBlank(modulesIds) && isBlank(uiModulesIds)) {
+      throw new IllegalArgumentException(
+        "Update failed: both -Dmodules and -DuiModules parameters are missing or empty");
+    }
+
     var moduleNameVersion = parseModuleIdsToUpdate(modulesIds);
     var uiModuleNameVersion = parseModuleIdsToUpdate(uiModulesIds);
 
     var resolvedModules = resolveConstraints(moduleNameVersion, BE);
     var resolvedUiModules = resolveConstraints(uiModuleNameVersion, UI);
 
-    validateModules(resolvedModules, application.getModuleDescriptors());
-    validateModules(resolvedUiModules, application.getUiModuleDescriptors());
+    validateModules(resolvedModules, application.getModules());
+    validateModules(resolvedUiModules, application.getUiModules());
 
     var modules = convertToArtifacts(resolvedModules);
     var uiModules = convertToArtifacts(resolvedUiModules);
@@ -63,7 +75,7 @@ public class ApplicationDescriptorUpdateService {
     var modulesLoadResult = moduleDescriptorService.loadModules(BE, modules);
     var uiModulesLoadResult = moduleDescriptorService.loadModules(UI, uiModules);
 
-    var version = getVersionWithIncPatch(application.getVersion());
+    var version = getUpdatedVersion(application.getVersion());
     application.setId(getId(application.getName(), version));
     application.setVersion(version);
     application.setModules(updateModules(application.getModules(), modulesLoadResult));
@@ -75,9 +87,24 @@ public class ApplicationDescriptorUpdateService {
     jsonProvider.writeApplication(application, mavenProject.getBuild().getDirectory());
   }
 
-  private void validateModules(List<Dependency> moduleNameVersion, List<Map<String, Object>> descriptors) {
-    var moduleIds = getDescriptorModuleIds(descriptors);
-    validate(moduleIds, moduleNameVersion);
+  private void validateModules(List<Dependency> modulesToUpdate, List<ModuleDefinition> modulesList) {
+    if (modulesToUpdate.isEmpty()) {
+      return;
+    }
+
+    if (modulesList == null) {
+      throw new IllegalArgumentException(
+        "Cannot validate modules: modules list is null in application descriptor");
+    }
+
+    var existingModules = getModuleListIds(modulesList);
+    validate(existingModules, modulesToUpdate);
+  }
+
+  private List<Dependency> getModuleListIds(List<ModuleDefinition> modules) {
+    return modules.stream()
+      .map(md -> new Dependency(md.getName(), md.getVersion(), PreReleaseFilter.fromVersion(md.getVersion())))
+      .toList();
   }
 
   private List<Dependency> resolveConstraints(List<Dependency> dependencies, ModuleType type)
@@ -85,17 +112,31 @@ public class ApplicationDescriptorUpdateService {
     return moduleVersionService.resolveModulesConstraints(emptyIfNull(dependencies), type);
   }
 
-  private String getVersionWithIncPatch(String version) {
-    return ofNullable(Semver.parse(version)).map(Semver::withIncPatch).map(Semver::getVersion).orElse(version);
-  }
-
-  private List<Dependency> getDescriptorModuleIds(List<Map<String, Object>> descriptors) {
-    if (descriptors == null) {
-      return emptyList();
+  private String getUpdatedVersion(String version) {
+    var buildNumber = pluginConfig.getBuildNumber();
+    var semver = Semver.parse(version);
+    if (semver == null) {
+      return version;
     }
 
-    return descriptors.stream()
-      .flatMap(descriptor -> splitModuleId(getModuleId(descriptor)).stream()).toList();
+    if (isNotBlank(buildNumber) && !semver.getPreRelease().isEmpty()) {
+      return updateBuildNumber(semver, buildNumber);
+    } else {
+      return semver.withIncPatch().getVersion();
+    }
+  }
+
+  private String updateBuildNumber(Semver version, String buildNumber) {
+    var preReleaseParts = new ArrayList<>(version.getPreRelease());
+    var lastPart = preReleaseParts.get(preReleaseParts.size() - 1);
+
+    if (DIGITS_PATTERN.matcher(lastPart).matches()) {
+      preReleaseParts.set(preReleaseParts.size() - 1, buildNumber);
+    } else {
+      preReleaseParts.add(buildNumber);
+    }
+
+    return version.withPreRelease(String.join(".", preReleaseParts)).getVersion();
   }
 
   private List<ModuleDefinition> updateModules(List<ModuleDefinition> modules, ModulesLoadResult modulesLoadResult) {
@@ -178,7 +219,7 @@ public class ApplicationDescriptorUpdateService {
   }
 
   private Optional<Dependency> parseModuleId(String moduleId) {
-    if (moduleId.contains(LATEST_VERSION)) {
+    if (moduleId.contains(":" + LATEST_VERSION)) {
       var name = moduleId.substring(0, moduleId.indexOf(':'));
       return Optional.of(new Dependency(name, LATEST_VERSION, PreReleaseFilter.TRUE));
     }
