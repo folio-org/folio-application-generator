@@ -297,7 +297,13 @@ public class ApplicationDescriptorUpdateService {
     var existingSemver = SemverUtils.parse(existingVersion);
     var updateSemver = SemverUtils.parse(updateVersion);
 
-    return updateSemver == null || existingSemver == null ? 0 : existingSemver.compareTo(updateSemver);
+    if (existingSemver == null || updateSemver == null) {
+      log.warn(String.format("Unable to compare versions '%s' and '%s' - treating as unchanged",
+        existingVersion, updateVersion));
+      return 0;
+    }
+
+    return existingSemver.compareTo(updateSemver);
   }
 
   private List<Dependency> resolveConstraints(List<Dependency> dependencies, ModuleType type)

@@ -529,6 +529,7 @@ class ApplicationDescriptorUpdateServiceTest {
     assertThat(applicationCaptor.getValue().getModules()).hasSize(2);
     assertThat(applicationCaptor.getValue().getModules().get(0).getVersion()).isEqualTo("1.1.0");
     assertThat(applicationCaptor.getValue().getModules().get(1).getVersion()).isEqualTo("1.0.0");
+    verify(log).warn("Unable to compare versions '1.0.0' and '1x' - treating as unchanged");
   }
 
   @Test
