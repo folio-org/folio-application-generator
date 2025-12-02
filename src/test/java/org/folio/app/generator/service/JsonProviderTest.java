@@ -2,6 +2,7 @@ package org.folio.app.generator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -111,6 +112,29 @@ class JsonProviderTest {
       assertThat(exception.getMessage()).contains("Could not create target directory");
     } finally {
       Files.deleteIfExists(tempFile);
+    }
+  }
+
+  @Test
+  @SneakyThrows
+  void writeUpdateResult_negative_directoryNotWritable() {
+    var tempDir = Files.createTempDirectory("json-provider-readonly-test");
+    var updateResult = new UpdateResult(
+      List.of(), List.of(), List.of(), List.of(),
+      List.of(), List.of(), List.of(), List.of());
+
+    try {
+      var permissionChanged = tempDir.toFile().setWritable(false);
+      assumeTrue(permissionChanged && !tempDir.toFile().canWrite(),
+        "Skipping test: cannot make directory non-writable on this system");
+
+      var exception = assertThrows(MojoExecutionException.class,
+        () -> jsonProvider.writeUpdateResult(updateResult, tempDir.toAbsolutePath().toString()));
+
+      assertThat(exception.getMessage()).contains("Target directory is not writable");
+    } finally {
+      tempDir.toFile().setWritable(true);
+      Files.deleteIfExists(tempDir);
     }
   }
 

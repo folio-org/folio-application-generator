@@ -149,8 +149,13 @@ public class ApplicationDescriptorUpdateService {
 
     return existingDescriptors.stream()
       .filter(descriptor -> {
-        var moduleIdOpt = parseModuleId(getModuleId(descriptor));
-        return moduleIdOpt.isPresent() && unchangedModuleNames.contains(moduleIdOpt.get().getName());
+        var moduleId = getModuleId(descriptor);
+        var moduleIdOpt = parseModuleId(moduleId);
+        if (moduleIdOpt.isEmpty()) {
+          log.warn("Skipping descriptor with invalid module ID: " + moduleId);
+          return false;
+        }
+        return unchangedModuleNames.contains(moduleIdOpt.get().getName());
       })
       .toList();
   }

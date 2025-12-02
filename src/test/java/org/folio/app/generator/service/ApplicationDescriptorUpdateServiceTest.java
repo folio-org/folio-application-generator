@@ -631,6 +631,7 @@ class ApplicationDescriptorUpdateServiceTest {
 
     assertThat(applicationCaptor.getValue().getModuleDescriptors()).hasSize(1);
     assertThat(applicationCaptor.getValue().getModuleDescriptors().get(0)).containsEntry("id", "module2-1.0.0");
+    verify(log).warn("Skipping descriptor with invalid module ID: invalid");
   }
 
   @Test

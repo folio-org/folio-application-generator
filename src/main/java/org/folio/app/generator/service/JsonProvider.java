@@ -84,6 +84,9 @@ public class JsonProvider {
     if (!file.exists() && !file.mkdirs()) {
       throw new MojoExecutionException("Could not create target directory: " + file);
     }
+    if (!file.canWrite()) {
+      throw new MojoExecutionException("Target directory is not writable: " + file);
+    }
 
     var updateResultFile = new File(file, "update-result.json");
     jsonConverter.writeValue(updateResultFile, updateResult);
