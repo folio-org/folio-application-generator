@@ -1,0 +1,31 @@
+{
+  "name": "${project.name}",
+  "version": "${project.version}",
+  "description": "${project.description}",
+  "platform": "base",
+  "dependencies": [],
+  "modules": [
+    {
+      "name": "mod-configuration",
+      "version": "latest"
+    },
+    {
+      "name": "mod-permissions",
+      "version": "latest"
+    },
+    {
+      "name": "mod-users",
+      "version": "latest"
+    }
+  ],
+  "uiModules": [
+    {
+      "name": "folio_developer",
+      "version": "latest"
+    },
+    {
+      "name": "folio_tags",
+      "version": "latest"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "name": "${project.name}",
+  "version": "${project.version}",
+  "description": "${project.description}",
+  "platform": "complete",
+  "dependencies": [
+    {
+      "name": "app-platform-complete",
+      "version": "^3.0.0-SNAPSHOT",
+      "preRelease": "only"
+    }
+  ],
+  "modules": [
+    {
+      "name": "mod-organizations",
+      "version": "latest",
+      "preRelease": "only"
+    },
+    {
+      "name": "mod-orders",
+      "version": "latest",
+      "preRelease": "only"
+    },
+    {
+      "name": "mod-invoice",
+      "version": "latest",
+      "preRelease": "only"
+    }
+  ],
+  "uiModules": [
+    {
+      "name": "folio_organizations",
+      "version": "latest",
+      "preRelease": "only"
+    },
+    {
+      "name": "folio_orders",
+      "version": "latest",
+      "preRelease": "only"
+    }
+  ]
+}
