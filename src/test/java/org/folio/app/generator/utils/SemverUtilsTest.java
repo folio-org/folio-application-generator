@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @UnitTest
 class SemverUtilsTest {
@@ -118,5 +120,28 @@ class SemverUtilsTest {
       Arguments.of("invalid version", "invalid", "^1.0.0", false),
       Arguments.of("null version", null, "^1.0.0", false)
     );
+  }
+
+  @Test
+  void isPreRelease_positive_snapshotVersion() {
+    var result = SemverUtils.isPreRelease("1.0.0-SNAPSHOT");
+
+    assertThat(result).isTrue();
+  }
+
+  @Test
+  void isPreRelease_positive_uiSnapshot() {
+    var result = SemverUtils.isPreRelease("11.0.109900000000247");
+
+    assertThat(result).isTrue();
+  }
+
+  @ParameterizedTest
+  @NullSource
+  @ValueSource(strings = {"1.0.0", "invalid"})
+  void isPreRelease_negative(String version) {
+    var result = SemverUtils.isPreRelease(version);
+
+    assertThat(result).isFalse();
   }
 }

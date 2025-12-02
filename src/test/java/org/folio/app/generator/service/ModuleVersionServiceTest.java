@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -17,9 +19,14 @@ import org.folio.app.generator.model.PreReleaseFilter;
 import org.folio.app.generator.model.registry.ModuleRegistries;
 import org.folio.app.generator.model.registry.OkapiModuleRegistry;
 import org.folio.app.generator.model.registry.S3ModuleRegistry;
+import org.folio.app.generator.model.registry.artifact.ArtifactRegistries;
+import org.folio.app.generator.model.registry.artifact.DockerHubArtifactRegistry;
+import org.folio.app.generator.model.registry.artifact.FolioNpmArtifactRegistry;
 import org.folio.app.generator.model.types.ModuleType;
+import org.folio.app.generator.service.artifact.existence.ArtifactExistenceCheckerFacade;
 import org.folio.app.generator.service.resolver.ModuleVersionResolverFacade;
 import org.folio.app.generator.support.UnitTest;
+import org.folio.app.generator.utils.PluginConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,12 +40,17 @@ class ModuleVersionServiceTest {
   @Mock private Log log;
   @Mock private ModuleRegistries moduleRegistries;
   @Mock private ModuleVersionResolverFacade resolverFacade;
+  @Mock private PluginConfig pluginConfig;
+  @Mock private ArtifactExistenceCheckerFacade artifactExistenceCheckerFacade;
+  @Mock private ArtifactRegistryProvider artifactRegistryProvider;
 
   private ModuleVersionService service;
 
   @BeforeEach
   void setUp() {
-    service = new ModuleVersionService(log, moduleRegistries, resolverFacade);
+    service = new ModuleVersionService(log, moduleRegistries, resolverFacade,
+      pluginConfig, artifactExistenceCheckerFacade, artifactRegistryProvider);
+    lenient().when(pluginConfig.isValidateArtifacts()).thenReturn(false);
   }
 
   @Test
@@ -346,11 +358,132 @@ class ModuleVersionServiceTest {
     assertThat(result.get(0).getVersion()).isEqualTo("1.5.0+build.123");
   }
 
+  @Test
+  void resolveModulesConstraints_positive_fallbackToNextVersionWhenArtifactNotFound()
+      throws MojoExecutionException {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var registry = okapiRegistry();
+    var artifactRegistries = createDefaultArtifactRegistries();
+
+    when(pluginConfig.isValidateArtifacts()).thenReturn(true);
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
+    when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE))
+        .thenReturn(Optional.of(List.of("1.5.0", "1.4.0", "1.3.0", "1.0.0")));
+    when(artifactRegistryProvider.getArtifactRegistries(pluginConfig)).thenReturn(artifactRegistries);
+    when(artifactExistenceCheckerFacade.exists(any(), any(), eq(ModuleType.BE)))
+        .thenReturn(false)
+        .thenReturn(false)
+        .thenReturn(true);
+
+    var result = service.resolveModulesConstraints(List.of(dependency), ModuleType.BE);
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getVersion()).isEqualTo("1.3.0");
+  }
+
+  @Test
+  void resolveModulesConstraints_positive_skipArtifactValidationWhenDisabled()
+      throws MojoExecutionException {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var registry = okapiRegistry();
+
+    when(pluginConfig.isValidateArtifacts()).thenReturn(false);
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
+    when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE))
+        .thenReturn(Optional.of(List.of("1.5.0", "1.4.0", "1.0.0")));
+
+    var result = service.resolveModulesConstraints(List.of(dependency), ModuleType.BE);
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getVersion()).isEqualTo("1.5.0");
+    verify(artifactExistenceCheckerFacade, never()).exists(any(), any(), any());
+  }
+
+  @Test
+  void resolveModulesConstraints_negative_noVersionWithArtifactFound() {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var registry = okapiRegistry();
+    var artifactRegistries = createDefaultArtifactRegistries();
+
+    when(pluginConfig.isValidateArtifacts()).thenReturn(true);
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
+    when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE))
+        .thenReturn(Optional.of(List.of("1.5.0", "1.4.0")));
+    when(artifactRegistryProvider.getArtifactRegistries(pluginConfig)).thenReturn(artifactRegistries);
+    when(artifactExistenceCheckerFacade.exists(any(), any(), eq(ModuleType.BE))).thenReturn(false);
+
+    assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
+        .isInstanceOf(MojoExecutionException.class)
+        .hasMessage("No version matching constraint '^1.0.0' found for BE module 'mod-foo' in any registry");
+  }
+
+  @Test
+  void resolveModulesConstraints_positive_snapshotVersionUsesSnapshotRegistry()
+      throws MojoExecutionException {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.TRUE);
+    var registry = okapiRegistry();
+    var artifactRegistries = createDefaultArtifactRegistries();
+
+    when(pluginConfig.isValidateArtifacts()).thenReturn(true);
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
+    when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE))
+        .thenReturn(Optional.of(List.of("1.5.0-SNAPSHOT.123")));
+    when(artifactRegistryProvider.getArtifactRegistries(pluginConfig)).thenReturn(artifactRegistries);
+    when(artifactExistenceCheckerFacade.exists(any(), any(), eq(ModuleType.BE))).thenReturn(true);
+
+    var result = service.resolveModulesConstraints(List.of(dependency), ModuleType.BE);
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getVersion()).isEqualTo("1.5.0-SNAPSHOT.123");
+  }
+
+  @Test
+  void resolveModulesConstraints_positive_uiModuleArtifactValidation() throws MojoExecutionException {
+    var dependency = new Dependency("folio_users", "^1.0.0", PreReleaseFilter.FALSE);
+    var registry = okapiRegistry();
+    var artifactRegistries = createDefaultArtifactRegistries();
+
+    when(pluginConfig.isValidateArtifacts()).thenReturn(true);
+    when(moduleRegistries.getRegistries(ModuleType.UI)).thenReturn(List.of(registry));
+    when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.UI))
+        .thenReturn(Optional.of(List.of("1.5.0", "1.4.0")));
+    when(artifactRegistryProvider.getArtifactRegistries(pluginConfig)).thenReturn(artifactRegistries);
+    when(artifactExistenceCheckerFacade.exists(any(), any(), eq(ModuleType.UI)))
+        .thenReturn(false)
+        .thenReturn(true);
+
+    var result = service.resolveModulesConstraints(List.of(dependency), ModuleType.UI);
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getVersion()).isEqualTo("1.4.0");
+  }
+
   private static OkapiModuleRegistry okapiRegistry() {
     return new OkapiModuleRegistry().url("http://localhost").withGeneratedFields();
   }
 
   private static S3ModuleRegistry s3Registry() {
     return new S3ModuleRegistry().bucket("test-bucket").path("modules/").withGeneratedFields();
+  }
+
+  private static ArtifactRegistries createDefaultArtifactRegistries() {
+    var beRegistries = List.of(
+      (org.folio.app.generator.model.registry.artifact.ArtifactRegistry)
+        new DockerHubArtifactRegistry().namespace("folioorg")
+    );
+    var bePreReleaseRegistries = List.of(
+      (org.folio.app.generator.model.registry.artifact.ArtifactRegistry)
+        new DockerHubArtifactRegistry().namespace("folioci")
+    );
+    var uiRegistries = List.of(
+      (org.folio.app.generator.model.registry.artifact.ArtifactRegistry)
+        new FolioNpmArtifactRegistry().namespace("npm-folio")
+    );
+    var uiPreReleaseRegistries = List.of(
+      (org.folio.app.generator.model.registry.artifact.ArtifactRegistry)
+        new FolioNpmArtifactRegistry().namespace("npm-folioci")
+    );
+    return new ArtifactRegistries(
+      beRegistries, uiRegistries, bePreReleaseRegistries, uiPreReleaseRegistries, List.of());
   }
 }

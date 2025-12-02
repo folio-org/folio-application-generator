@@ -1,0 +1,42 @@
+{
+  "id": "app-acquisitions-1.0.0-SNAPSHOT",
+  "name": "app-acquisitions",
+  "version": "1.0.0-SNAPSHOT",
+  "description": "Folio app-acquisitions descriptor",
+  "platform": "complete",
+  "modules": [
+    {
+      "id": "mod-orders-13.0.0",
+      "name": "mod-orders",
+      "version": "13.0.0"
+    },
+    {
+      "id": "mod-invoice-6.0.0",
+      "name": "mod-invoice",
+      "version": "6.0.0"
+    },
+    {
+      "id": "mod-organizations-2.0.0",
+      "name": "mod-organizations",
+      "version": "2.0.0"
+    }
+  ],
+  "uiModules": [
+    {
+      "id": "folio_orders-5.0.0",
+      "name": "folio_orders",
+      "version": "5.0.0"
+    },
+    {
+      "id": "folio_organizations-4.0.0",
+      "name": "folio_organizations",
+      "version": "4.0.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "name": "app-platform-complete",
+      "version": "^2.0.0"
+    }
+  ]
+}

@@ -81,11 +81,11 @@ public class ApplicationDependencyValidator {
     }
 
     var parsed = SemverUtils.parse(version);
-    if (parsed == null) {
+    if (parsed == null || dependency.getPreRelease() == null) {
       return null;
     }
 
-    var preRelease = dependency.getPreRelease() == null ? PreReleaseFilter.FALSE : dependency.getPreRelease();
+    var preRelease = dependency.getPreRelease();
     boolean isPre = !parsed.getPreRelease().isEmpty();
 
     if (!isPre && preRelease != PreReleaseFilter.FALSE) {

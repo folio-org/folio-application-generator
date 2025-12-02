@@ -143,9 +143,9 @@ public class ApplicationDescriptorUpdateService {
     if (existingDescriptors == null) {
       return List.of();
     }
-    var unchangedModuleNames = processResult.unchangedModules().stream()
-      .map(ModuleDefinition::getName)
-      .collect(Collectors.toSet());
+
+    var unchangedModuleVersions = processResult.unchangedModules().stream()
+      .collect(toMap(ModuleDefinition::getName, ModuleDefinition::getVersion));
 
     return existingDescriptors.stream()
       .filter(descriptor -> {
@@ -155,7 +155,21 @@ public class ApplicationDescriptorUpdateService {
           log.warn("Skipping descriptor with invalid module ID: " + moduleId);
           return false;
         }
-        return unchangedModuleNames.contains(moduleIdOpt.get().getName());
+
+        var moduleName = moduleIdOpt.get().getName();
+        var expectedVersion = unchangedModuleVersions.get(moduleName);
+        if (expectedVersion == null) {
+          return false;
+        }
+
+        var descriptorVersion = moduleIdOpt.get().getVersion();
+        if (!expectedVersion.equals(descriptorVersion)) {
+          log.warn(String.format("Descriptor version mismatch for '%s': expected %s, found %s",
+            moduleName, expectedVersion, descriptorVersion));
+          return false;
+        }
+
+        return true;
       })
       .toList();
   }
@@ -283,7 +297,13 @@ public class ApplicationDescriptorUpdateService {
     var existingSemver = SemverUtils.parse(existingVersion);
     var updateSemver = SemverUtils.parse(updateVersion);
 
-    return updateSemver == null || existingSemver == null ? 0 : existingSemver.compareTo(updateSemver);
+    if (existingSemver == null || updateSemver == null) {
+      log.warn(String.format("Unable to compare versions '%s' and '%s' - treating as unchanged",
+        existingVersion, updateVersion));
+      return 0;
+    }
+
+    return existingSemver.compareTo(updateSemver);
   }
 
   private List<Dependency> resolveConstraints(List<Dependency> dependencies, ModuleType type)
