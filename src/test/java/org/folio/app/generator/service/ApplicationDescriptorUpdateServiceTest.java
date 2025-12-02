@@ -669,4 +669,39 @@ class ApplicationDescriptorUpdateServiceTest {
     assertThat(applicationCaptor.getValue().getModuleDescriptors().get(0)).containsEntry("id", "module1-1.1.0");
     assertThat(applicationCaptor.getValue().getModuleDescriptors().get(1)).containsEntry("id", "module2-1.0.0");
   }
+
+  @Test
+  @SneakyThrows
+  void update_positive_moduleUrlsOnlyMode_descriptorVersionMismatch() {
+    var build = new Build();
+    build.setDirectory("dir");
+
+    final var application = new ApplicationDescriptor()
+      .id("name-1.0.0-SNAPSHOT")
+      .name("name")
+      .version("1.0.0-SNAPSHOT")
+      .modules(List.of(
+        new ModuleDefinition().id("module1-1.0.0").name("module1").version("1.0.0"),
+        new ModuleDefinition().id("module2-1.0.0").name("module2").version("1.0.0")))
+      .uiModules(List.of())
+      .moduleDescriptors(List.of(
+        Map.of("id", "module1-1.0.0"),
+        Map.of("id", "module2-2.0.0")));
+
+    when(pluginConfig.isModuleUrlsOnly()).thenReturn(true);
+    when(moduleDescriptorService.loadModules(eq(BE), anyList()))
+      .thenReturn(new ModulesLoadResult(
+        List.of(new ModuleDefinition().id("module1-1.1.0").name("module1").version("1.1.0")
+          .url("http://registry/module1")),
+        List.of()));
+    when(moduleDescriptorService.loadModules(eq(UI), anyList()))
+      .thenReturn(new ModulesLoadResult(List.of(), List.of()));
+    when(mavenProject.getBuild()).thenReturn(build);
+    doNothing().when(jsonProvider).writeApplication(applicationCaptor.capture(), any());
+
+    updateService.update(application, "module1-1.1.0,module2-1.0.0", "", UpdateConfig.defaults());
+
+    assertThat(applicationCaptor.getValue().getModuleDescriptors()).isEmpty();
+    verify(log).warn("Descriptor version mismatch for 'module2': expected 1.0.0, found 2.0.0");
+  }
 }
