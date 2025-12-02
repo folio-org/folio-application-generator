@@ -269,9 +269,9 @@ class ApplicationDescriptorGeneratorTemplateTest {
     assertThat(outputFile).exists();
     var result = jsonConverter.parse(outputFile, ApplicationDescriptor.class);
     assertThat(result.getModuleDescriptors()).hasSize(1);
-    assertThat(result.getModuleDescriptors().get(0).get("id")).isEqualTo("mod-configuration-5.10.0");
+    assertThat(result.getModuleDescriptors().get(0)).containsEntry("id", "mod-configuration-5.10.0");
     assertThat(result.getUiModuleDescriptors()).hasSize(1);
-    assertThat(result.getUiModuleDescriptors().get(0).get("id")).isEqualTo("folio_developer-7.1.0");
+    assertThat(result.getUiModuleDescriptors().get(0)).containsEntry("id", "folio_developer-7.1.0");
     assertThat(result.getModules().get(0).getUrl()).isNull();
     assertThat(result.getUiModules().get(0).getUrl()).isNull();
   }
