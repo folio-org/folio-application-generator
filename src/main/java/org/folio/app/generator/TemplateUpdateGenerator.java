@@ -1,6 +1,5 @@
 package org.folio.app.generator;
 
-import static java.util.Optional.ofNullable;
 import static org.apache.maven.plugins.annotations.ResolutionScope.RUNTIME;
 import static org.folio.app.generator.utils.PluginUtils.emptyIfNull;
 
@@ -48,8 +47,7 @@ public class TemplateUpdateGenerator extends AbstractGeneratorMojo {
     var application = jsonProvider.readJsonFromFile(appDescriptorPath, ApplicationDescriptor.class, false);
     var template = jsonProvider.readJsonFromFile(templatePath, ApplicationDescriptorTemplate.class, true);
 
-    application.setDependencies(
-      ofNullable(template.getDependencies()).orElse(application.getDependencies()));
+    application.setDependencies(emptyIfNull(template.getDependencies()));
 
     var updateConfig = UpdateConfig.builder()
       .allowDowngrade(allowDowngrade)

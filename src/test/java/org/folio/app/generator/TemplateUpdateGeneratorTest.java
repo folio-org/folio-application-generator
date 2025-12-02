@@ -149,6 +149,29 @@ class TemplateUpdateGeneratorTest {
     verify(mockJsonProvider).readJsonFromFile(null, ApplicationDescriptorTemplate.class, true);
   }
 
+  @Test
+  @SneakyThrows
+  void execute_positive_nullTemplateDependenciesResultsInEmptyList() {
+    mojo.appDescriptorPath = "/path/to/descriptor.json";
+    mojo.templatePath = "/path/to/template.json";
+    mojo.allowDowngrade = true;
+    mojo.allowAddModules = true;
+    mojo.removeUnlistedModules = true;
+
+    inputDescriptor.setDependencies(List.of(new Dependency("app-old", "1.0.0", null)));
+    template.setDependencies(null);
+
+    setupContextMocks();
+    when(mockJsonProvider.readJsonFromFile("/path/to/descriptor.json", ApplicationDescriptor.class, false))
+      .thenReturn(inputDescriptor);
+    when(mockJsonProvider.readJsonFromFile("/path/to/template.json", ApplicationDescriptorTemplate.class, true))
+      .thenReturn(template);
+
+    assertDoesNotThrow(() -> mojo.execute());
+
+    assert inputDescriptor.getDependencies().isEmpty();
+  }
+
   private void setupContextMocks() {
     when(mockContextBuilder.withLog(any())).thenReturn(mockContextBuilder);
     when(mockContextBuilder.withMavenSession(any())).thenReturn(mockContextBuilder);
