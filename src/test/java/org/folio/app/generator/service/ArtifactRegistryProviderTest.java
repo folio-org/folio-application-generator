@@ -209,7 +209,7 @@ class ArtifactRegistryProviderTest {
   }
 
   @Test
-  void getArtifactRegistries_positive_preReleaseRegistriesFromConfig() {
+  void getArtifactRegistries_positive_bePreReleaseRegistriesFromConfig() {
     var preReleaseRegistry = new ConfigArtifactRegistry();
     preReleaseRegistry.setType("docker-hub");
     preReleaseRegistry.setNamespace("my-snapshots");
@@ -222,6 +222,22 @@ class ArtifactRegistryProviderTest {
     assertThat(result.bePreReleaseRegistries()).hasSize(1);
     assertThat(result.bePreReleaseRegistries().get(0).getNamespace()).isEqualTo("my-snapshots");
     assertThat(result.beRegistries()).isEmpty();
+  }
+
+  @Test
+  void getArtifactRegistries_positive_uiPreReleaseRegistriesFromConfig() {
+    var preReleaseRegistry = new ConfigArtifactRegistry();
+    preReleaseRegistry.setType("folio-npm");
+    preReleaseRegistry.setNamespace("npm-snapshots");
+    var config = PluginConfig.builder()
+      .uiPreReleaseArtifactRegistries(List.of(preReleaseRegistry))
+      .build();
+
+    var result = artifactRegistryProvider.getArtifactRegistries(config);
+
+    assertThat(result.uiPreReleaseRegistries()).hasSize(1);
+    assertThat(result.uiPreReleaseRegistries().get(0).getNamespace()).isEqualTo("npm-snapshots");
+    assertThat(result.uiRegistries()).isEmpty();
   }
 
   @Test
