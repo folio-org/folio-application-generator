@@ -51,16 +51,18 @@ public class ApplicationDescriptorService {
       .platform(defaultIfBlank(template.getPlatform(), "base"))
       .modules(modulesLoadResult.artifacts())
       .uiModules(uiModulesLoadResult.artifacts())
-      .dependencies(emptyIfNull(template.getDependencies()));
+      .dependencies(stripPreRelease(template.getDependencies()));
 
-    if (!pluginParameters.isModuleUrlsOnly()) {
+    if (pluginParameters.isModuleUrlsOnly()) {
+      baseAppDescriptor
+        .moduleDescriptors(List.of())
+        .uiModuleDescriptors(List.of());
+    } else {
       baseAppDescriptor
         .moduleDescriptors(modulesLoadResult.descriptors())
         .uiModuleDescriptors(uiModulesLoadResult.descriptors());
-      emptyIfNull(baseAppDescriptor.getModules())
-        .forEach(md -> md.setUrl(null));
-      emptyIfNull(baseAppDescriptor.getUiModules())
-        .forEach(md -> md.setUrl(null));
+      clearModuleUrls(baseAppDescriptor.getModules());
+      clearModuleUrls(baseAppDescriptor.getUiModules());
     }
     return baseAppDescriptor;
   }
@@ -114,5 +116,15 @@ public class ApplicationDescriptorService {
   private String getVersionWithBuildNumber(String version) {
     var buildNumber = pluginParameters.getBuildNumber();
     return version.endsWith("SNAPSHOT") && isNotBlank(buildNumber) ? version + "." + buildNumber : version;
+  }
+
+  private void clearModuleUrls(List<ModuleDefinition> modules) {
+    emptyIfNull(modules).forEach(md -> md.setUrl(null));
+  }
+
+  private List<Dependency> stripPreRelease(List<Dependency> dependencies) {
+    return emptyIfNull(dependencies).stream()
+      .map(dep -> Dependency.builder().name(dep.getName()).version(dep.getVersion()).build())
+      .toList();
   }
 }
