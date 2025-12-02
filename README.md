@@ -212,7 +212,7 @@ mvn org.folio:folio-application-generator:updateFromTemplate \
 
 #### Update configuration options
 
-Both `updateFromJson` and `updateFromTemplate` goals support the following configuration options:
+##### updateFromJson defaults
 
 | Parameter             | Default | Description                                                                 |
 |-----------------------|---------|-----------------------------------------------------------------------------|
@@ -220,13 +220,21 @@ Both `updateFromJson` and `updateFromTemplate` goals support the following confi
 | allowAddModules       | false   | Allow adding new modules not present in the original descriptor             |
 | removeUnlistedModules | false   | Remove modules from descriptor that are not in the update list/template     |
 
-Example with options:
+##### updateFromTemplate defaults
+
+| Parameter             | Default | Description                                                                 |
+|-----------------------|---------|-----------------------------------------------------------------------------|
+| allowDowngrade        | true    | Allow downgrading module versions                                           |
+| allowAddModules       | true    | Allow adding new modules not present in the original descriptor             |
+| removeUnlistedModules | true    | Remove modules from descriptor that are not in the template                 |
+
+Example overriding defaults:
 ```shell
 mvn org.folio:folio-application-generator:updateFromTemplate \
   -DtemplatePath="${basedir}/template.json" \
-  -DallowDowngrade=true \
-  -DallowAddModules=true \
-  -DremoveUnlistedModules=true
+  -DallowDowngrade=false \
+  -DallowAddModules=false \
+  -DremoveUnlistedModules=false
 ```
 
 ### Validate Application's Modules Interface Integrity
@@ -412,25 +420,25 @@ These parameters can be specified in the job run using following notation
 mvn install -DbuildNumber="123" -DawsRegion=us-east-1
 ```
 
-| Parameter                | Default Value | Description                                                                                                                                                         |
-|--------------------------|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| awsRegion                | us-east-1     | AWS Region for S3 client                                                                                                                                            |
-| buildNumber              |               | Build number from CI tool (will be added for any '-SNAPSHOT' version of generated application                                                                       |
-| registries               |               | Comma-separated list of custom module-descriptor registries in formats: `s3::{{bucket-name}}:{{path-to-folder}}`, `okapi::{{okapi-base}}`, `simple::{{okapi-base}}` |
-| beRegistries             |               | Comma-separated list of custom back-end module-descriptor registries in the same format as `registries` parameter                                                   |
-| uiRegistries             |               | Comma-separated list of custom ui module-descriptor registries in the same format as `registries` parameter                                                         |
-| moduleUrlsOnly           | false         | If `true` only URLs of modules will be included to the modules. Modules descriptors will be empty.                                                                  |
-| appDescriptorPath        |               | File path of the application descriptor to update                                                                                                                   |
-| modules                  |               | Comma-separated list of BE module ids to be updated in format: `module1-1.1.0,module2-2.1.0`                                                                        |
-| uiModules                |               | Comma-separated list of UI module ids to be updated in the same format as `modules` parameter                                                                       |
-| overrideConfigRegistries |               | Defines if only command-line specified registries must be used (applies to `registries`, `beRegistries` and `uiRegistries` params)                                  |
-| allowDowngrade           | false         | Allow downgrading module versions during update (applies to `updateFromJson` and `updateFromTemplate` goals)                                                        |
-| allowAddModules          | false         | Allow adding new modules not present in the original descriptor (applies to `updateFromJson` and `updateFromTemplate` goals)                                        |
-| removeUnlistedModules    | false         | Remove modules from descriptor that are not in the update list/template (applies to `updateFromJson` and `updateFromTemplate` goals)                                |
-| templatePath             |               | Path to the template file for `updateFromTemplate` goal (default: `${basedir}/template.json`)                                                                       |
-| validateArtifacts              | false         | If `true`, validates that Docker images (BE) and NPM packages (UI) exist before generating the descriptor                                     |
-| artifactRegistries             |               | Comma-separated unified artifact registries (fallback for both BE and UI)                                                                     |
-| beArtifactRegistries           |               | Comma-separated BE artifact registries for release versions (format: `namespace` or `url::namespace`)                                         |
-| uiArtifactRegistries           |               | Comma-separated UI artifact registries for release versions (format: `repository` or `url::repository`)                                       |
-| bePreReleaseArtifactRegistries |               | Comma-separated BE artifact registries for pre-release versions                                                                               |
-| uiPreReleaseArtifactRegistries |               | Comma-separated UI artifact registries for pre-release versions                                                                               |
+| Parameter                      | Default Value | Description                                                                                                                                                         |
+|--------------------------------|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| awsRegion                      | us-east-1     | AWS Region for S3 client                                                                                                                                            |
+| buildNumber                    |               | Build number from CI tool (will be added for any '-SNAPSHOT' version of generated application                                                                       |
+| registries                     |               | Comma-separated list of custom module-descriptor registries in formats: `s3::{{bucket-name}}:{{path-to-folder}}`, `okapi::{{okapi-base}}`, `simple::{{okapi-base}}` |
+| beRegistries                   |               | Comma-separated list of custom back-end module-descriptor registries in the same format as `registries` parameter                                                   |
+| uiRegistries                   |               | Comma-separated list of custom ui module-descriptor registries in the same format as `registries` parameter                                                         |
+| moduleUrlsOnly                 | false         | If `true` only URLs of modules will be included to the modules. Modules descriptors will be empty.                                                                  |
+| appDescriptorPath              |               | File path of the application descriptor to update                                                                                                                   |
+| modules                        |               | Comma-separated list of BE module ids to be updated in format: `module1-1.1.0,module2-2.1.0`                                                                        |
+| uiModules                      |               | Comma-separated list of UI module ids to be updated in the same format as `modules` parameter                                                                       |
+| overrideConfigRegistries       |               | Defines if only command-line specified registries must be used (applies to `registries`, `beRegistries` and `uiRegistries` params)                                  |
+| allowDowngrade                 | false         | Allow downgrading module versions during update (applies to `updateFromJson` and `updateFromTemplate` goals)                                                        |
+| allowAddModules                | false         | Allow adding new modules not present in the original descriptor (applies to `updateFromJson` and `updateFromTemplate` goals)                                        |
+| removeUnlistedModules          | false         | Remove modules from descriptor that are not in the update list/template (applies to `updateFromJson` and `updateFromTemplate` goals)                                |
+| templatePath                   |               | Path to the template file for `updateFromTemplate` goal (default: `${basedir}/template.json`)                                                                       |
+| validateArtifacts              | false         | If `true`, validates that Docker images (BE) and NPM packages (UI) exist before generating the descriptor                                                           |
+| artifactRegistries             |               | Comma-separated unified artifact registries (fallback for both BE and UI)                                                                                           |
+| beArtifactRegistries           |               | Comma-separated BE artifact registries for release versions (format: `namespace` or `url::namespace`)                                                               |
+| uiArtifactRegistries           |               | Comma-separated UI artifact registries for release versions (format: `repository` or `url::repository`)                                                             |
+| bePreReleaseArtifactRegistries |               | Comma-separated BE artifact registries for pre-release versions                                                                                                     |
+| uiPreReleaseArtifactRegistries |               | Comma-separated UI artifact registries for pre-release versions                                                                                                     |
