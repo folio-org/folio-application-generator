@@ -28,11 +28,6 @@ public class ApplicationDescriptor {
   private String description;
 
   /**
-   * An application platform.
-   */
-  private String platform;
-
-  /**
    * A list with modules to be resolved.
    */
   private List<ModuleDefinition> modules;
@@ -94,16 +89,6 @@ public class ApplicationDescriptor {
    */
   public ApplicationDescriptor description(String description) {
     this.description = description;
-    return this;
-  }
-
-  /**
-   * Sets platform field and returns {@link ApplicationDescriptor}.
-   *
-   * @return modified {@link ApplicationDescriptor} value
-   */
-  public ApplicationDescriptor platform(String platform) {
-    this.platform = platform;
     return this;
   }
 

@@ -95,7 +95,6 @@ Or via command-line: `-DmoduleUrlsOnly=true`
   "name": "${project.name}",
   "version": "${project.version}",
   "description": "${project.description}",
-  "platform": "base",
   "dependencies": [
     {
       "name": "app-foo",
