@@ -2,7 +2,6 @@
   "name": "app-finc",
   "version": "1.1.0-SNAPSHOT.100200000001741",
   "description": "Application descriptor for the FOLIO finc application",
-  "platform": "complete",
   "dependencies": [
     {
       "name": "app-acquisitions",

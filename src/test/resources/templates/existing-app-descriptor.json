@@ -3,7 +3,6 @@
   "name": "app-acquisitions",
   "version": "1.0.0-SNAPSHOT",
   "description": "Folio app-acquisitions descriptor",
-  "platform": "complete",
   "modules": [
     {
       "id": "mod-orders-13.0.0",

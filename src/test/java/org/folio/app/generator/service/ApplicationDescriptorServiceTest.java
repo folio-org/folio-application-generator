@@ -56,7 +56,6 @@ class ApplicationDescriptorServiceTest {
       .dependencies(List.of(new Dependency("app-platform", "^1.0.0", null)));
 
     template.setDescription("Test application");
-    template.setPlatform("complete");
 
     when(moduleDescriptorService.loadModules(eq(BE), anyList())).thenReturn(
       new ModulesLoadResult(
@@ -74,7 +73,6 @@ class ApplicationDescriptorServiceTest {
     assertThat(result.getName()).isEqualTo("test-app");
     assertThat(result.getVersion()).isEqualTo("1.0.0");
     assertThat(result.getDescription()).isEqualTo("Test application");
-    assertThat(result.getPlatform()).isEqualTo("complete");
     assertThat(result.getModules()).hasSize(1);
     assertThat(result.getUiModules()).hasSize(1);
     assertThat(result.getDependencies()).hasSize(1);
@@ -105,7 +103,6 @@ class ApplicationDescriptorServiceTest {
     assertThat(result.getName()).isEqualTo("maven-app");
     assertThat(result.getVersion()).isEqualTo("2.0.0-SNAPSHOT");
     assertThat(result.getDescription()).isEqualTo("Maven project description");
-    assertThat(result.getPlatform()).isEqualTo("base");
   }
 
   @Test
@@ -266,45 +263,6 @@ class ApplicationDescriptorServiceTest {
     var result = service.create(template);
 
     assertThat(result.getDescription()).isEqualTo("Template description");
-  }
-
-  @Test
-  @SneakyThrows
-  void create_positive_defaultPlatformIsBase() {
-    var template = new ApplicationDescriptorTemplate()
-      .name("test-app")
-      .version("1.0.0")
-      .modules(List.of());
-
-    when(moduleDescriptorService.loadModules(eq(BE), anyList())).thenReturn(
-      new ModulesLoadResult(List.of(), List.of()));
-    when(moduleDescriptorService.loadModules(eq(UI), anyList())).thenReturn(
-      new ModulesLoadResult(List.of(), List.of()));
-    when(pluginConfig.isModuleUrlsOnly()).thenReturn(true);
-
-    var result = service.create(template);
-
-    assertThat(result.getPlatform()).isEqualTo("base");
-  }
-
-  @Test
-  @SneakyThrows
-  void create_positive_templatePlatformOverridesDefault() {
-    var template = new ApplicationDescriptorTemplate()
-      .name("test-app")
-      .version("1.0.0")
-      .modules(List.of());
-    template.setPlatform("complete");
-
-    when(moduleDescriptorService.loadModules(eq(BE), anyList())).thenReturn(
-      new ModulesLoadResult(List.of(), List.of()));
-    when(moduleDescriptorService.loadModules(eq(UI), anyList())).thenReturn(
-      new ModulesLoadResult(List.of(), List.of()));
-    when(pluginConfig.isModuleUrlsOnly()).thenReturn(true);
-
-    var result = service.create(template);
-
-    assertThat(result.getPlatform()).isEqualTo("complete");
   }
 
   @Test

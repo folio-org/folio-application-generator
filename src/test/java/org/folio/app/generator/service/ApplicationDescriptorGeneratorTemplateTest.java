@@ -129,7 +129,6 @@ class ApplicationDescriptorGeneratorTemplateTest {
     var result = jsonConverter.parse(outputFile, ApplicationDescriptor.class);
     assertThat(result.getName()).isEqualTo("test-app");
     assertThat(result.getVersion()).isEqualTo("1.0.0-SNAPSHOT");
-    assertThat(result.getPlatform()).isEqualTo("base");
     assertThat(result.getModules()).hasSize(3);
     assertThat(result.getUiModules()).hasSize(2);
     assertThat(result.getDependencies()).isEmpty();
@@ -164,7 +163,6 @@ class ApplicationDescriptorGeneratorTemplateTest {
     var result = jsonConverter.parse(outputFile, ApplicationDescriptor.class);
     assertThat(result.getName()).isEqualTo("app-finc");
     assertThat(result.getVersion()).isEqualTo("1.1.0-SNAPSHOT.100200000001741");
-    assertThat(result.getPlatform()).isEqualTo("complete");
     assertThat(result.getModules()).hasSize(1);
     assertThat(result.getModules().get(0).getVersion()).isEqualTo("7.0.0-SNAPSHOT.170");
     assertThat(result.getUiModules()).hasSize(2);
