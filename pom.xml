@@ -19,7 +19,7 @@
     <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
     <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
 
-    <semver4j.version>6.0.0</semver4j.version>
+    <semver4j.version>5.8.0</semver4j.version>
     <lombok.version>1.18.42</lombok.version>
     <maven-core.version>3.9.11</maven-core.version>
     <commons-text.version>1.14.0</commons-text.version>
@@ -34,9 +34,9 @@
     <slf4j.version>2.0.13</slf4j.version>
     <jackson-databind.version>2.20.1</jackson-databind.version>
     <junit-jupiter.version>5.10.2</junit-jupiter.version>
-    <aws-sdk.version>2.39.6</aws-sdk.version>
-    <spring-boot.version>3.3.9</spring-boot.version>
-    <spring-context.version>6.1.17</spring-context.version>
+    <aws-sdk.version>2.26.7</aws-sdk.version>
+    <spring-boot.version>4.0.0</spring-boot.version>
+    <spring-context.version>7.0.1</spring-context.version>
 
     <sonar.exclusions>
       src/main/java/**/ApplicationDescriptorService.java
@@ -248,9 +248,12 @@
         </executions>
         <configuration>
           <sourceDirectories>
-            <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
-            <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
+            <directory>${project.build.sourceDirectory}</directory>
           </sourceDirectories>
+          <testSourceDirectories>
+            <directory>${project.build.testSourceDirectory}</directory>
+          </testSourceDirectories>
+          <includeTestSourceDirectory>true</includeTestSourceDirectory>
           <failsOnError>true</failsOnError>
           <outputEncoding>UTF-8</outputEncoding>
           <inputEncoding>UTF-8</inputEncoding>
@@ -258,6 +261,8 @@
           <failOnViolation>true</failOnViolation>
           <logViolationsToConsole>true</logViolationsToConsole>
           <configLocation>folio-checkstyle/checkstyle.xml</configLocation>
+          <propertiesLocation>${basedir}/checkstyle/checkstyle-checker.properties</propertiesLocation>
+          <suppressionsLocation>${basedir}/checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
           <cacheFile>${basedir}/target/cachefile</cacheFile>
         </configuration>
       </plugin>
