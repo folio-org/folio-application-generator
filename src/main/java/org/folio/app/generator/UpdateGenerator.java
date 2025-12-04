@@ -17,7 +17,8 @@ import org.folio.app.generator.service.ModuleRegistryProvider;
 @Mojo(name = "updateFromJson", defaultPhase = LifecyclePhase.COMPILE, requiresDependencyResolution = RUNTIME)
 public class UpdateGenerator extends AbstractGeneratorMojo {
 
-  @Parameter(name = "appDescriptorPath", defaultValue = "${basedir}/application-descriptor.json")
+  @Parameter(name = "appDescriptorPath", property = "appDescriptorPath",
+    defaultValue = "${basedir}/${project.artifactId}-${project.version}.json")
   String appDescriptorPath;
 
   @Parameter(defaultValue = "${modules}")

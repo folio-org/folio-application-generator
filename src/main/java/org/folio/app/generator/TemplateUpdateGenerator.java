@@ -19,10 +19,12 @@ import org.folio.app.generator.service.ModuleRegistryProvider;
 @Mojo(name = "updateFromTemplate", defaultPhase = LifecyclePhase.COMPILE, requiresDependencyResolution = RUNTIME)
 public class TemplateUpdateGenerator extends AbstractGeneratorMojo {
 
-  @Parameter(name = "appDescriptorPath", defaultValue = "${basedir}/application-descriptor.json")
+  @Parameter(name = "appDescriptorPath", property = "appDescriptorPath",
+    defaultValue = "${basedir}/${project.artifactId}-${project.version}.json")
   String appDescriptorPath;
 
-  @Parameter(name = "templatePath", defaultValue = "${basedir}/application-template.json")
+  @Parameter(name = "templatePath", property = "templatePath",
+    defaultValue = "${basedir}/${project.artifactId}.template.json")
   String templatePath;
 
   @Parameter(name = "allowDowngrade", property = "allowDowngrade", defaultValue = "true")

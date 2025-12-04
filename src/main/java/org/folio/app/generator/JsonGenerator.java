@@ -16,7 +16,8 @@ import org.folio.app.generator.service.ModuleRegistryProvider;
 @Mojo(name = "generateFromJson", defaultPhase = LifecyclePhase.COMPILE, requiresDependencyResolution = RUNTIME)
 public class JsonGenerator extends AbstractGeneratorMojo {
 
-  @Parameter(name = "templatePath", defaultValue = "${basedir}/application-template.json")
+  @Parameter(name = "templatePath", property = "templatePath",
+    defaultValue = "${basedir}/${project.artifactId}.template.json")
   String templatePath;
 
   @Inject
