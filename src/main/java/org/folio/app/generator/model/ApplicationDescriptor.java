@@ -1,10 +1,12 @@
 package org.folio.app.generator.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 import java.util.Map;
 import lombok.Data;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ApplicationDescriptor {
 
   /**
