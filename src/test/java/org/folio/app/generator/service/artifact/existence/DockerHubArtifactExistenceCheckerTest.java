@@ -173,5 +173,52 @@ class DockerHubArtifactExistenceCheckerTest {
     assertThatThrownBy(() -> checker.exists(module, registry))
       .isInstanceOf(IOException.class)
       .hasMessage("Connection refused");
+    verify(httpClient, times(6)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void exists_positive_retryOnExceptionThenSuccess() throws Exception {
+    var module = new ModuleDefinition().name("mod-users").version("1.0.0");
+    var registry = new DockerHubArtifactRegistry().namespace("folioorg");
+
+    HttpResponse<InputStream> successResponse = org.mockito.Mockito.mock(HttpResponse.class);
+    when(successResponse.statusCode()).thenReturn(200);
+
+    when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+      .thenThrow(new IOException("Connection reset"))
+      .thenThrow(new IOException("Connection reset"))
+      .thenReturn(successResponse);
+
+    var result = checker.exists(module, registry);
+
+    assertThat(result).isTrue();
+    verify(httpClient, times(3)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
+    verify(log).debug("Retrying request due to exception: Connection reset (attempt 1)");
+    verify(log).debug("Retrying request due to exception: Connection reset (attempt 2)");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void exists_positive_retryOnMixedErrorsThenSuccess() throws Exception {
+    var module = new ModuleDefinition().name("mod-users").version("1.0.0");
+    var registry = new DockerHubArtifactRegistry().namespace("folioorg");
+
+    HttpResponse<InputStream> rateLimitResponse = org.mockito.Mockito.mock(HttpResponse.class);
+    HttpResponse<InputStream> successResponse = org.mockito.Mockito.mock(HttpResponse.class);
+    when(rateLimitResponse.statusCode()).thenReturn(429);
+    when(successResponse.statusCode()).thenReturn(200);
+
+    when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+      .thenThrow(new IOException("Connection reset"))
+      .thenReturn(rateLimitResponse)
+      .thenReturn(successResponse);
+
+    var result = checker.exists(module, registry);
+
+    assertThat(result).isTrue();
+    verify(httpClient, times(3)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
+    verify(log).debug("Retrying request due to exception: Connection reset (attempt 1)");
+    verify(log).debug("Retrying request due to status code 429 (attempt 2)");
   }
 }
