@@ -79,7 +79,10 @@ public class ApplicationDescriptorUpdateService {
     var modulesLoadResult = moduleDescriptorService.loadModules(BE, modulesResult.changedModules());
     var uiModulesLoadResult = moduleDescriptorService.loadModules(UI, uiModulesResult.changedModules());
 
-    var version = getUpdatedVersion(application.getVersion());
+    var baseVersion = config.isUseProjectVersion()
+      ? mavenProject.getVersion()
+      : application.getVersion();
+    var version = getUpdatedVersion(baseVersion);
 
     application.setId(getId(application.getName(), version));
     application.setVersion(version);
