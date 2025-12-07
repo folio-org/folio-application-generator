@@ -16,6 +16,9 @@ public class UpdateConfig {
   @Builder.Default
   private final boolean removeUnlistedModules = false;
 
+  @Builder.Default
+  private final boolean useProjectVersion = false;
+
   public static UpdateConfig defaults() {
     return UpdateConfig.builder().build();
   }

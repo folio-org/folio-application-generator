@@ -36,6 +36,9 @@ public class TemplateUpdateGenerator extends AbstractGeneratorMojo {
   @Parameter(name = "removeUnlistedModules", property = "removeUnlistedModules", defaultValue = "true")
   boolean removeUnlistedModules;
 
+  @Parameter(name = "useProjectVersion", property = "useProjectVersion", defaultValue = "false")
+  boolean useProjectVersion;
+
   @Inject
   public TemplateUpdateGenerator(ModuleRegistryProvider registryProvider, ApplicationContextBuilder contextBuilder) {
     super(registryProvider, contextBuilder);
@@ -55,6 +58,7 @@ public class TemplateUpdateGenerator extends AbstractGeneratorMojo {
       .allowDowngrade(allowDowngrade)
       .allowAddModules(allowAddModules)
       .removeUnlistedModules(removeUnlistedModules)
+      .useProjectVersion(useProjectVersion)
       .build();
 
     var updateService = ctx.getBean(ApplicationDescriptorUpdateService.class);

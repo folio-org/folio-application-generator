@@ -36,6 +36,9 @@ public class UpdateGenerator extends AbstractGeneratorMojo {
   @Parameter(name = "removeUnlistedModules", property = "removeUnlistedModules", defaultValue = "false")
   boolean removeUnlistedModules;
 
+  @Parameter(name = "useProjectVersion", property = "useProjectVersion", defaultValue = "false")
+  boolean useProjectVersion;
+
   @Inject
   public UpdateGenerator(ModuleRegistryProvider registryProvider, ApplicationContextBuilder contextBuilder) {
     super(registryProvider, contextBuilder);
@@ -53,6 +56,7 @@ public class UpdateGenerator extends AbstractGeneratorMojo {
       .allowDowngrade(allowDowngrade)
       .allowAddModules(allowAddModules)
       .removeUnlistedModules(removeUnlistedModules)
+      .useProjectVersion(useProjectVersion)
       .build();
     descriptorUpdateService.update(application, cmdModulesString, cmdUiModulesString, updateConfig);
   }
