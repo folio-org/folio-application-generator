@@ -60,8 +60,7 @@ class ApplicationDescriptorGeneratorTemplateTest {
 
   @BeforeEach
   void setUp() throws Exception {
-    var springConfig = new SpringConfiguration();
-    var objectMapper = springConfig.objectMapper();
+    var objectMapper = new SpringConfiguration().objectMapper();
 
     jsonConverter = new JsonConverter(objectMapper);
 
