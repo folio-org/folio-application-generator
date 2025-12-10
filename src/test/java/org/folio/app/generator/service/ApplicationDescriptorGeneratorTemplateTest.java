@@ -10,8 +10,6 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
@@ -20,6 +18,7 @@ import lombok.SneakyThrows;
 import org.apache.maven.model.Build;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
+import org.folio.app.generator.configuration.SpringConfiguration;
 import org.folio.app.generator.model.ApplicationDescriptor;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
 import org.folio.app.generator.model.Dependency;
@@ -61,9 +60,8 @@ class ApplicationDescriptorGeneratorTemplateTest {
 
   @BeforeEach
   void setUp() throws Exception {
-    var objectMapper = new ObjectMapper()
-      .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true)
-      .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, false);
+    var springConfig = new SpringConfiguration();
+    var objectMapper = springConfig.objectMapper();
 
     jsonConverter = new JsonConverter(objectMapper);
 
@@ -272,6 +270,26 @@ class ApplicationDescriptorGeneratorTemplateTest {
     assertThat(result.getUiModuleDescriptors().get(0)).containsEntry("id", "folio_developer-7.1.0");
     assertThat(result.getModules().get(0).getUrl()).isNull();
     assertThat(result.getUiModules().get(0).getUrl()).isNull();
+  }
+
+  @Test
+  @SneakyThrows
+  void generate_positive_withUnknownPlatformField() {
+    when(moduleDescriptorService.loadModules(eq(BE), anyList())).thenReturn(
+      new ModulesLoadResult(List.of(), List.of()));
+    when(moduleDescriptorService.loadModules(eq(UI), anyList())).thenReturn(
+      new ModulesLoadResult(List.of(), List.of()));
+    when(pluginConfig.isModuleUrlsOnly()).thenReturn(true);
+    doNothing().when(dependencyValidator).validateDependencies(any());
+
+    var template = readTemplate("template-with-unknown-platform-field.json", true);
+    generator.generate(template);
+
+    var outputFile = new File(tempDir.toFile(), "test-app-1.0.0-SNAPSHOT.json");
+    assertThat(outputFile).exists();
+    var result = jsonConverter.parse(outputFile, ApplicationDescriptor.class);
+    assertThat(result.getName()).isEqualTo("test-app");
+    assertThat(result.getVersion()).isEqualTo("1.0.0-SNAPSHOT");
   }
 
   @SneakyThrows

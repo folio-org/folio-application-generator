@@ -1,0 +1,9 @@
+{
+  "name": "${project.name}",
+  "version": "${project.version}",
+  "description": "${project.description}",
+  "platform": "complete",
+  "dependencies": [],
+  "modules": [],
+  "uiModules": []
+}
