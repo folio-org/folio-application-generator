@@ -121,7 +121,7 @@ class SimpleModuleVersionResolverTest {
   }
 
   @Test
-  void getAvailableVersions_positive_nullPreReleaseDefaultsToFalse()
+  void getAvailableVersions_positive_nullPreReleaseDefaultsToTrue()
       throws IOException, InterruptedException {
     var dependency = new Dependency("mod-foo", "^1.0.0", null);
 
@@ -132,7 +132,7 @@ class SimpleModuleVersionResolverTest {
     var result = resolver.getAvailableVersions(simpleRegistry(), dependency, ModuleType.BE);
 
     assertThat(result).isPresent();
-    assertThat(result.get()).containsExactly("1.1.0");
+    assertThat(result.get()).containsExactly("1.2.0-SNAPSHOT", "1.1.0");
   }
 
   @Test
