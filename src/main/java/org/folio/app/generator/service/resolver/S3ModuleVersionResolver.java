@@ -119,7 +119,7 @@ public class S3ModuleVersionResolver implements ModuleVersionResolver {
   }
 
   private static boolean matchesPreReleaseFilter(Semver semver, PreReleaseFilter filter) {
-    var effective = filter == null ? PreReleaseFilter.FALSE : filter;
+    var effective = filter == null ? PreReleaseFilter.TRUE : filter;
     var isPreRelease = !semver.getPreRelease().isEmpty();
 
     return switch (effective) {

@@ -95,7 +95,7 @@ public class SimpleModuleVersionResolver implements ModuleVersionResolver {
   }
 
   private boolean matchesPreReleaseFilter(String version, PreReleaseFilter filter) {
-    var effective = filter == null ? PreReleaseFilter.FALSE : filter;
+    var effective = filter == null ? PreReleaseFilter.TRUE : filter;
     var semver = SemverUtils.parse(version);
     var isPreRelease = !semver.getPreRelease().isEmpty();
 
