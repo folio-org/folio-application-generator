@@ -175,7 +175,7 @@ class S3ModuleVersionResolverTest {
   }
 
   @Test
-  void getAvailableVersions_positive_nullPreReleaseDefaultsToFalse() {
+  void getAvailableVersions_positive_nullPreReleaseDefaultsToTrue() {
     var dependency = new Dependency("mod-foo", "^1.0.0", null);
     var request = listObjectsRequest("modules/mod-foo-", null);
     var response = listObjectsResponse(
@@ -187,7 +187,7 @@ class S3ModuleVersionResolverTest {
     var result = resolver.getAvailableVersions(s3Registry(), dependency, ModuleType.BE);
 
     assertThat(result).isPresent();
-    assertThat(result.get()).containsExactly("1.0.0");
+    assertThat(result.get()).containsExactly("1.1.0-SNAPSHOT", "1.0.0");
   }
 
   @ParameterizedTest(name = "{0}")
