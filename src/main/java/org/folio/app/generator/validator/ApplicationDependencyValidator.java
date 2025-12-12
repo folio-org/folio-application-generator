@@ -12,7 +12,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
 import org.folio.app.generator.model.Dependency;
@@ -26,7 +25,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ApplicationDependencyValidator {
 
-  private final Log log;
   private final MavenProject mavenProject;
   private final Set<String> reservedVersionKeywords = Set.of("");
 
@@ -89,11 +87,11 @@ public class ApplicationDependencyValidator {
     boolean isPre = !parsed.getPreRelease().isEmpty();
 
     if (!isPre && preRelease != PreReleaseFilter.FALSE) {
-      return format("Module '%s' version '%s' must be stable", name, version);
+      return format("Template module '%s' version '%s' must be pre release", name, version);
     }
 
     if (isPre && preRelease == PreReleaseFilter.FALSE) {
-      return format("Module '%s' version '%s' must be pre release", name, version);
+      return format("Template module '%s' version '%s' must be stable", name, version);
     }
 
     return null;

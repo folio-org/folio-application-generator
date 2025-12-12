@@ -31,7 +31,7 @@ class ApplicationDependencyValidatorTest {
 
   @BeforeEach
   void setUp() {
-    validator = new ApplicationDependencyValidator(log, mavenProject);
+    validator = new ApplicationDependencyValidator(mavenProject);
   }
 
   @Test
@@ -168,7 +168,7 @@ class ApplicationDependencyValidatorTest {
       Arguments.of("invalid module version", "mod-foo", "invalid",
         "Module 'mod-foo' version 'invalid' must be a valid semver version or constraint"),
       Arguments.of("pre-release version with FALSE filter", "mod-foo", "1.0.0-SNAPSHOT",
-        "Module 'mod-foo' version '1.0.0-SNAPSHOT' must be pre release")
+        "Template module 'mod-foo' version '1.0.0-SNAPSHOT' must be stable")
     );
   }
 
@@ -183,7 +183,7 @@ class ApplicationDependencyValidatorTest {
     assertThatThrownBy(() -> validator.validateDependencies(template))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Invalid dependencies found")
-        .hasMessageContaining("Module 'mod-foo' version '1.0.0' must be stable");
+        .hasMessageContaining("Template module 'mod-foo' version '1.0.0' must be pre release");
   }
 
   @Test
@@ -197,7 +197,7 @@ class ApplicationDependencyValidatorTest {
     assertThatThrownBy(() -> validator.validateDependencies(template))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Invalid dependencies found")
-        .hasMessageContaining("Module 'mod-foo' version '1.0.0' must be stable");
+        .hasMessageContaining("Template module 'mod-foo' version '1.0.0' must be pre release");
   }
 
   @Test
@@ -246,7 +246,7 @@ class ApplicationDependencyValidatorTest {
         .hasMessageContaining("Invalid dependencies found")
         .hasMessageContaining("Module name cannot be empty at index: 0")
         .hasMessageContaining("Module 'mod-bar' version 'invalid' must be a valid semver version or constraint")
-        .hasMessageContaining("Module 'mod-baz' version '1.0.0-SNAPSHOT' must be pre release")
+        .hasMessageContaining("Template module 'mod-baz' version '1.0.0-SNAPSHOT' must be stable")
         .hasMessageContaining("Application dependency 'app-foo' version 'bad-version' must satisfy semver range");
   }
 
