@@ -218,6 +218,7 @@ mvn org.folio:folio-application-generator:updateFromTemplate \
 | allowDowngrade        | false   | Allow downgrading module versions (by default, only upgrades are allowed)   |
 | allowAddModules       | false   | Allow adding new modules not present in the original descriptor             |
 | removeUnlistedModules | false   | Remove modules from descriptor that are not in the update list/template     |
+| noVersionBump         | false   | Skip automatic version incrementing, keeping the current version unchanged  |
 
 ##### updateFromTemplate defaults
 
@@ -226,6 +227,7 @@ mvn org.folio:folio-application-generator:updateFromTemplate \
 | allowDowngrade        | true    | Allow downgrading module versions                                           |
 | allowAddModules       | true    | Allow adding new modules not present in the original descriptor             |
 | removeUnlistedModules | true    | Remove modules from descriptor that are not in the template                 |
+| noVersionBump         | false   | Skip automatic version incrementing, keeping the current version unchanged  |
 
 Example overriding defaults:
 ```shell
@@ -436,6 +438,7 @@ mvn install -DbuildNumber="123" -DawsRegion=us-east-1
 | removeUnlistedModules          | false                                           | Remove modules from descriptor that are not in the update list/template (applies to `updateFromJson` and `updateFromTemplate` goals)                                |
 | templatePath                   | `${project.artifactId}.template.json`           | Path to the template file for `updateFromTemplate` goal                                                                                                             |
 | useProjectVersion              | false                                           | When `true`, uses pom.xml version as base; when `false`, increments patch from descriptor version (applies to `updateFromJson` and `updateFromTemplate` goals)     |
+| noVersionBump                  | false                                           | Skip automatic version incrementing, keeping the version unchanged (applies to `updateFromJson` and `updateFromTemplate` goals)                                    |
 | validateArtifacts              | false                                           | If `true`, validates that Docker images (BE) and NPM packages (UI) exist before generating the descriptor                                                           |
 | artifactRegistries             |                                                 | Comma-separated unified artifact registries (fallback for both BE and UI)                                                                                           |
 | beArtifactRegistries           |                                                 | Comma-separated BE artifact registries for release versions (format: `namespace` or `url::namespace`)                                                               |
