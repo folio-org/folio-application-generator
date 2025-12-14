@@ -39,6 +39,9 @@ public class TemplateUpdateGenerator extends AbstractGeneratorMojo {
   @Parameter(name = "useProjectVersion", property = "useProjectVersion", defaultValue = "false")
   boolean useProjectVersion;
 
+  @Parameter(name = "noVersionBump", property = "noVersionBump", defaultValue = "false")
+  boolean noVersionBump;
+
   @Inject
   public TemplateUpdateGenerator(ModuleRegistryProvider registryProvider, ApplicationContextBuilder contextBuilder) {
     super(registryProvider, contextBuilder);
@@ -59,6 +62,7 @@ public class TemplateUpdateGenerator extends AbstractGeneratorMojo {
       .allowAddModules(allowAddModules)
       .removeUnlistedModules(removeUnlistedModules)
       .useProjectVersion(useProjectVersion)
+      .noVersionBump(noVersionBump)
       .build();
 
     var updateService = ctx.getBean(ApplicationDescriptorUpdateService.class);
