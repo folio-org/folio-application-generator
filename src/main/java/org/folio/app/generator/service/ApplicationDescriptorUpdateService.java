@@ -82,7 +82,10 @@ public class ApplicationDescriptorUpdateService {
     var baseVersion = config.isUseProjectVersion()
       ? mavenProject.getVersion()
       : application.getVersion();
-    var version = getUpdatedVersion(baseVersion);
+
+    var version = config.isNoVersionBump()
+      ? baseVersion
+      : getUpdatedVersion(baseVersion);
 
     application.setId(getId(application.getName(), version));
     application.setVersion(version);
