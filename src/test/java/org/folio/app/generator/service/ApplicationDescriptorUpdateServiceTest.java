@@ -795,4 +795,63 @@ class ApplicationDescriptorUpdateServiceTest {
     assertThat(applicationCaptor.getValue().getVersion()).isEqualTo("1.5.1");
     assertThat(applicationCaptor.getValue().getId()).isEqualTo("name-1.5.1");
   }
+
+  @Test
+  @SneakyThrows
+  void update_positive_noVersionBump_preservesDescriptorVersion() {
+    var build = new Build();
+    build.setDirectory("dir");
+
+    final var application = new ApplicationDescriptor()
+      .id("name-1.5.0")
+      .name("name")
+      .version("1.5.0")
+      .modules(List.of(new ModuleDefinition().name("module1").version("1.0.0")))
+      .uiModules(List.of());
+
+    when(moduleDescriptorService.loadModules(eq(BE), anyList()))
+      .thenReturn(new ModulesLoadResult(
+        List.of(new ModuleDefinition().id("module1-1.1.0").name("module1").version("1.1.0")),
+        List.of(Map.of("id", "module1-1.1.0"))));
+    when(moduleDescriptorService.loadModules(eq(UI), anyList()))
+      .thenReturn(new ModulesLoadResult(List.of(), List.of()));
+    when(mavenProject.getBuild()).thenReturn(build);
+    doNothing().when(jsonProvider).writeApplication(applicationCaptor.capture(), any());
+
+    var config = UpdateConfig.builder().noVersionBump(true).build();
+    updateService.update(application, "module1-1.1.0", "", config);
+
+    assertThat(applicationCaptor.getValue().getVersion()).isEqualTo("1.5.0");
+    assertThat(applicationCaptor.getValue().getId()).isEqualTo("name-1.5.0");
+  }
+
+  @Test
+  @SneakyThrows
+  void update_positive_noVersionBump_withUseProjectVersion() {
+    var build = new Build();
+    build.setDirectory("dir");
+
+    final var application = new ApplicationDescriptor()
+      .id("name-1.0.0")
+      .name("name")
+      .version("1.0.0")
+      .modules(List.of(new ModuleDefinition().name("module1").version("1.0.0")))
+      .uiModules(List.of());
+
+    when(mavenProject.getVersion()).thenReturn("2.0.0-SNAPSHOT");
+    when(moduleDescriptorService.loadModules(eq(BE), anyList()))
+      .thenReturn(new ModulesLoadResult(
+        List.of(new ModuleDefinition().id("module1-1.1.0").name("module1").version("1.1.0")),
+        List.of(Map.of("id", "module1-1.1.0"))));
+    when(moduleDescriptorService.loadModules(eq(UI), anyList()))
+      .thenReturn(new ModulesLoadResult(List.of(), List.of()));
+    when(mavenProject.getBuild()).thenReturn(build);
+    doNothing().when(jsonProvider).writeApplication(applicationCaptor.capture(), any());
+
+    var config = UpdateConfig.builder().useProjectVersion(true).noVersionBump(true).build();
+    updateService.update(application, "module1-1.1.0", "", config);
+
+    assertThat(applicationCaptor.getValue().getVersion()).isEqualTo("2.0.0-SNAPSHOT");
+    assertThat(applicationCaptor.getValue().getId()).isEqualTo("name-2.0.0-SNAPSHOT");
+  }
 }

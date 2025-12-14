@@ -172,6 +172,29 @@ class TemplateUpdateGeneratorTest {
     assert inputDescriptor.getDependencies().isEmpty();
   }
 
+  @Test
+  @SneakyThrows
+  void execute_positive_noVersionBumpEnabled() {
+    mojo.appDescriptorPath = "/path/to/descriptor.json";
+    mojo.templatePath = "/path/to/template.json";
+    mojo.allowDowngrade = true;
+    mojo.allowAddModules = true;
+    mojo.removeUnlistedModules = true;
+    mojo.noVersionBump = true;
+
+    setupContextMocks();
+    when(mockJsonProvider.readJsonFromFile("/path/to/descriptor.json", ApplicationDescriptor.class, false))
+      .thenReturn(inputDescriptor);
+    when(mockJsonProvider.readJsonFromFile("/path/to/template.json", ApplicationDescriptorTemplate.class, true))
+      .thenReturn(template);
+
+    assertDoesNotThrow(() -> mojo.execute());
+
+    verify(mockUpdateService).update(eq(inputDescriptor), anyList(), anyList(), configCaptor.capture());
+    var config = configCaptor.getValue();
+    assert config.isNoVersionBump();
+  }
+
   private void setupContextMocks() {
     when(mockContextBuilder.withLog(any())).thenReturn(mockContextBuilder);
     when(mockContextBuilder.withMavenSession(any())).thenReturn(mockContextBuilder);
