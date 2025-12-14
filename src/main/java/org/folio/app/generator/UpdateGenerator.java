@@ -39,6 +39,9 @@ public class UpdateGenerator extends AbstractGeneratorMojo {
   @Parameter(name = "useProjectVersion", property = "useProjectVersion", defaultValue = "false")
   boolean useProjectVersion;
 
+  @Parameter(name = "noVersionBump", property = "noVersionBump", defaultValue = "false")
+  boolean noVersionBump;
+
   @Inject
   public UpdateGenerator(ModuleRegistryProvider registryProvider, ApplicationContextBuilder contextBuilder) {
     super(registryProvider, contextBuilder);
@@ -57,6 +60,7 @@ public class UpdateGenerator extends AbstractGeneratorMojo {
       .allowAddModules(allowAddModules)
       .removeUnlistedModules(removeUnlistedModules)
       .useProjectVersion(useProjectVersion)
+      .noVersionBump(noVersionBump)
       .build();
     descriptorUpdateService.update(application, cmdModulesString, cmdUiModulesString, updateConfig);
   }
