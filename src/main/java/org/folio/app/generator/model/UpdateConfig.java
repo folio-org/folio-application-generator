@@ -19,6 +19,9 @@ public class UpdateConfig {
   @Builder.Default
   private final boolean useProjectVersion = false;
 
+  @Builder.Default
+  private final boolean noVersionBump = false;
+
   public static UpdateConfig defaults() {
     return UpdateConfig.builder().build();
   }
