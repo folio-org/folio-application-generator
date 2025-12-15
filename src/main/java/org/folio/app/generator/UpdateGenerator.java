@@ -9,17 +9,12 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.folio.app.generator.configuration.ApplicationContextBuilder;
 import org.folio.app.generator.model.ApplicationDescriptor;
-import org.folio.app.generator.model.UpdateConfig;
 import org.folio.app.generator.service.ApplicationDescriptorUpdateService;
 import org.folio.app.generator.service.JsonProvider;
 import org.folio.app.generator.service.ModuleRegistryProvider;
 
 @Mojo(name = "updateFromJson", defaultPhase = LifecyclePhase.COMPILE, requiresDependencyResolution = RUNTIME)
-public class UpdateGenerator extends AbstractGeneratorMojo {
-
-  @Parameter(name = "appDescriptorPath", property = "appDescriptorPath",
-    defaultValue = "${basedir}/${project.artifactId}-${project.version}.json")
-  String appDescriptorPath;
+public class UpdateGenerator extends AbstractUpdateMojo {
 
   @Parameter(defaultValue = "${modules}")
   String cmdModulesString;
@@ -36,9 +31,6 @@ public class UpdateGenerator extends AbstractGeneratorMojo {
   @Parameter(name = "removeUnlistedModules", property = "removeUnlistedModules", defaultValue = "false")
   boolean removeUnlistedModules;
 
-  @Parameter(name = "useProjectVersion", property = "useProjectVersion", defaultValue = "false")
-  boolean useProjectVersion;
-
   @Inject
   public UpdateGenerator(ModuleRegistryProvider registryProvider, ApplicationContextBuilder contextBuilder) {
     super(registryProvider, contextBuilder);
@@ -52,12 +44,7 @@ public class UpdateGenerator extends AbstractGeneratorMojo {
     var application = jsonProvider.readJsonFromFile(appDescriptorPath, ApplicationDescriptor.class, false);
 
     var descriptorUpdateService = ctx.getBean(ApplicationDescriptorUpdateService.class);
-    var updateConfig = UpdateConfig.builder()
-      .allowDowngrade(allowDowngrade)
-      .allowAddModules(allowAddModules)
-      .removeUnlistedModules(removeUnlistedModules)
-      .useProjectVersion(useProjectVersion)
-      .build();
+    var updateConfig = buildUpdateConfig(allowDowngrade, allowAddModules, removeUnlistedModules);
     descriptorUpdateService.update(application, cmdModulesString, cmdUiModulesString, updateConfig);
   }
 }

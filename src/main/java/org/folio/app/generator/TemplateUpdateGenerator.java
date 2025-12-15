@@ -11,17 +11,12 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.folio.app.generator.configuration.ApplicationContextBuilder;
 import org.folio.app.generator.model.ApplicationDescriptor;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
-import org.folio.app.generator.model.UpdateConfig;
 import org.folio.app.generator.service.ApplicationDescriptorUpdateService;
 import org.folio.app.generator.service.JsonProvider;
 import org.folio.app.generator.service.ModuleRegistryProvider;
 
 @Mojo(name = "updateFromTemplate", defaultPhase = LifecyclePhase.COMPILE, requiresDependencyResolution = RUNTIME)
-public class TemplateUpdateGenerator extends AbstractGeneratorMojo {
-
-  @Parameter(name = "appDescriptorPath", property = "appDescriptorPath",
-    defaultValue = "${basedir}/${project.artifactId}-${project.version}.json")
-  String appDescriptorPath;
+public class TemplateUpdateGenerator extends AbstractUpdateMojo {
 
   @Parameter(name = "templatePath", property = "templatePath",
     defaultValue = "${basedir}/${project.artifactId}.template.json")
@@ -35,9 +30,6 @@ public class TemplateUpdateGenerator extends AbstractGeneratorMojo {
 
   @Parameter(name = "removeUnlistedModules", property = "removeUnlistedModules", defaultValue = "true")
   boolean removeUnlistedModules;
-
-  @Parameter(name = "useProjectVersion", property = "useProjectVersion", defaultValue = "false")
-  boolean useProjectVersion;
 
   @Inject
   public TemplateUpdateGenerator(ModuleRegistryProvider registryProvider, ApplicationContextBuilder contextBuilder) {
@@ -54,12 +46,7 @@ public class TemplateUpdateGenerator extends AbstractGeneratorMojo {
 
     application.setDependencies(emptyIfNull(template.getDependencies()));
 
-    var updateConfig = UpdateConfig.builder()
-      .allowDowngrade(allowDowngrade)
-      .allowAddModules(allowAddModules)
-      .removeUnlistedModules(removeUnlistedModules)
-      .useProjectVersion(useProjectVersion)
-      .build();
+    var updateConfig = buildUpdateConfig(allowDowngrade, allowAddModules, removeUnlistedModules);
 
     var updateService = ctx.getBean(ApplicationDescriptorUpdateService.class);
     updateService.update(application,

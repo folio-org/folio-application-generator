@@ -100,6 +100,29 @@ class UpdateGeneratorTest {
 
   @Test
   @SneakyThrows
+  void execute_positive_noVersionBumpEnabled() {
+    mojo.appDescriptorPath = "/path/to/descriptor.json";
+    mojo.cmdModulesString = "mod-orders:1.0.0";
+    mojo.cmdUiModulesString = null;
+    mojo.allowDowngrade = false;
+    mojo.allowAddModules = false;
+    mojo.removeUnlistedModules = false;
+    mojo.noVersionBump = true;
+
+    setupContextMocks();
+    when(mockJsonProvider.readJsonFromFile("/path/to/descriptor.json", ApplicationDescriptor.class, false))
+      .thenReturn(inputDescriptor);
+
+    assertDoesNotThrow(() -> mojo.execute());
+
+    verify(mockUpdateService).update(eq(inputDescriptor), eq("mod-orders:1.0.0"),
+      eq(null), configCaptor.capture());
+    var config = configCaptor.getValue();
+    assert config.isNoVersionBump();
+  }
+
+  @Test
+  @SneakyThrows
   void execute_positive_nullModuleStrings() {
     mojo.appDescriptorPath = "/path/to/descriptor.json";
     mojo.cmdModulesString = null;
