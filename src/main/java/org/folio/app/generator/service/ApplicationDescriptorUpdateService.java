@@ -83,9 +83,7 @@ public class ApplicationDescriptorUpdateService {
       ? mavenProject.getVersion()
       : application.getVersion();
 
-    var version = config.isNoVersionBump()
-      ? baseVersion
-      : getUpdatedVersion(baseVersion);
+    var version = resolveVersion(baseVersion, config.isNoVersionBump());
 
     application.setId(getId(application.getName(), version));
     application.setVersion(version);
@@ -317,7 +315,7 @@ public class ApplicationDescriptorUpdateService {
     return moduleVersionService.resolveModulesConstraints(emptyIfNull(dependencies), type);
   }
 
-  private String getUpdatedVersion(String version) {
+  private String resolveVersion(String version, boolean noVersionBump) {
     var buildNumber = pluginConfig.getBuildNumber();
     var semver = Semver.parse(version);
     if (semver == null) {
@@ -326,9 +324,12 @@ public class ApplicationDescriptorUpdateService {
 
     if (isNotBlank(buildNumber) && !semver.getPreRelease().isEmpty()) {
       return updateBuildNumber(semver, buildNumber);
-    } else {
-      return semver.withIncPatch().getVersion();
     }
+
+    if (noVersionBump) {
+      return version;
+    }
+    return semver.withIncPatch().getVersion();
   }
 
   private String updateBuildNumber(Semver version, String buildNumber) {
