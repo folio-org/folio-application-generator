@@ -21,6 +21,7 @@ import org.folio.app.generator.model.registry.S3ModuleRegistry;
 import org.folio.app.generator.model.registry.artifact.ArtifactRegistries;
 import org.folio.app.generator.model.registry.artifact.DockerHubArtifactRegistry;
 import org.folio.app.generator.model.registry.artifact.FolioNpmArtifactRegistry;
+import org.folio.app.generator.model.types.ErrorCategory;
 import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.service.artifact.existence.ArtifactExistenceCheckerFacade;
 import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
@@ -453,6 +454,81 @@ class ModuleVersionServiceTest {
 
     assertThat(result).hasSize(1);
     assertThat(result.get(0).getVersion()).isEqualTo("1.4.0");
+  }
+
+  @Test
+  void resolveModulesConstraints_negative_allRegistriesFailWithExceptions_infrastructure() {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var okapiReg = okapiRegistry();
+    var s3Reg = s3Registry();
+    var networkException = new ApplicationGeneratorException(
+      "Network error", ErrorCategory.INFRASTRUCTURE, new RuntimeException("Connection reset"));
+
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(okapiReg, s3Reg));
+    when(resolverFacade.getAvailableVersions(okapiReg, dependency, ModuleType.BE)).thenThrow(networkException);
+    when(resolverFacade.getAvailableVersions(s3Reg, dependency, ModuleType.BE))
+        .thenThrow(new RuntimeException("S3 connection failed"));
+
+    assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
+        .isInstanceOf(ApplicationGeneratorException.class)
+        .hasMessageContaining("No version matching constraint '^1.0.0' found for BE module 'mod-foo'")
+        .satisfies(e -> assertThat(((ApplicationGeneratorException) e).getCategory())
+            .isEqualTo(ErrorCategory.INFRASTRUCTURE));
+  }
+
+  @Test
+  void resolveModulesConstraints_negative_mixedEmptyAndException_moduleNotFound() {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var okapiReg = okapiRegistry();
+    var s3Reg = s3Registry();
+
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(okapiReg, s3Reg));
+    when(resolverFacade.getAvailableVersions(okapiReg, dependency, ModuleType.BE))
+        .thenReturn(Optional.empty());
+    when(resolverFacade.getAvailableVersions(s3Reg, dependency, ModuleType.BE))
+        .thenThrow(new RuntimeException("S3 connection failed"));
+
+    assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
+        .isInstanceOf(ApplicationGeneratorException.class)
+        .hasMessageContaining("No version matching constraint '^1.0.0' found for BE module 'mod-foo'")
+        .satisfies(e -> assertThat(((ApplicationGeneratorException) e).getCategory())
+            .isEqualTo(ErrorCategory.MODULE_NOT_FOUND));
+  }
+
+  @Test
+  void resolveModulesConstraints_negative_singleRegistryNetworkError_infrastructure() {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var registry = okapiRegistry();
+    var networkException = new ApplicationGeneratorException(
+      "Network error", ErrorCategory.INFRASTRUCTURE, new RuntimeException("Connection reset"));
+
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
+    when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE)).thenThrow(networkException);
+
+    assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
+        .isInstanceOf(ApplicationGeneratorException.class)
+        .hasMessageContaining("No version matching constraint '^1.0.0' found for BE module 'mod-foo'")
+        .satisfies(e -> assertThat(((ApplicationGeneratorException) e).getCategory())
+            .isEqualTo(ErrorCategory.INFRASTRUCTURE));
+  }
+
+  @Test
+  void resolveModulesConstraints_negative_allRegistriesEmpty_moduleNotFound() {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var okapiReg = okapiRegistry();
+    var s3Reg = s3Registry();
+
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(okapiReg, s3Reg));
+    when(resolverFacade.getAvailableVersions(okapiReg, dependency, ModuleType.BE))
+        .thenReturn(Optional.empty());
+    when(resolverFacade.getAvailableVersions(s3Reg, dependency, ModuleType.BE))
+        .thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
+        .isInstanceOf(ApplicationGeneratorException.class)
+        .hasMessageContaining("No version matching constraint '^1.0.0' found for BE module 'mod-foo'")
+        .satisfies(e -> assertThat(((ApplicationGeneratorException) e).getCategory())
+            .isEqualTo(ErrorCategory.MODULE_NOT_FOUND));
   }
 
   private static OkapiModuleRegistry okapiRegistry() {
