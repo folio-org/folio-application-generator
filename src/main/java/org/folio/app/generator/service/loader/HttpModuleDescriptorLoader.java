@@ -7,6 +7,7 @@ import java.net.SocketTimeoutException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -39,7 +40,7 @@ public abstract class HttpModuleDescriptorLoader implements ModuleDescriptorLoad
         }
         log.debug("Retrying request due to status code " + response.statusCode()
           + " (attempt " + (attemptsCount + 1) + ")");
-      } catch (SocketException | SocketTimeoutException e) {
+      } catch (SocketException | SocketTimeoutException | HttpTimeoutException e) {
         lastException = e;
         log.warn("Network error, retrying (attempt " + (attemptsCount + 1) + "): " + e.getMessage());
       }
