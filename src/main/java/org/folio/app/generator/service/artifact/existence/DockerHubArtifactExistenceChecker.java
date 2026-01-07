@@ -47,8 +47,8 @@ public class DockerHubArtifactExistenceChecker extends HttpArtifactExistenceChec
       return true;
     }
 
-    log.debug("Docker image not found: " + module.getName() + ":" + module.getVersion()
-      + " (status: " + statusCode + ")");
+    log.warn("Docker image not found: " + module.getName() + ":" + module.getVersion()
+      + " (status: " + statusCode + ", url: " + url + ")");
     return false;
   }
 
