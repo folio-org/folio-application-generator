@@ -397,6 +397,109 @@ For simpler configurations, use `artifactRegistries` as a fallback for both BE a
 
 The artifact validation includes a retry mechanism for temporary service unavailability. HTTP status codes `429`, `502`, `503`, and `504` will trigger automatic retries (up to 5 attempts).
 
+### Execution Result Output
+
+All plugin goals generate an `execution-result.json` file in the target directory. This file provides structured information about the execution status and any errors encountered, useful for CI/CD pipeline integration.
+
+#### Output Location
+
+`${project.build.directory}/execution-result.json`
+
+#### Schema
+
+| Field | Type | Description |
+|-------|------|-------------|
+| status | String | Execution status: `STARTED` or `COMPLETED` |
+| success | Boolean | `true` if successful, `false` if failed, `null` if still running |
+| goal | String | The executed goal (e.g., `generateFromJson`, `updateFromTemplate`) |
+| appName | String | Application name being processed |
+| appVersion | String | Application version (only on success) |
+| errorCategory | String | Error classification for routing/alerting |
+| errorMessage | String | Human-readable error description |
+| errors | Array | Structured error details |
+
+#### Error Categories
+
+| Category | Description |
+|----------|-------------|
+| `NONE` | No error (success) |
+| `INFRASTRUCTURE` | Network issues, registry unavailable, timeouts |
+| `MODULE_NOT_FOUND` | Module doesn't exist in any registry |
+| `ARTIFACT_NOT_FOUND` | Docker image or NPM package not found |
+| `VALIDATION_FAILED` | Module integrity validation failed |
+| `CONFIGURATION_ERROR` | Invalid configuration, missing files |
+
+#### Example: Success
+
+```json
+{
+  "status": "COMPLETED",
+  "success": true,
+  "goal": "generateFromJson",
+  "appName": "app-platform",
+  "appVersion": "2.0.0",
+  "errorCategory": "NONE",
+  "errorMessage": null,
+  "errors": []
+}
+```
+
+#### Example: Infrastructure Error
+
+```json
+{
+  "status": "COMPLETED",
+  "success": false,
+  "goal": "updateFromTemplate",
+  "appName": "app-acquisitions",
+  "appVersion": null,
+  "errorCategory": "INFRASTRUCTURE",
+  "errorMessage": "No version matching constraint 'latest' found for BE module 'mod-orders' in any registry",
+  "errors": [
+    {
+      "errorType": "INFRASTRUCTURE",
+      "source": null,
+      "artifact": null,
+      "url": "https://folio-registry.dev.folio.org",
+      "httpStatusCode": null,
+      "message": "ConnectException"
+    }
+  ]
+}
+```
+
+#### Example: Module Not Found
+
+```json
+{
+  "status": "COMPLETED",
+  "success": false,
+  "goal": "generateFromJson",
+  "appName": "app-platform",
+  "appVersion": null,
+  "errorCategory": "MODULE_NOT_FOUND",
+  "errorMessage": "No version matching constraint '^19.0.0' found for BE module 'mod-users' in any registry",
+  "errors": [
+    {
+      "errorType": "MODULE_NOT_FOUND",
+      "source": null,
+      "artifact": "mod-users-^19.0.0",
+      "url": null,
+      "httpStatusCode": null,
+      "message": "No version matching constraint '^19.0.0' found"
+    }
+  ]
+}
+```
+
+#### CI Pipeline Integration
+
+The error category can be used to route alerts appropriately:
+- `INFRASTRUCTURE` → Infrastructure/DevOps channel (affects all builds)
+- `MODULE_NOT_FOUND`, `ARTIFACT_NOT_FOUND` → Repository-specific channel
+- `CONFIGURATION_ERROR` → Repository-specific channel
+- `VALIDATION_FAILED` → Repository-specific channel
+
 ### Module-Registries order
 
 #### Backend module registries
