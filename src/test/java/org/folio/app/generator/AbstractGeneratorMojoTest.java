@@ -24,10 +24,10 @@ class AbstractGeneratorMojoTest {
 
     var result = AbstractGeneratorMojo.toMojoExecutionException(original);
 
-    assertThat(result).isNotSameAs(original);
-    assertThat(result).isInstanceOf(MojoExecutionException.class);
-    assertThat(result.getMessage()).isEqualTo("Test runtime error");
-    assertThat(result.getCause()).isSameAs(original);
+    assertThat(result)
+      .isInstanceOf(MojoExecutionException.class)
+      .hasMessage("Test runtime error")
+      .hasCause(original);
   }
 
   @Test
@@ -36,9 +36,9 @@ class AbstractGeneratorMojoTest {
 
     var result = AbstractGeneratorMojo.toMojoExecutionException(original);
 
-    assertThat(result).isNotSameAs(original);
-    assertThat(result).isInstanceOf(MojoExecutionException.class);
-    assertThat(result.getMessage()).isEqualTo("Test checked exception");
-    assertThat(result.getCause()).isSameAs(original);
+    assertThat(result)
+      .isInstanceOf(MojoExecutionException.class)
+      .hasMessage("Test checked exception")
+      .hasCause(original);
   }
 }

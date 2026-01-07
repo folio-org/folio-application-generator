@@ -230,7 +230,8 @@ class ModuleVersionServiceTest {
     when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE))
         .thenReturn(Optional.of(List.of("1.2.0", "1.1.0")));
 
-    assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
+    var dependencies = List.of(dependency);
+    assertThatThrownBy(() -> service.resolveModulesConstraints(dependencies, ModuleType.BE))
         .isInstanceOf(ApplicationGeneratorException.class)
         .hasMessage("No version matching constraint '^5.0.0' found for BE module 'mod-foo' in any registry");
   }

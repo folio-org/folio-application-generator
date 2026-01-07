@@ -80,7 +80,8 @@ class ErrorDetailTest {
     var error2 = ErrorDetail.moduleNotFoundById("mod-users-1.0.0");
     var error3 = ErrorDetail.moduleNotFoundById("mod-orders-2.0.0");
 
-    assertThat(error1).isEqualTo(error2);
-    assertThat(error1).isNotEqualTo(error3);
+    assertThat(error1)
+      .isEqualTo(error2)
+      .isNotEqualTo(error3);
   }
 }

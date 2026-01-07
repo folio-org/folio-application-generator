@@ -64,7 +64,7 @@ class IntegrityValidatorMojoTest {
   }
 
   @Test
-  void execute_shouldRunWithoutErrors() throws MojoExecutionException {
+  void execute_shouldRunWithoutErrors() {
     mockMojo.baseUrl = "baseUrl";
     mockMojo.token = "token";
 

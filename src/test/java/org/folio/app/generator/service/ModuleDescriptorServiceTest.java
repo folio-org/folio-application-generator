@@ -116,7 +116,8 @@ class ModuleDescriptorServiceTest {
       .thenReturn(Optional.of(loaderResult("mod-users", "1.0.0")));
     when(moduleDescriptorLoaderFacade.find(registry, module2)).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> service.loadModules(ModuleType.BE, List.of(module1, module2)))
+    var modules = List.of(module1, module2);
+    assertThatThrownBy(() -> service.loadModules(ModuleType.BE, modules))
       .isInstanceOf(ApplicationGeneratorException.class)
       .satisfies(e -> {
         var ex = (ApplicationGeneratorException) e;

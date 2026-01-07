@@ -3,7 +3,6 @@ package org.folio.app.generator.service.resolver;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -169,16 +168,17 @@ class OkapiModuleVersionResolverTest {
       throws IOException, InterruptedException {
     var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
     var exception = new IOException("Connection refused");
+    var registry = okapiRegistry();
 
     when(httpClient.send(any(HttpRequest.class), any())).thenThrow(exception);
 
-    assertThatThrownBy(() -> resolver.getAvailableVersions(okapiRegistry(), dependency, ModuleType.BE))
+    assertThatThrownBy(() -> resolver.getAvailableVersions(registry, dependency, ModuleType.BE))
       .isInstanceOf(ApplicationGeneratorException.class)
       .hasMessageContaining("Network error while fetching versions for module 'mod-foo' from http://localhost")
       .hasCause(exception)
       .satisfies(e -> assertThat(((ApplicationGeneratorException) e).getCategory())
         .isEqualTo(ErrorCategory.INFRASTRUCTURE));
-    verify(log).warn(eq("Failed to fetch versions for module 'mod-foo' from http://localhost"), eq(exception));
+    verify(log).warn("Failed to fetch versions for module 'mod-foo' from http://localhost", exception);
   }
 
   @Test

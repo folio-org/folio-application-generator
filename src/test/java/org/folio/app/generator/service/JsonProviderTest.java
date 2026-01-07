@@ -130,8 +130,9 @@ class JsonProviderTest {
       assumeTrue(permissionChanged && !tempDir.toFile().canWrite(),
         "Skipping test: cannot make directory non-writable on this system");
 
+      var targetPath = tempDir.toAbsolutePath().toString();
       var exception = assertThrows(ApplicationGeneratorException.class,
-        () -> jsonProvider.writeUpdateResult(updateResult, tempDir.toAbsolutePath().toString()));
+        () -> jsonProvider.writeUpdateResult(updateResult, targetPath));
 
       assertThat(exception.getMessage()).contains("Target directory is not writable");
     } finally {
