@@ -23,6 +23,12 @@ public class ApplicationGeneratorException extends RuntimeException {
     this.errors = List.of();
   }
 
+  public ApplicationGeneratorException(String message, ErrorCategory category, ErrorDetail error, Throwable cause) {
+    super(message, cause);
+    this.category = category;
+    this.errors = error != null ? List.of(error) : List.of();
+  }
+
   public ApplicationGeneratorException(String message, ErrorCategory category, ErrorDetail error) {
     super(message);
     this.category = category;
