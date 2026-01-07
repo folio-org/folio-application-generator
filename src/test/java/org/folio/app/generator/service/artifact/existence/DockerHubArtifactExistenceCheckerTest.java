@@ -9,6 +9,8 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -74,7 +76,7 @@ class DockerHubArtifactExistenceCheckerTest {
     var result = checker.exists(module, registry);
 
     assertThat(result).isFalse();
-    verify(log).debug("Docker image not found: mod-users:1.0.0 (status: 404)");
+    verify(log).warn("Docker image not found: mod-users:1.0.0 (status: 404, url: https://hub.docker.com/v2/repositories/folioorg/mod-users/tags/1.0.0)");
   }
 
   @Test
@@ -173,5 +175,61 @@ class DockerHubArtifactExistenceCheckerTest {
     assertThatThrownBy(() -> checker.exists(module, registry))
       .isInstanceOf(IOException.class)
       .hasMessage("Connection refused");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void exists_positive_retryOnSocketExceptionThenSuccess() throws Exception {
+    var module = new ModuleDefinition().name("mod-users").version("1.0.0");
+    var registry = new DockerHubArtifactRegistry().namespace("folioorg");
+
+    HttpResponse<InputStream> successResponse = org.mockito.Mockito.mock(HttpResponse.class);
+    when(successResponse.statusCode()).thenReturn(200);
+
+    when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+      .thenThrow(new SocketException("Connection reset"))
+      .thenReturn(successResponse);
+
+    var result = checker.exists(module, registry);
+
+    assertThat(result).isTrue();
+    verify(httpClient, times(2)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
+    verify(log).warn("Network error, retrying (attempt 1): Connection reset");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void exists_positive_retryOnSocketTimeoutExceptionThenSuccess() throws Exception {
+    var module = new ModuleDefinition().name("mod-users").version("1.0.0");
+    var registry = new DockerHubArtifactRegistry().namespace("folioorg");
+
+    HttpResponse<InputStream> successResponse = org.mockito.Mockito.mock(HttpResponse.class);
+    when(successResponse.statusCode()).thenReturn(200);
+
+    when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+      .thenThrow(new SocketTimeoutException("Read timed out"))
+      .thenReturn(successResponse);
+
+    var result = checker.exists(module, registry);
+
+    assertThat(result).isTrue();
+    verify(httpClient, times(2)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
+    verify(log).warn("Network error, retrying (attempt 1): Read timed out");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void exists_negative_socketExceptionRetryLimitExhausted() throws Exception {
+    var module = new ModuleDefinition().name("mod-users").version("1.0.0");
+    var registry = new DockerHubArtifactRegistry().namespace("folioorg");
+
+    when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+      .thenThrow(new SocketException("Connection reset"));
+
+    assertThatThrownBy(() -> checker.exists(module, registry))
+      .isInstanceOf(SocketException.class)
+      .hasMessage("Connection reset");
+
+    verify(httpClient, times(5)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
   }
 }

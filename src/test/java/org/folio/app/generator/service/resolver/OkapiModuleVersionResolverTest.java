@@ -8,6 +8,8 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -196,6 +198,113 @@ class OkapiModuleVersionResolverTest {
     assertThat(result).isPresent();
     assertThat(result.get()).containsExactly("1.0.0");
     verify(log).debug("Module 'mod-foo' versions fetched from http://localhost");
+  }
+
+  @Test
+  void getAvailableVersions_positive_retryOnSocketExceptionThenSuccess()
+      throws IOException, InterruptedException {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+
+    when(httpClient.send(any(HttpRequest.class), any()))
+      .thenThrow(new SocketException("Connection reset"))
+      .thenReturn(httpResponse);
+    when(httpResponse.statusCode()).thenReturn(200);
+    when(httpResponse.body()).thenReturn(IOUtils.toInputStream("", "UTF-8"));
+    when(jsonConverter.parse(any(InputStream.class), any()))
+      .thenReturn(List.of(Map.of("id", "mod-foo-1.0.0")));
+
+    var result = resolver.getAvailableVersions(okapiRegistry(), dependency, ModuleType.BE);
+
+    assertThat(result).isPresent();
+    assertThat(result.get()).containsExactly("1.0.0");
+    verify(log).warn("Network error, retrying (attempt 1): Connection reset");
+    verify(log).debug("Module 'mod-foo' versions fetched from http://localhost");
+  }
+
+  @Test
+  void getAvailableVersions_positive_retryOnSocketTimeoutExceptionThenSuccess()
+      throws IOException, InterruptedException {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+
+    when(httpClient.send(any(HttpRequest.class), any()))
+      .thenThrow(new SocketTimeoutException("Read timed out"))
+      .thenReturn(httpResponse);
+    when(httpResponse.statusCode()).thenReturn(200);
+    when(httpResponse.body()).thenReturn(IOUtils.toInputStream("", "UTF-8"));
+    when(jsonConverter.parse(any(InputStream.class), any()))
+      .thenReturn(List.of(Map.of("id", "mod-foo-1.0.0")));
+
+    var result = resolver.getAvailableVersions(okapiRegistry(), dependency, ModuleType.BE);
+
+    assertThat(result).isPresent();
+    assertThat(result.get()).containsExactly("1.0.0");
+    verify(log).warn("Network error, retrying (attempt 1): Read timed out");
+    verify(log).debug("Module 'mod-foo' versions fetched from http://localhost");
+  }
+
+  @Test
+  void getAvailableVersions_negative_socketExceptionRetryLimitExhausted()
+      throws IOException, InterruptedException {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var exception = new SocketException("Connection reset");
+
+    when(httpClient.send(any(HttpRequest.class), any())).thenThrow(exception);
+
+    var result = resolver.getAvailableVersions(okapiRegistry(), dependency, ModuleType.BE);
+
+    assertThat(result).isEmpty();
+    verify(log).warn("Network error, retrying (attempt 1): Connection reset");
+    verify(log).warn("Network error, retrying (attempt 2): Connection reset");
+    verify(log).warn("Network error, retrying (attempt 3): Connection reset");
+    verify(log).warn("Network error, retrying (attempt 4): Connection reset");
+    verify(log).warn("Network error, retrying (attempt 5): Connection reset");
+    verify(log).warn("Failed to fetch versions for module 'mod-foo' from http://localhost", exception);
+  }
+
+  @Test
+  void getAvailableVersions_positive_retryOnStatusCodeThenSuccess()
+      throws IOException, InterruptedException {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+
+    when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
+    when(httpResponse.statusCode())
+      .thenReturn(504).thenReturn(504)
+      .thenReturn(200);
+    when(httpResponse.body()).thenReturn(IOUtils.toInputStream("", "UTF-8"));
+    when(jsonConverter.parse(any(InputStream.class), any()))
+      .thenReturn(List.of(Map.of("id", "mod-foo-1.0.0")));
+
+    var result = resolver.getAvailableVersions(okapiRegistry(), dependency, ModuleType.BE);
+
+    assertThat(result).isPresent();
+    assertThat(result.get()).containsExactly("1.0.0");
+    verify(log).debug("Retrying request due to status code 504 (attempt 1)");
+    verify(log).debug("Module 'mod-foo' versions fetched from http://localhost");
+  }
+
+  @Test
+  void getAvailableVersions_negative_statusCodeRetryLimitExhausted()
+      throws IOException, InterruptedException {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+
+    when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
+    when(httpResponse.statusCode())
+      .thenReturn(504).thenReturn(504)
+      .thenReturn(504).thenReturn(504)
+      .thenReturn(504).thenReturn(504)
+      .thenReturn(504).thenReturn(504)
+      .thenReturn(504).thenReturn(504)
+      .thenReturn(500);
+
+    var result = resolver.getAvailableVersions(okapiRegistry(), dependency, ModuleType.BE);
+
+    assertThat(result).isEmpty();
+    verify(log).debug("Retrying request due to status code 504 (attempt 1)");
+    verify(log).debug("Retrying request due to status code 504 (attempt 2)");
+    verify(log).debug("Retrying request due to status code 504 (attempt 3)");
+    verify(log).debug("Retrying request due to status code 504 (attempt 4)");
+    verify(log).debug("Retrying request due to status code 504 (attempt 5)");
+    verify(log).warn("Failed to fetch versions for module 'mod-foo' from http://localhost: HTTP 500");
   }
 
   private void mockHttpResponse(int statusCode, List<Map<String, Object>> payload)

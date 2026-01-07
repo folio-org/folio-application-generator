@@ -12,7 +12,6 @@ import static org.mockito.Mockito.when;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.PreReleaseFilter;
@@ -24,6 +23,7 @@ import org.folio.app.generator.model.registry.artifact.DockerHubArtifactRegistry
 import org.folio.app.generator.model.registry.artifact.FolioNpmArtifactRegistry;
 import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.service.artifact.existence.ArtifactExistenceCheckerFacade;
+import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 import org.folio.app.generator.service.resolver.ModuleVersionResolverFacade;
 import org.folio.app.generator.support.UnitTest;
 import org.folio.app.generator.utils.PluginConfig;
@@ -54,7 +54,7 @@ class ModuleVersionServiceTest {
   }
 
   @Test
-  void resolveModulesConstraints_positive() throws MojoExecutionException {
+  void resolveModulesConstraints_positive()  {
     var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
     var registry = okapiRegistry();
 
@@ -70,7 +70,7 @@ class ModuleVersionServiceTest {
   }
 
   @Test
-  void resolveModulesConstraints_positive_exactVersion() throws MojoExecutionException {
+  void resolveModulesConstraints_positive_exactVersion()  {
     var dependency = new Dependency("mod-foo", "1.2.0", PreReleaseFilter.FALSE);
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(okapiRegistry()));
@@ -83,7 +83,7 @@ class ModuleVersionServiceTest {
   }
 
   @Test
-  void resolveModulesConstraints_positive_tildeConstraint() throws MojoExecutionException {
+  void resolveModulesConstraints_positive_tildeConstraint()  {
     var dependency = new Dependency("mod-foo", "~1.2.0", PreReleaseFilter.FALSE);
     var registry = okapiRegistry();
 
@@ -98,7 +98,7 @@ class ModuleVersionServiceTest {
   }
 
   @Test
-  void resolveModulesConstraints_positive_greaterOrEqualConstraint() throws MojoExecutionException {
+  void resolveModulesConstraints_positive_greaterOrEqualConstraint()  {
     var dependency = new Dependency("mod-foo", ">=1.0.0", PreReleaseFilter.FALSE);
     var registry = okapiRegistry();
 
@@ -113,7 +113,7 @@ class ModuleVersionServiceTest {
   }
 
   @Test
-  void resolveModulesConstraints_positive_emptyRegistries() throws MojoExecutionException {
+  void resolveModulesConstraints_positive_emptyRegistries()  {
     var dependency = new Dependency("mod-foo", "1.0.0", PreReleaseFilter.FALSE);
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of());
@@ -125,7 +125,7 @@ class ModuleVersionServiceTest {
   }
 
   @Test
-  void resolveModulesConstraints_positive_selectsGreatestVersionAcrossRegistries() throws MojoExecutionException {
+  void resolveModulesConstraints_positive_selectsGreatestVersionAcrossRegistries()  {
     var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
     var okapiReg = okapiRegistry();
     var s3Reg = s3Registry();
@@ -143,7 +143,7 @@ class ModuleVersionServiceTest {
   }
 
   @Test
-  void resolveModulesConstraints_positive_multipleDependencies() throws MojoExecutionException {
+  void resolveModulesConstraints_positive_multipleDependencies()  {
     var dep1 = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
     var dep2 = new Dependency("mod-bar", "2.0.0", PreReleaseFilter.FALSE);
     var registry = okapiRegistry();
@@ -160,7 +160,7 @@ class ModuleVersionServiceTest {
   }
 
   @Test
-  void resolveModulesConstraints_positive_preReleaseTrue() throws MojoExecutionException {
+  void resolveModulesConstraints_positive_preReleaseTrue()  {
     var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.TRUE);
     var registry = okapiRegistry();
 
@@ -175,7 +175,7 @@ class ModuleVersionServiceTest {
   }
 
   @Test
-  void resolveModulesConstraints_positive_preReleaseNull() throws MojoExecutionException {
+  void resolveModulesConstraints_positive_preReleaseNull()  {
     var dependency = new Dependency("mod-foo", "^1.0.0", null);
     var registry = okapiRegistry();
 
@@ -191,7 +191,7 @@ class ModuleVersionServiceTest {
   }
 
   @Test
-  void resolveModulesConstraints_positive_preReleaseOnly() throws MojoExecutionException {
+  void resolveModulesConstraints_positive_preReleaseOnly()  {
     var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.ONLY);
     var registry = okapiRegistry();
 
@@ -206,7 +206,7 @@ class ModuleVersionServiceTest {
   }
 
   @Test
-  void resolveModulesConstraints_positive_uiModule() throws MojoExecutionException {
+  void resolveModulesConstraints_positive_uiModule()  {
     var dependency = new Dependency("folio_app", "^1.0.0", PreReleaseFilter.TRUE);
     var registry = okapiRegistry();
 
@@ -230,7 +230,7 @@ class ModuleVersionServiceTest {
         .thenReturn(Optional.of(List.of("1.2.0", "1.1.0")));
 
     assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
-        .isInstanceOf(MojoExecutionException.class)
+        .isInstanceOf(ApplicationGeneratorException.class)
         .hasMessage("No version matching constraint '^5.0.0' found for BE module 'mod-foo' in any registry");
   }
 
@@ -244,12 +244,12 @@ class ModuleVersionServiceTest {
         .thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
-        .isInstanceOf(MojoExecutionException.class)
+        .isInstanceOf(ApplicationGeneratorException.class)
         .hasMessage("No version matching constraint '^1.0.0' found for BE module 'mod-foo' in any registry");
   }
 
   @Test
-  void resolveModulesConstraints_positive_continuesOnRegistryException() throws MojoExecutionException {
+  void resolveModulesConstraints_positive_continuesOnRegistryException()  {
     var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
     var okapiReg = okapiRegistry();
     var s3Reg = s3Registry();
@@ -278,14 +278,14 @@ class ModuleVersionServiceTest {
         .thenReturn(Optional.of(List.of("1.2.0", "1.1.0")));
 
     assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
-        .isInstanceOf(MojoExecutionException.class)
+        .isInstanceOf(ApplicationGeneratorException.class)
         .hasMessage("No version matching constraint 'invalid' found for BE module 'mod-foo' in any registry");
 
     verify(log).warn("Invalid version constraint 'invalid' for module 'mod-foo'");
   }
 
   @Test
-  void resolveModulesConstraints_positive_preservesPreReleaseFilter() throws MojoExecutionException {
+  void resolveModulesConstraints_positive_preservesPreReleaseFilter()  {
     var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.ONLY);
     var registry = okapiRegistry();
 
@@ -309,7 +309,7 @@ class ModuleVersionServiceTest {
         .thenReturn(Optional.of(List.of()));
 
     assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
-        .isInstanceOf(MojoExecutionException.class)
+        .isInstanceOf(ApplicationGeneratorException.class)
         .hasMessage("No version matching constraint '^1.0.0' found for BE module 'mod-foo' in any registry");
   }
 
@@ -323,12 +323,12 @@ class ModuleVersionServiceTest {
         .thenReturn(Optional.of(List.of("1.0.0", "1.5.0")));
 
     assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
-        .isInstanceOf(MojoExecutionException.class)
+        .isInstanceOf(ApplicationGeneratorException.class)
         .hasMessage("No version matching constraint '^2.0.0' found for BE module 'mod-foo' in any registry");
   }
 
   @Test
-  void resolveModulesConstraints_positive_filtersInvalidSemverVersions() throws MojoExecutionException {
+  void resolveModulesConstraints_positive_filtersInvalidSemverVersions()  {
     var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
     var registry = okapiRegistry();
 
@@ -344,7 +344,7 @@ class ModuleVersionServiceTest {
   }
 
   @Test
-  void resolveModulesConstraints_positive_versionWithBuildMetadata() throws MojoExecutionException {
+  void resolveModulesConstraints_positive_versionWithBuildMetadata()  {
     var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
     var registry = okapiRegistry();
 
@@ -359,8 +359,7 @@ class ModuleVersionServiceTest {
   }
 
   @Test
-  void resolveModulesConstraints_positive_fallbackToNextVersionWhenArtifactNotFound()
-      throws MojoExecutionException {
+  void resolveModulesConstraints_positive_fallbackToNextVersionWhenArtifactNotFound() {
     var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
     var registry = okapiRegistry();
     var artifactRegistries = createDefaultArtifactRegistries();
@@ -382,8 +381,7 @@ class ModuleVersionServiceTest {
   }
 
   @Test
-  void resolveModulesConstraints_positive_skipArtifactValidationWhenDisabled()
-      throws MojoExecutionException {
+  void resolveModulesConstraints_positive_skipArtifactValidationWhenDisabled() {
     var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
     var registry = okapiRegistry();
 
@@ -413,13 +411,12 @@ class ModuleVersionServiceTest {
     when(artifactExistenceCheckerFacade.exists(any(), any(), eq(ModuleType.BE))).thenReturn(false);
 
     assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
-        .isInstanceOf(MojoExecutionException.class)
+        .isInstanceOf(ApplicationGeneratorException.class)
         .hasMessage("No version matching constraint '^1.0.0' found for BE module 'mod-foo' in any registry");
   }
 
   @Test
-  void resolveModulesConstraints_positive_snapshotVersionUsesSnapshotRegistry()
-      throws MojoExecutionException {
+  void resolveModulesConstraints_positive_snapshotVersionUsesSnapshotRegistry() {
     var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.TRUE);
     var registry = okapiRegistry();
     var artifactRegistries = createDefaultArtifactRegistries();
@@ -438,7 +435,7 @@ class ModuleVersionServiceTest {
   }
 
   @Test
-  void resolveModulesConstraints_positive_uiModuleArtifactValidation() throws MojoExecutionException {
+  void resolveModulesConstraints_positive_uiModuleArtifactValidation()  {
     var dependency = new Dependency("folio_users", "^1.0.0", PreReleaseFilter.FALSE);
     var registry = okapiRegistry();
     var artifactRegistries = createDefaultArtifactRegistries();
