@@ -5,14 +5,16 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.Dependency;
+import org.folio.app.generator.model.ErrorDetail;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.registry.ModuleRegistries;
 import org.folio.app.generator.model.registry.ModuleRegistry;
+import org.folio.app.generator.model.types.ErrorCategory;
 import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.service.artifact.existence.ArtifactExistenceCheckerFacade;
+import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 import org.folio.app.generator.service.resolver.ModuleVersionResolverFacade;
 import org.folio.app.generator.utils.PluginConfig;
 import org.folio.app.generator.utils.SemverUtils;
@@ -39,10 +41,10 @@ public class ModuleVersionService {
    * @param dependencies list of dependencies (may contain constraints)
    * @param type         the module type (BE or UI)
    * @return list of dependencies with exact versions
-   * @throws MojoExecutionException if any constraint cannot be resolved
+   * @throws ApplicationGeneratorException if any constraint cannot be resolved
    */
   public List<Dependency> resolveModulesConstraints(List<Dependency> dependencies, ModuleType type)
-        throws MojoExecutionException {
+    throws ApplicationGeneratorException {
 
     var registries = moduleRegistries.getRegistries(type);
 
@@ -66,10 +68,10 @@ public class ModuleVersionService {
    * @param type       the module type (BE or UI)
    * @param registries list of module registries to query
    * @return dependency with resolved exact version
-   * @throws MojoExecutionException if no matching version is found
+   * @throws ApplicationGeneratorException if no matching version is found
    */
   private Dependency resolveModuleConstraints(Dependency dependency, ModuleType type, List<ModuleRegistry> registries)
-        throws MojoExecutionException {
+    throws ApplicationGeneratorException {
 
     var moduleName = dependency.getName();
     var versionConstraint = dependency.getVersion();
@@ -91,9 +93,10 @@ public class ModuleVersionService {
     }
 
     if (allMatchingVersions.isEmpty()) {
-      throw new MojoExecutionException(String.format(
+      var errorDetail = ErrorDetail.moduleNotFound(moduleName, versionConstraint, versionConstraint);
+      throw new ApplicationGeneratorException(String.format(
         "No version matching constraint '%s' found for %s module '%s' in any registry",
-        versionConstraint, type, moduleName));
+        versionConstraint, type, moduleName), ErrorCategory.MODULE_NOT_FOUND, errorDetail);
     }
 
     var greatestVersion = allMatchingVersions.stream()
