@@ -9,6 +9,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpClient.Version;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -21,8 +22,10 @@ import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.PreReleaseFilter;
 import org.folio.app.generator.model.registry.ModuleRegistry;
 import org.folio.app.generator.model.registry.OkapiModuleRegistry;
+import org.folio.app.generator.model.types.ErrorCategory;
 import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.model.types.RegistryType;
+import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 import org.folio.app.generator.utils.JsonConverter;
 import org.folio.app.generator.utils.PluginUtils;
 import org.springframework.context.annotation.Conditional;
@@ -47,6 +50,12 @@ public class OkapiModuleVersionResolver implements ModuleVersionResolver {
     var url = okapiRegistry.getUrl();
     try {
       return getVersions(url, module, type);
+    } catch (IOException e) {
+      log.warn(String.format("Failed to fetch versions for module '%s' from %s", module.getName(), url), e);
+      throw new ApplicationGeneratorException(
+        String.format("Network error while fetching versions for module '%s' from %s: %s",
+          module.getName(), url, e.getMessage()),
+        ErrorCategory.INFRASTRUCTURE, e);
     } catch (Exception e) {
       log.warn(String.format("Failed to fetch versions for module '%s' from %s", module.getName(), url), e);
       return Optional.empty();
@@ -105,7 +114,7 @@ public class OkapiModuleVersionResolver implements ModuleVersionResolver {
         }
         log.debug("Retrying request due to status code " + response.statusCode()
           + " (attempt " + (attemptsCount + 1) + ")");
-      } catch (SocketException | SocketTimeoutException e) {
+      } catch (SocketException | SocketTimeoutException | HttpTimeoutException e) {
         lastException = e;
         log.warn("Network error, retrying (attempt " + (attemptsCount + 1) + "): " + e.getMessage());
       }
