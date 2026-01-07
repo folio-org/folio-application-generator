@@ -1,0 +1,159 @@
+package org.folio.app.generator;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.List;
+import lombok.SneakyThrows;
+import org.apache.maven.model.Build;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.project.MavenProject;
+import org.folio.app.generator.configuration.ApplicationContextBuilder;
+import org.folio.app.generator.model.ApplicationDescriptorTemplate;
+import org.folio.app.generator.model.Dependency;
+import org.folio.app.generator.model.ErrorDetail;
+import org.folio.app.generator.model.ExecutionResult;
+import org.folio.app.generator.model.types.ErrorCategory;
+import org.folio.app.generator.service.ApplicationDescriptorGenerator;
+import org.folio.app.generator.service.JsonProvider;
+import org.folio.app.generator.service.ModuleRegistryProvider;
+import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
+import org.folio.app.generator.support.UnitTest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.support.GenericApplicationContext;
+
+@UnitTest
+@ExtendWith(MockitoExtension.class)
+class ConfigurationGeneratorTest {
+
+  @Mock private ModuleRegistryProvider mockRegistryProvider;
+  @Mock private ApplicationContextBuilder mockContextBuilder;
+  @Mock private GenericApplicationContext mockGenericApplicationContext;
+  @Mock private ApplicationDescriptorGenerator mockAppDescriptorGenerator;
+  @Mock private JsonProvider mockJsonProvider;
+  @Mock private MavenProject mavenProject;
+  @Mock private Build build;
+  @Captor private ArgumentCaptor<ApplicationDescriptorTemplate> templateCaptor;
+  @InjectMocks private ConfigurationGenerator mojo;
+
+  @BeforeEach
+  void setUp() {
+    mojo.mavenProject = mavenProject;
+  }
+
+  @Test
+  @SneakyThrows
+  void execute_positive() {
+    mojo.modules = List.of(new Dependency("mod-users", "1.0.0", null));
+    mojo.uiModules = List.of(new Dependency("folio_users", "2.0.0", null));
+    mojo.dependencies = List.of(new Dependency("app-core", "1.0.0", null));
+
+    setupContextMocks();
+
+    assertDoesNotThrow(() -> mojo.execute());
+
+    verify(mockAppDescriptorGenerator).generate(templateCaptor.capture());
+    var template = templateCaptor.getValue();
+    assert template.getModules().size() == 1;
+    assert template.getUiModules().size() == 1;
+    assert template.getDependencies().size() == 1;
+  }
+
+  @Test
+  @SneakyThrows
+  void execute_positive_nullModules() {
+    mojo.modules = null;
+    mojo.uiModules = null;
+    mojo.dependencies = null;
+
+    setupContextMocks();
+
+    assertDoesNotThrow(() -> mojo.execute());
+
+    verify(mockAppDescriptorGenerator).generate(templateCaptor.capture());
+    var template = templateCaptor.getValue();
+    assert template.getModules() == null;
+    assert template.getUiModules() == null;
+    assert template.getDependencies() == null;
+  }
+
+  @Test
+  @SneakyThrows
+  void execute_negative_applicationGeneratorException() {
+    mojo.modules = List.of(new Dependency("mod-users", "1.0.0", null));
+    setupContextMocks();
+
+    var errorDetail = ErrorDetail.moduleNotFound("mod-users", "1.0.0", "^1.0.0");
+    var exception = new ApplicationGeneratorException("Module not found", ErrorCategory.MODULE_NOT_FOUND, errorDetail);
+    doThrow(exception).when(mockAppDescriptorGenerator).generate(any());
+
+    assertThatThrownBy(() -> mojo.execute())
+      .isInstanceOf(MojoExecutionException.class)
+      .hasMessage("Module not found")
+      .hasCause(exception);
+
+    verify(mockJsonProvider, times(2)).writeExecutionResult(any(ExecutionResult.class), eq("/target"));
+  }
+
+  @Test
+  @SneakyThrows
+  void execute_negative_genericException() {
+    mojo.modules = List.of(new Dependency("mod-users", "1.0.0", null));
+    setupContextMocks();
+
+    var exception = new RuntimeException("Unexpected error");
+    doThrow(exception).when(mockAppDescriptorGenerator).generate(any());
+
+    assertThatThrownBy(() -> mojo.execute())
+      .isInstanceOf(MojoExecutionException.class)
+      .hasMessage("Unexpected error")
+      .hasCause(exception);
+
+    verify(mockJsonProvider, times(2)).writeExecutionResult(any(ExecutionResult.class), eq("/target"));
+  }
+
+  @Test
+  @SneakyThrows
+  void execute_negative_mojoExecutionExceptionRethrown() {
+    mojo.modules = List.of(new Dependency("mod-users", "1.0.0", null));
+    setupContextMocks();
+
+    var originalException = new MojoExecutionException("Original mojo error");
+    doThrow(originalException).when(mockAppDescriptorGenerator).generate(any());
+
+    assertThatThrownBy(() -> mojo.execute())
+      .isSameAs(originalException);
+
+    verify(mockJsonProvider, times(2)).writeExecutionResult(any(ExecutionResult.class), eq("/target"));
+  }
+
+  private void setupContextMocks() {
+    when(mavenProject.getArtifactId()).thenReturn("test-app");
+    lenient().when(mavenProject.getVersion()).thenReturn("1.0.0");
+    when(mavenProject.getBuild()).thenReturn(build);
+    when(build.getDirectory()).thenReturn("/target");
+    when(mockContextBuilder.withLog(any())).thenReturn(mockContextBuilder);
+    when(mockContextBuilder.withMavenSession(any())).thenReturn(mockContextBuilder);
+    when(mockContextBuilder.withMavenProject(any())).thenReturn(mockContextBuilder);
+    when(mockContextBuilder.withPluginConfig(any())).thenReturn(mockContextBuilder);
+    when(mockContextBuilder.withModuleRegistries(any())).thenReturn(mockContextBuilder);
+    when(mojo.buildApplicationContext()).thenReturn(mockGenericApplicationContext);
+    when(mockGenericApplicationContext.getBean(JsonProvider.class)).thenReturn(mockJsonProvider);
+    when(mockGenericApplicationContext.getBean(ApplicationDescriptorGenerator.class))
+      .thenReturn(mockAppDescriptorGenerator);
+  }
+}
