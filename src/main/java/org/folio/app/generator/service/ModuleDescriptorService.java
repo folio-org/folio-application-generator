@@ -9,12 +9,14 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
+import org.folio.app.generator.model.ErrorDetail;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.ModulesLoadResult;
 import org.folio.app.generator.model.registry.ModuleRegistries;
+import org.folio.app.generator.model.types.ErrorCategory;
 import org.folio.app.generator.model.types.ModuleType;
+import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 import org.folio.app.generator.service.loader.LoaderResultContainer;
 import org.folio.app.generator.service.loader.ModuleDescriptorLoaderFacade;
 import org.folio.app.generator.utils.JsonConverter;
@@ -34,9 +36,10 @@ public class ModuleDescriptorService {
    *
    * @param modules - a {@link List} with {@link ModuleDefinition} module definitions
    * @return {@link ModulesLoadResult} with list of module definitions and module descriptors
-   * @throws MojoExecutionException if not all modules have been loaded
+   * @throws ApplicationGeneratorException if not all modules have been loaded
    */
-  public ModulesLoadResult loadModules(ModuleType type, List<ModuleDefinition> modules) throws MojoExecutionException {
+  public ModulesLoadResult loadModules(ModuleType type, List<ModuleDefinition> modules)
+      throws ApplicationGeneratorException {
     var foundDescriptors = new LinkedHashMap<String, LoaderResultContainer>();
 
     var registries = moduleRegistries.getRegistries(type);
@@ -63,7 +66,11 @@ public class ModuleDescriptorService {
 
     if (!notFoundModuleIds.isEmpty()) {
       var modulesString = collectToBulletedList(notFoundModuleIds);
-      throw new MojoExecutionException("Failed to load module descriptors: " + modulesString);
+      var errorDetails = notFoundModuleIds.stream()
+        .map(ErrorDetail::moduleNotFoundById)
+        .toList();
+      throw new ApplicationGeneratorException("Failed to load module descriptors: " + modulesString,
+        ErrorCategory.MODULE_NOT_FOUND, errorDetails);
     }
 
     var loadedModuleDescriptors = new ArrayList<>(foundDescriptors.values()
@@ -73,7 +80,7 @@ public class ModuleDescriptorService {
   }
 
   private ArrayList<ModuleDefinition> convertToArtifacts(Collection<LoaderResultContainer> values)
-    throws MojoExecutionException {
+      throws ApplicationGeneratorException {
     var moduleDefinitions = new ArrayList<ModuleDefinition>();
     for (var value : values) {
       moduleDefinitions.add(convertToArtifact(value));
@@ -83,16 +90,18 @@ public class ModuleDescriptorService {
   }
 
   public ModuleDefinition convertToArtifact(LoaderResultContainer loaderResultContainer)
-    throws MojoExecutionException {
+      throws ApplicationGeneratorException {
     var moduleDescriptor = loaderResultContainer.getModuleDescriptor();
     var url = loaderResultContainer.getSourceUrl();
     var idField = moduleDescriptor.get("id");
     if (!(idField instanceof String moduleId)) {
-      throw new MojoExecutionException("Loaded module id is invalid: " + jsonConverter.toJsonString(moduleDescriptor));
+      throw new ApplicationGeneratorException("Loaded module id is invalid: "
+        + jsonConverter.toJsonString(moduleDescriptor), ErrorCategory.CONFIGURATION_ERROR);
     }
 
     return createModuleDefinitionFromId(moduleId).map(md -> md.url(url.toString()))
-      .orElseThrow(() -> new MojoExecutionException(
-        "Module cannot be created for a module descriptor:" + jsonConverter.toJsonString(moduleDescriptor)));
+      .orElseThrow(() -> new ApplicationGeneratorException(
+        "Module cannot be created for a module descriptor:" + jsonConverter.toJsonString(moduleDescriptor),
+        ErrorCategory.CONFIGURATION_ERROR));
   }
 }
