@@ -81,22 +81,32 @@ public class ModuleVersionService {
     }
 
     List<VersionCandidate> allMatchingVersions = new ArrayList<>();
+    int registryErrorCount = 0;
+    Exception lastException = null;
 
     for (var registry : registries) {
       try {
         var matchingVersion = getMatchingVersionFromRegistry(registry, dependency, type);
         matchingVersion.ifPresent(allMatchingVersions::add);
       } catch (Exception e) {
+        registryErrorCount++;
+        lastException = e;
         log.warn(String.format("Failed to resolve constraint '%s' for module '%s' from %s",
           versionConstraint, moduleName, registry.getClass().getSimpleName()), e);
       }
     }
 
     if (allMatchingVersions.isEmpty()) {
+      var allRegistriesFailed = registryErrorCount == registries.size() && !registries.isEmpty();
+      var category = allRegistriesFailed ? ErrorCategory.INFRASTRUCTURE : ErrorCategory.MODULE_NOT_FOUND;
       var errorDetail = ErrorDetail.moduleNotFound(moduleName, versionConstraint, versionConstraint);
-      throw new ApplicationGeneratorException(String.format(
-        "No version matching constraint '%s' found for %s module '%s' in any registry",
-        versionConstraint, type, moduleName), ErrorCategory.MODULE_NOT_FOUND, errorDetail);
+      var message = String.format("No version matching constraint '%s' found for %s module '%s' in any registry",
+        versionConstraint, type, moduleName);
+
+      if (allRegistriesFailed && lastException != null) {
+        throw new ApplicationGeneratorException(message, category, lastException);
+      }
+      throw new ApplicationGeneratorException(message, category, errorDetail);
     }
 
     var greatestVersion = allMatchingVersions.stream()
