@@ -8,13 +8,14 @@ import static org.folio.app.generator.utils.PluginUtils.emptyIfNull;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.model.ApplicationDescriptor;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
 import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.ModuleDefinition;
+import org.folio.app.generator.model.types.ErrorCategory;
 import org.folio.app.generator.model.types.ModuleType;
+import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 import org.folio.app.generator.utils.PluginConfig;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +33,7 @@ public class ApplicationDescriptorService {
    * @param template - application descriptor template {@link ApplicationDescriptorTemplate}
    * @return created {@link ApplicationDescriptor} with all fields.
    */
-  public ApplicationDescriptor create(ApplicationDescriptorTemplate template) throws MojoExecutionException {
+  public ApplicationDescriptor create(ApplicationDescriptorTemplate template) throws ApplicationGeneratorException {
     var name = template.getName();
     var version = template.getVersion();
     var baseAppDescriptor = name == null && version == null ? buildDescriptor() : buildDescriptor(template);
@@ -67,7 +68,7 @@ public class ApplicationDescriptorService {
   }
 
   private List<Dependency> resolveConstraints(List<Dependency> dependencies, ModuleType type)
-    throws MojoExecutionException {
+      throws ApplicationGeneratorException {
     return moduleVersionService.resolveModulesConstraints(emptyIfNull(dependencies), type);
   }
 
@@ -83,7 +84,8 @@ public class ApplicationDescriptorService {
     return applicationDescriptor;
   }
 
-  private ApplicationDescriptor buildDescriptor(ApplicationDescriptorTemplate template) throws MojoExecutionException {
+  private ApplicationDescriptor buildDescriptor(ApplicationDescriptorTemplate template)
+      throws ApplicationGeneratorException {
     var name = template.getName();
     var version = getVersionWithBuildNumber(template.getVersion());
 
@@ -93,7 +95,8 @@ public class ApplicationDescriptorService {
 
     var generatedId = name + "-" + template.getVersion();
     if (template.getId() != null && !generatedId.equals(template.getId())) {
-      throw new MojoExecutionException("Invalid application id provided in template");
+      throw new ApplicationGeneratorException("Invalid application id provided in template",
+        ErrorCategory.CONFIGURATION_ERROR);
     }
 
     applicationDescriptor.setId(name + "-" + version);
