@@ -47,7 +47,7 @@ public class JsonGenerator extends AbstractGeneratorMojo {
     }
   }
 
-  protected ApplicationDescriptorTemplate readTemplate() throws MojoExecutionException {
+  protected ApplicationDescriptorTemplate readTemplate() throws ApplicationGeneratorException {
     var ctx = buildApplicationContext();
     var jsonProvider = ctx.getBean(JsonProvider.class);
     return jsonProvider.readJsonFromFile(templatePath, ApplicationDescriptorTemplate.class, true);
