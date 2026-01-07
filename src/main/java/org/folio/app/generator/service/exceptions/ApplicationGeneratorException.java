@@ -9,7 +9,7 @@ import org.folio.app.generator.model.types.ErrorCategory;
 public class ApplicationGeneratorException extends RuntimeException {
 
   private final ErrorCategory category;
-  private final List<ErrorDetail> errors;
+  private final transient List<ErrorDetail> errors;
 
   public ApplicationGeneratorException(String message, ErrorCategory category) {
     super(message);
