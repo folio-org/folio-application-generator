@@ -46,7 +46,7 @@ public class FolioNpmArtifactExistenceChecker extends HttpArtifactExistenceCheck
     var statusCode = response.statusCode();
 
     if (statusCode != SUCCESS_STATUS_CODE) {
-      log.debug("NPM package not found: " + packageName + " (status: " + statusCode + ")");
+      log.warn("NPM package not found: " + packageName + " (status: " + statusCode + ", url: " + url + ")");
       return false;
     }
 
@@ -57,7 +57,7 @@ public class FolioNpmArtifactExistenceChecker extends HttpArtifactExistenceCheck
     }
 
     if (versions == null || !versions.containsKey(module.getVersion())) {
-      log.debug("NPM package version not found: " + packageName + "@" + module.getVersion());
+      log.warn("NPM package version not found: " + packageName + "@" + module.getVersion() + " (url: " + url + ")");
       return false;
     }
 
