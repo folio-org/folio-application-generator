@@ -105,6 +105,23 @@ public class JsonProvider {
     log.info("Update result saved to: " + updateResultFile.getAbsolutePath());
   }
 
+  public void writeExecutionResult(ExecutionResult executionResult, String path)
+    throws ApplicationGeneratorException {
+    var file = new File(path);
+    if (!file.exists() && !file.mkdirs()) {
+      throw new ApplicationGeneratorException("Could not create target directory: " + file,
+        ErrorCategory.CONFIGURATION_ERROR);
+    }
+    if (!file.canWrite()) {
+      throw new ApplicationGeneratorException("Target directory is not writable: " + file,
+        ErrorCategory.CONFIGURATION_ERROR);
+    }
+
+    var executionResultFile = new File(file, "execution-result.json");
+    jsonConverter.writeValue(executionResultFile, executionResult);
+    log.debug("Execution result saved to: " + executionResultFile.getAbsolutePath());
+  }
+
   private String performSubstitution(String content) {
     var stringSubstitutor = new StringSubstitutor(substitutionMap);
     return stringSubstitutor.replace(content);
