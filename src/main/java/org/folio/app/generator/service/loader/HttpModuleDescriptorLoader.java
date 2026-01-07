@@ -42,7 +42,8 @@ public abstract class HttpModuleDescriptorLoader implements ModuleDescriptorLoad
           + " (attempt " + (attemptsCount + 1) + ")");
       } catch (SocketException | SocketTimeoutException | HttpTimeoutException e) {
         lastException = e;
-        log.warn("Network error, retrying (attempt " + (attemptsCount + 1) + "): " + e.getMessage());
+        var errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+        log.warn("Network error, retrying (attempt " + (attemptsCount + 1) + "): " + errorMsg);
       }
       attemptsCount++;
       Thread.sleep(RETRY_DELAY_MS * attemptsCount);

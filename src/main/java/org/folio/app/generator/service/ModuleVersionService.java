@@ -99,13 +99,16 @@ public class ModuleVersionService {
     if (allMatchingVersions.isEmpty()) {
       var allRegistriesFailed = registryErrorCount == registries.size() && !registries.isEmpty();
       var category = allRegistriesFailed ? ErrorCategory.INFRASTRUCTURE : ErrorCategory.MODULE_NOT_FOUND;
-      var errorDetail = ErrorDetail.moduleNotFound(moduleName, versionConstraint, versionConstraint);
       var message = String.format("No version matching constraint '%s' found for %s module '%s' in any registry",
         versionConstraint, type, moduleName);
 
-      if (allRegistriesFailed && lastException != null) {
-        throw new ApplicationGeneratorException(message, category, lastException);
+      if (allRegistriesFailed) {
+        var exMsg = lastException.getMessage();
+        var errorMsg = exMsg != null ? exMsg : lastException.getClass().getSimpleName();
+        var errorDetail = ErrorDetail.infrastructureError(null, errorMsg);
+        throw new ApplicationGeneratorException(message, category, errorDetail, lastException);
       }
+      var errorDetail = ErrorDetail.moduleNotFound(moduleName, versionConstraint, versionConstraint);
       throw new ApplicationGeneratorException(message, category, errorDetail);
     }
 

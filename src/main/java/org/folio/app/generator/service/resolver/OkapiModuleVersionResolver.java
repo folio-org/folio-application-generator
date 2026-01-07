@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.conditions.OkapiCondition;
 import org.folio.app.generator.model.Dependency;
+import org.folio.app.generator.model.ErrorDetail;
 import org.folio.app.generator.model.PreReleaseFilter;
 import org.folio.app.generator.model.registry.ModuleRegistry;
 import org.folio.app.generator.model.registry.OkapiModuleRegistry;
@@ -52,10 +53,12 @@ public class OkapiModuleVersionResolver implements ModuleVersionResolver {
       return getVersions(url, module, type);
     } catch (IOException e) {
       log.warn(String.format("Failed to fetch versions for module '%s' from %s", module.getName(), url), e);
+      var errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+      var errorDetail = ErrorDetail.infrastructureError(url, errorMsg);
       throw new ApplicationGeneratorException(
         String.format("Network error while fetching versions for module '%s' from %s: %s",
-          module.getName(), url, e.getMessage()),
-        ErrorCategory.INFRASTRUCTURE, e);
+          module.getName(), url, errorMsg),
+        ErrorCategory.INFRASTRUCTURE, errorDetail, e);
     } catch (Exception e) {
       log.warn(String.format("Failed to fetch versions for module '%s' from %s", module.getName(), url), e);
       return Optional.empty();
@@ -116,7 +119,8 @@ public class OkapiModuleVersionResolver implements ModuleVersionResolver {
           + " (attempt " + (attemptsCount + 1) + ")");
       } catch (SocketException | SocketTimeoutException | HttpTimeoutException e) {
         lastException = e;
-        log.warn("Network error, retrying (attempt " + (attemptsCount + 1) + "): " + e.getMessage());
+        var errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+        log.warn("Network error, retrying (attempt " + (attemptsCount + 1) + "): " + errorMsg);
       }
       attemptsCount++;
       Thread.sleep(RETRY_DELAY_MS * attemptsCount);
