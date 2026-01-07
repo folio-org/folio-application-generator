@@ -6,11 +6,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Map;
 import org.apache.commons.text.StringSubstitutor;
-import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.model.ApplicationDescriptor;
+import org.folio.app.generator.model.ErrorDetail;
+import org.folio.app.generator.model.ExecutionResult;
 import org.folio.app.generator.model.UpdateResult;
+import org.folio.app.generator.model.types.ErrorCategory;
+import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 import org.folio.app.generator.utils.JsonConverter;
 import org.springframework.stereotype.Component;
 
@@ -38,14 +41,18 @@ public class JsonProvider {
    * @param clazz - object type to return
    * @param useSubstitution - defines whether apply substitution in the read content or not
    * @return application descriptor template as {@link T} object
-   * @throws MojoExecutionException for any issues related to read and parse operations
+   * @throws ApplicationGeneratorException for any issues related to read and parse operations
    */
-  public <T> T readJsonFromFile(String path, Class<T> clazz, boolean useSubstitution) throws MojoExecutionException {
+  public <T> T readJsonFromFile(String path, Class<T> clazz, boolean useSubstitution)
+    throws ApplicationGeneratorException {
     var file = new File(path);
     log.debug(clazz.getSimpleName() + " file location: " + file.getAbsolutePath());
 
     if (!file.exists() || file.isDirectory()) {
-      throw new MojoExecutionException(clazz.getSimpleName() + " is not found: " + file.getAbsolutePath());
+      var errorDetail = ErrorDetail.configurationError(file.getAbsolutePath(),
+        clazz.getSimpleName() + " file not found");
+      throw new ApplicationGeneratorException(clazz.getSimpleName() + " is not found: " + file.getAbsolutePath(),
+        ErrorCategory.CONFIGURATION_ERROR, errorDetail);
     }
 
     try {
@@ -57,7 +64,8 @@ public class JsonProvider {
       }
       return jsonConverter.parse(content, clazz);
     } catch (IOException e) {
-      throw new MojoExecutionException("Failed to read file: " + file.getAbsolutePath(), e);
+      throw new ApplicationGeneratorException("Failed to read file: " + file.getAbsolutePath(),
+        ErrorCategory.CONFIGURATION_ERROR, e);
     }
   }
 
@@ -66,26 +74,30 @@ public class JsonProvider {
    *
    * @param application - object to store
    * @param path - file path where to store object
-   * @throws MojoExecutionException for any issues related to parse and write operations
+   * @throws ApplicationGeneratorException for any issues related to parse and write operations
    */
   public void writeApplication(ApplicationDescriptor application, String path)
-    throws MojoExecutionException {
+    throws ApplicationGeneratorException {
     var file = new File(path);
     if (!file.exists() && !file.mkdirs()) {
-      throw new MojoExecutionException("Could not create target directory: " + file);
+      throw new ApplicationGeneratorException("Could not create target directory: " + file,
+        ErrorCategory.CONFIGURATION_ERROR);
     }
 
     var applicationFile = new File(file, application.getId() + ".json");
     jsonConverter.writeValue(applicationFile, application);
   }
 
-  public void writeUpdateResult(UpdateResult updateResult, String path) throws MojoExecutionException {
+  public void writeUpdateResult(UpdateResult updateResult, String path)
+    throws ApplicationGeneratorException {
     var file = new File(path);
     if (!file.exists() && !file.mkdirs()) {
-      throw new MojoExecutionException("Could not create target directory: " + file);
+      throw new ApplicationGeneratorException("Could not create target directory: " + file,
+        ErrorCategory.CONFIGURATION_ERROR);
     }
     if (!file.canWrite()) {
-      throw new MojoExecutionException("Target directory is not writable: " + file);
+      throw new ApplicationGeneratorException("Target directory is not writable: " + file,
+        ErrorCategory.CONFIGURATION_ERROR);
     }
 
     var updateResultFile = new File(file, "update-result.json");
