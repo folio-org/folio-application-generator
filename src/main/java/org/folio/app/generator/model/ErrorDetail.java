@@ -26,4 +26,8 @@ public record ErrorDetail(
   public static ErrorDetail configurationError(String source, String message) {
     return new ErrorDetail("CONFIGURATION_ERROR", source, null, null, null, message);
   }
+
+  public static ErrorDetail infrastructureError(String url, String message) {
+    return new ErrorDetail("INFRASTRUCTURE", null, null, url, null, message);
+  }
 }
