@@ -52,9 +52,10 @@ public class UpdateGenerator extends AbstractUpdateMojo {
 
       var descriptorUpdateService = ctx.getBean(ApplicationDescriptorUpdateService.class);
       var updateConfig = buildUpdateConfig(allowDowngrade, allowAddModules, removeUnlistedModules);
-      descriptorUpdateService.update(application, cmdModulesString, cmdUiModulesString, updateConfig);
+      var changesDetected = descriptorUpdateService.update(application, cmdModulesString, cmdUiModulesString,
+        updateConfig);
 
-      writeExecutionSuccess(ctx, "updateFromJson", appName, application.getVersion());
+      writeExecutionSuccess(ctx, "updateFromJson", appName, application.getVersion(), changesDetected);
     } catch (Exception e) {
       var category = classifyException(e);
       List<ErrorDetail> errors = e instanceof ApplicationGeneratorException age ? age.getErrors() : List.of();

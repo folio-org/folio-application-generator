@@ -49,7 +49,7 @@ public class IntegrityValidatorMojo extends JsonGenerator {
 
       applicationModulesValidator.validateApplication(application, baseUrl, token);
 
-      writeExecutionSuccess(ctx, "validateIntegrity", appName, application.getVersion());
+      writeExecutionSuccess(ctx, "validateIntegrity", appName, application.getVersion(), true);
     } catch (Exception e) {
       var category = classifyException(e);
       List<ErrorDetail> errors = e instanceof ApplicationGeneratorException age ? age.getErrors() : List.of();

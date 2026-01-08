@@ -56,12 +56,12 @@ public class TemplateUpdateGenerator extends AbstractUpdateMojo {
       var updateConfig = buildUpdateConfig(allowDowngrade, allowAddModules, removeUnlistedModules);
 
       var updateService = ctx.getBean(ApplicationDescriptorUpdateService.class);
-      updateService.update(application,
+      var changesDetected = updateService.update(application,
         emptyIfNull(template.getModules()),
         emptyIfNull(template.getUiModules()),
         updateConfig);
 
-      writeExecutionSuccess(ctx, "updateFromTemplate", appName, application.getVersion());
+      writeExecutionSuccess(ctx, "updateFromTemplate", appName, application.getVersion(), changesDetected);
     } catch (Exception e) {
       var category = classifyException(e);
       List<ErrorDetail> errors = e instanceof ApplicationGeneratorException age ? age.getErrors() : List.of();

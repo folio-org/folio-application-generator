@@ -47,7 +47,7 @@ public class ConfigurationGenerator extends AbstractGeneratorMojo {
       var appDescriptorGenerator = ctx.getBean(ApplicationDescriptorGenerator.class);
       appDescriptorGenerator.generate(template);
 
-      writeExecutionSuccess(ctx, "generateFromConfiguration", appName, mavenProject.getVersion());
+      writeExecutionSuccess(ctx, "generateFromConfiguration", appName, mavenProject.getVersion(), true);
     } catch (Exception e) {
       var category = classifyException(e);
       List<ErrorDetail> errors = e instanceof ApplicationGeneratorException age ? age.getErrors() : List.of();
