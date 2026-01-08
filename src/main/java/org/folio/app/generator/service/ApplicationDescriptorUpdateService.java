@@ -51,15 +51,15 @@ public class ApplicationDescriptorUpdateService {
   private final ModuleDescriptorService moduleDescriptorService;
   private final ModuleVersionService moduleVersionService;
 
-  public void update(ApplicationDescriptor application, String modulesIds, String uiModulesIds,
-                     UpdateConfig config) throws MojoExecutionException {
+  public boolean update(ApplicationDescriptor application, String modulesIds, String uiModulesIds,
+                        UpdateConfig config) throws MojoExecutionException {
     var moduleUpdates = parseModuleIdsToUpdate(modulesIds);
     var uiModuleUpdates = parseModuleIdsToUpdate(uiModulesIds);
-    update(application, moduleUpdates, uiModuleUpdates, config);
+    return update(application, moduleUpdates, uiModuleUpdates, config);
   }
 
-  public void update(ApplicationDescriptor application, List<Dependency> modules, List<Dependency> uiModules,
-                     UpdateConfig config) throws MojoExecutionException {
+  public boolean update(ApplicationDescriptor application, List<Dependency> modules, List<Dependency> uiModules,
+                        UpdateConfig config) throws MojoExecutionException {
     var moduleUpdates = emptyIfNull(modules);
     var uiModuleUpdates = emptyIfNull(uiModules);
 
@@ -73,7 +73,7 @@ public class ApplicationDescriptorUpdateService {
 
     if (!modulesResult.hasChanges() && !uiModulesResult.hasChanges()) {
       log.info("No module changes detected. Skipping descriptor update.");
-      return;
+      return false;
     }
 
     var modulesLoadResult = moduleDescriptorService.loadModules(BE, modulesResult.changedModules());
@@ -98,6 +98,7 @@ public class ApplicationDescriptorUpdateService {
       modulesResult.added(), modulesResult.upgraded(), modulesResult.downgraded(), modulesResult.removed(),
       uiModulesResult.added(), uiModulesResult.upgraded(), uiModulesResult.downgraded(), uiModulesResult.removed());
     jsonProvider.writeUpdateResult(updateResult, outputDir);
+    return true;
   }
 
   private void updateApplicationModules(ApplicationDescriptor application,
