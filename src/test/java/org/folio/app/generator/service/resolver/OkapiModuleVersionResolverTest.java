@@ -325,7 +325,7 @@ class OkapiModuleVersionResolverTest {
 
     when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
     when(httpResponse.statusCode())
-      .thenReturn(504).thenReturn(504)
+      .thenReturn(504)
       .thenReturn(200);
     when(httpResponse.body()).thenReturn(IOUtils.toInputStream("", "UTF-8"));
     when(jsonConverter.parse(any(InputStream.class), any()))
@@ -346,11 +346,11 @@ class OkapiModuleVersionResolverTest {
 
     when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
     when(httpResponse.statusCode())
-      .thenReturn(504).thenReturn(504)
-      .thenReturn(504).thenReturn(504)
-      .thenReturn(504).thenReturn(504)
-      .thenReturn(504).thenReturn(504)
-      .thenReturn(504).thenReturn(504)
+      .thenReturn(504)
+      .thenReturn(504)
+      .thenReturn(504)
+      .thenReturn(504)
+      .thenReturn(504)
       .thenReturn(500);
 
     var result = resolver.getAvailableVersions(okapiRegistry(), dependency, ModuleType.BE);

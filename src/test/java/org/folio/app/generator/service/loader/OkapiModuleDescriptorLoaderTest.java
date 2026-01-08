@@ -187,7 +187,7 @@ class OkapiModuleDescriptorLoaderTest {
 
     when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
     when(httpResponse.statusCode())
-      .thenReturn(504).thenReturn(504)
+      .thenReturn(504)
       .thenReturn(200);
     mockPayloadResponse(List.of(expectedModuleDescriptor));
 
@@ -206,11 +206,11 @@ class OkapiModuleDescriptorLoaderTest {
 
     when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
     when(httpResponse.statusCode())
-      .thenReturn(504).thenReturn(504)
-      .thenReturn(504).thenReturn(504)
-      .thenReturn(504).thenReturn(504)
-      .thenReturn(504).thenReturn(504)
-      .thenReturn(504).thenReturn(504)
+      .thenReturn(504)
+      .thenReturn(504)
+      .thenReturn(504)
+      .thenReturn(504)
+      .thenReturn(504)
       .thenReturn(404);
 
     var result = loader.findModuleDescriptor(okapiRegistry(""), fooModule("1.0.0"));

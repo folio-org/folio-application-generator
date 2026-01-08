@@ -228,7 +228,7 @@ class SimpleModuleDescriptorLoaderTest {
 
     when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
     when(httpResponse.statusCode())
-      .thenReturn(504).thenReturn(504)
+      .thenReturn(504)
       .thenReturn(200);
     mockPayloadResponse(expectedModuleDescriptor);
 
@@ -247,11 +247,11 @@ class SimpleModuleDescriptorLoaderTest {
 
     when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
     when(httpResponse.statusCode())
-      .thenReturn(504).thenReturn(504)
-      .thenReturn(504).thenReturn(504)
-      .thenReturn(504).thenReturn(504)
-      .thenReturn(504).thenReturn(504)
-      .thenReturn(504).thenReturn(504)
+      .thenReturn(504)
+      .thenReturn(504)
+      .thenReturn(504)
+      .thenReturn(504)
+      .thenReturn(504)
       .thenReturn(404);
 
     var result = loader.findModuleDescriptor(simpleRegistry(""), fooModule("1.0.0"));
