@@ -146,10 +146,10 @@ public abstract class AbstractGeneratorMojo extends AbstractMojo {
     jsonProvider.writeExecutionResult(result, mavenProject.getBuild().getDirectory());
   }
 
-  protected void writeExecutionSuccess(GenericApplicationContext ctx, String goal, String appName, String appVersion)
-      throws ApplicationGeneratorException {
+  protected void writeExecutionSuccess(GenericApplicationContext ctx, String goal, String appName, String appVersion,
+                                       boolean changesDetected) throws ApplicationGeneratorException {
     var jsonProvider = ctx.getBean(JsonProvider.class);
-    var result = ExecutionResult.success(goal, appName, appVersion);
+    var result = ExecutionResult.success(goal, appName, appVersion, changesDetected);
     jsonProvider.writeExecutionResult(result, mavenProject.getBuild().getDirectory());
   }
 
