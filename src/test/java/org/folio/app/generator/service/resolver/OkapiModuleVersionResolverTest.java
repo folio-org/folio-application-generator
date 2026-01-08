@@ -277,10 +277,11 @@ class OkapiModuleVersionResolverTest {
       throws IOException, InterruptedException {
     var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
     var exception = new HttpTimeoutException("request timed out");
+    var registry = okapiRegistry();
 
     when(httpClient.send(any(HttpRequest.class), any())).thenThrow(exception);
 
-    assertThatThrownBy(() -> resolver.getAvailableVersions(okapiRegistry(), dependency, ModuleType.BE))
+    assertThatThrownBy(() -> resolver.getAvailableVersions(registry, dependency, ModuleType.BE))
       .isInstanceOf(ApplicationGeneratorException.class)
       .hasMessageContaining("Network error while fetching versions for module 'mod-foo'")
       .hasCause(exception)
@@ -300,10 +301,11 @@ class OkapiModuleVersionResolverTest {
       throws IOException, InterruptedException {
     var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
     var exception = new SocketException("Connection reset");
+    var registry = okapiRegistry();
 
     when(httpClient.send(any(HttpRequest.class), any())).thenThrow(exception);
 
-    assertThatThrownBy(() -> resolver.getAvailableVersions(okapiRegistry(), dependency, ModuleType.BE))
+    assertThatThrownBy(() -> resolver.getAvailableVersions(registry, dependency, ModuleType.BE))
       .isInstanceOf(ApplicationGeneratorException.class)
       .hasMessageContaining("Network error while fetching versions for module 'mod-foo'")
       .hasCause(exception)

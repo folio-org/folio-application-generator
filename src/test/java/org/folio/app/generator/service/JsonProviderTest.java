@@ -147,9 +147,9 @@ class JsonProviderTest {
     var tempDir = Files.createTempDirectory("json-provider-dir-test");
 
     try {
+      var tempPath = tempDir.toAbsolutePath().toString();
       var exception = assertThrows(ApplicationGeneratorException.class,
-        () -> jsonProvider.readJsonFromFile(tempDir.toAbsolutePath().toString(),
-          ApplicationDescriptor.class, true));
+        () -> jsonProvider.readJsonFromFile(tempPath, ApplicationDescriptor.class, true));
 
       assertThat(exception.getMessage()).contains("ApplicationDescriptor is not found");
       assertThat(exception.getCategory()).isEqualTo(ErrorCategory.CONFIGURATION_ERROR);

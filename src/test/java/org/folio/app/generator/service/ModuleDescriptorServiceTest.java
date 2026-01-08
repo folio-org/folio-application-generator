@@ -95,7 +95,8 @@ class ModuleDescriptorServiceTest {
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of());
 
-    assertThatThrownBy(() -> service.loadModules(ModuleType.BE, List.of(module)))
+    var modules = List.of(module);
+    assertThatThrownBy(() -> service.loadModules(ModuleType.BE, modules))
       .isInstanceOf(ApplicationGeneratorException.class)
       .satisfies(e -> {
         var ex = (ApplicationGeneratorException) e;

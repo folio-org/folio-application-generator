@@ -245,7 +245,8 @@ class ModuleVersionServiceTest {
     when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE))
         .thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
+    var dependencies = List.of(dependency);
+    assertThatThrownBy(() -> service.resolveModulesConstraints(dependencies, ModuleType.BE))
         .isInstanceOf(ApplicationGeneratorException.class)
         .hasMessage("No version matching constraint '^1.0.0' found for BE module 'mod-foo' in any registry");
   }
@@ -279,7 +280,8 @@ class ModuleVersionServiceTest {
     when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE))
         .thenReturn(Optional.of(List.of("1.2.0", "1.1.0")));
 
-    assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
+    var dependencies = List.of(dependency);
+    assertThatThrownBy(() -> service.resolveModulesConstraints(dependencies, ModuleType.BE))
         .isInstanceOf(ApplicationGeneratorException.class)
         .hasMessage("No version matching constraint 'invalid' found for BE module 'mod-foo' in any registry");
 
@@ -310,7 +312,8 @@ class ModuleVersionServiceTest {
     when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE))
         .thenReturn(Optional.of(List.of()));
 
-    assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
+    var dependencies = List.of(dependency);
+    assertThatThrownBy(() -> service.resolveModulesConstraints(dependencies, ModuleType.BE))
         .isInstanceOf(ApplicationGeneratorException.class)
         .hasMessage("No version matching constraint '^1.0.0' found for BE module 'mod-foo' in any registry");
   }
@@ -324,7 +327,8 @@ class ModuleVersionServiceTest {
     when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE))
         .thenReturn(Optional.of(List.of("1.0.0", "1.5.0")));
 
-    assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
+    var dependencies = List.of(dependency);
+    assertThatThrownBy(() -> service.resolveModulesConstraints(dependencies, ModuleType.BE))
         .isInstanceOf(ApplicationGeneratorException.class)
         .hasMessage("No version matching constraint '^2.0.0' found for BE module 'mod-foo' in any registry");
   }
@@ -412,7 +416,8 @@ class ModuleVersionServiceTest {
     when(artifactRegistryProvider.getArtifactRegistries(pluginConfig)).thenReturn(artifactRegistries);
     when(artifactExistenceCheckerFacade.exists(any(), any(), eq(ModuleType.BE))).thenReturn(false);
 
-    assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
+    var dependencies = List.of(dependency);
+    assertThatThrownBy(() -> service.resolveModulesConstraints(dependencies, ModuleType.BE))
         .isInstanceOf(ApplicationGeneratorException.class)
         .hasMessage("No version matching constraint '^1.0.0' found for BE module 'mod-foo' in any registry");
   }
@@ -470,7 +475,8 @@ class ModuleVersionServiceTest {
     when(resolverFacade.getAvailableVersions(s3Reg, dependency, ModuleType.BE))
         .thenThrow(new RuntimeException("S3 connection failed"));
 
-    assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
+    var dependencies = List.of(dependency);
+    assertThatThrownBy(() -> service.resolveModulesConstraints(dependencies, ModuleType.BE))
         .isInstanceOf(ApplicationGeneratorException.class)
         .hasMessageContaining("No version matching constraint '^1.0.0' found for BE module 'mod-foo'")
         .satisfies(e -> assertThat(((ApplicationGeneratorException) e).getCategory())
@@ -489,7 +495,8 @@ class ModuleVersionServiceTest {
     when(resolverFacade.getAvailableVersions(s3Reg, dependency, ModuleType.BE))
         .thenThrow(new RuntimeException("S3 connection failed"));
 
-    assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
+    var dependencies = List.of(dependency);
+    assertThatThrownBy(() -> service.resolveModulesConstraints(dependencies, ModuleType.BE))
         .isInstanceOf(ApplicationGeneratorException.class)
         .hasMessageContaining("No version matching constraint '^1.0.0' found for BE module 'mod-foo'")
         .satisfies(e -> assertThat(((ApplicationGeneratorException) e).getCategory())
@@ -506,7 +513,8 @@ class ModuleVersionServiceTest {
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
     when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE)).thenThrow(networkException);
 
-    assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
+    var dependencies = List.of(dependency);
+    assertThatThrownBy(() -> service.resolveModulesConstraints(dependencies, ModuleType.BE))
         .isInstanceOf(ApplicationGeneratorException.class)
         .hasMessageContaining("No version matching constraint '^1.0.0' found for BE module 'mod-foo'")
         .satisfies(e -> assertThat(((ApplicationGeneratorException) e).getCategory())
@@ -523,7 +531,8 @@ class ModuleVersionServiceTest {
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
     when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE)).thenThrow(networkException);
 
-    assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
+    var dependencies = List.of(dependency);
+    assertThatThrownBy(() -> service.resolveModulesConstraints(dependencies, ModuleType.BE))
         .isInstanceOf(ApplicationGeneratorException.class)
         .hasMessageContaining("No version matching constraint '^1.0.0' found for BE module 'mod-foo'")
         .satisfies(e -> {
@@ -546,7 +555,8 @@ class ModuleVersionServiceTest {
     when(resolverFacade.getAvailableVersions(s3Reg, dependency, ModuleType.BE))
         .thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
+    var dependencies = List.of(dependency);
+    assertThatThrownBy(() -> service.resolveModulesConstraints(dependencies, ModuleType.BE))
         .isInstanceOf(ApplicationGeneratorException.class)
         .hasMessageContaining("No version matching constraint '^1.0.0' found for BE module 'mod-foo'")
         .satisfies(e -> assertThat(((ApplicationGeneratorException) e).getCategory())
