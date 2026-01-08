@@ -17,7 +17,6 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.support.UnitTest;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -35,10 +34,6 @@ class HttpRetryHelperTest {
   private HttpRequest request;
   @Mock
   private HttpResponse<Object> response;
-
-  @BeforeEach
-  void setUp() {
-  }
 
   @Test
   void sendWithRetry_positive_immediateSuccess() throws IOException, InterruptedException {
