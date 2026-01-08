@@ -514,6 +514,27 @@ class ModuleVersionServiceTest {
   }
 
   @Test
+  void resolveModulesConstraints_negative_singleRegistryNetworkErrorWithNullMessage_infrastructure() {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var registry = okapiRegistry();
+    var networkException = new ApplicationGeneratorException(
+      (String) null, ErrorCategory.INFRASTRUCTURE);
+
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
+    when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE)).thenThrow(networkException);
+
+    assertThatThrownBy(() -> service.resolveModulesConstraints(List.of(dependency), ModuleType.BE))
+        .isInstanceOf(ApplicationGeneratorException.class)
+        .hasMessageContaining("No version matching constraint '^1.0.0' found for BE module 'mod-foo'")
+        .satisfies(e -> {
+          var appEx = (ApplicationGeneratorException) e;
+          assertThat(appEx.getCategory()).isEqualTo(ErrorCategory.INFRASTRUCTURE);
+          assertThat(appEx.getErrors()).hasSize(1);
+          assertThat(appEx.getErrors().get(0).message()).isEqualTo("ApplicationGeneratorException");
+        });
+  }
+
+  @Test
   void resolveModulesConstraints_negative_allRegistriesEmpty_moduleNotFound() {
     var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
     var okapiReg = okapiRegistry();

@@ -364,6 +364,37 @@ class OkapiModuleVersionResolverTest {
     verify(log).warn("Failed to fetch versions for module 'mod-foo' from http://localhost: HTTP 500");
   }
 
+  @Test
+  void getAvailableVersions_negative_genericExceptionReturnsEmpty()
+      throws IOException, InterruptedException {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var exception = new RuntimeException("Unexpected error");
+    var registry = okapiRegistry();
+
+    when(httpClient.send(any(HttpRequest.class), any())).thenThrow(exception);
+
+    var result = resolver.getAvailableVersions(registry, dependency, ModuleType.BE);
+
+    assertThat(result).isEmpty();
+    verify(log).warn("Failed to fetch versions for module 'mod-foo' from http://localhost", exception);
+  }
+
+  @Test
+  void getAvailableVersions_negative_ioExceptionWithNullMessage()
+      throws IOException, InterruptedException {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var exception = new IOException((String) null);
+    var registry = okapiRegistry();
+
+    when(httpClient.send(any(HttpRequest.class), any())).thenThrow(exception);
+
+    assertThatThrownBy(() -> resolver.getAvailableVersions(registry, dependency, ModuleType.BE))
+      .isInstanceOf(ApplicationGeneratorException.class)
+      .hasMessageContaining("IOException")
+      .hasCause(exception);
+    verify(log).warn("Failed to fetch versions for module 'mod-foo' from http://localhost", exception);
+  }
+
   private void mockHttpResponse(int statusCode, List<Map<String, Object>> payload)
       throws IOException, InterruptedException {
     when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);

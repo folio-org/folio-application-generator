@@ -53,6 +53,31 @@ class ApplicationGeneratorExceptionTest {
   }
 
   @Test
+  void constructor_withNullErrorDetailAndCause() {
+    var cause = new RuntimeException("Root cause");
+    var exception = new ApplicationGeneratorException(
+      "Test message", ErrorCategory.INFRASTRUCTURE, (ErrorDetail) null, cause);
+
+    assertThat(exception.getMessage()).isEqualTo("Test message");
+    assertThat(exception.getCategory()).isEqualTo(ErrorCategory.INFRASTRUCTURE);
+    assertThat(exception.getErrors()).isEmpty();
+    assertThat(exception.getCause()).isSameAs(cause);
+  }
+
+  @Test
+  void constructor_withErrorDetailAndCause() {
+    var cause = new RuntimeException("Root cause");
+    var errorDetail = ErrorDetail.infrastructureError("http://localhost", "Connection reset");
+    var exception = new ApplicationGeneratorException(
+      "Test message", ErrorCategory.INFRASTRUCTURE, errorDetail, cause);
+
+    assertThat(exception.getMessage()).isEqualTo("Test message");
+    assertThat(exception.getCategory()).isEqualTo(ErrorCategory.INFRASTRUCTURE);
+    assertThat(exception.getErrors()).containsExactly(errorDetail);
+    assertThat(exception.getCause()).isSameAs(cause);
+  }
+
+  @Test
   void constructor_withErrorDetailList_notNull() {
     var error1 = ErrorDetail.moduleNotFoundById("mod-users-1.0.0");
     var error2 = ErrorDetail.moduleNotFoundById("mod-orders-2.0.0");
