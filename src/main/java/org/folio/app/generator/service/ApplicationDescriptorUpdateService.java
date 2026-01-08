@@ -32,6 +32,7 @@ import org.folio.app.generator.model.PreReleaseFilter;
 import org.folio.app.generator.model.UpdateConfig;
 import org.folio.app.generator.model.UpdateResult;
 import org.folio.app.generator.model.types.ModuleType;
+import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 import org.folio.app.generator.utils.PluginConfig;
 import org.folio.app.generator.utils.SemverUtils;
 import org.semver4j.Semver;
@@ -312,7 +313,7 @@ public class ApplicationDescriptorUpdateService {
   }
 
   private List<Dependency> resolveConstraints(List<Dependency> dependencies, ModuleType type)
-    throws MojoExecutionException {
+      throws ApplicationGeneratorException {
     return moduleVersionService.resolveModulesConstraints(emptyIfNull(dependencies), type);
   }
 
