@@ -204,7 +204,7 @@ class JsonProviderTest {
   @Test
   @SneakyThrows
   void writeExecutionResult_positive() {
-    var executionResult = ExecutionResult.success("generateFromJson", "app-platform", "1.0.0");
+    var executionResult = ExecutionResult.success("generateFromJson", "app-platform", "1.0.0", true);
 
     jsonProvider.writeExecutionResult(executionResult, PATH);
 

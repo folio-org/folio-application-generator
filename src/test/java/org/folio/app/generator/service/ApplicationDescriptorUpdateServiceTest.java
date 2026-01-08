@@ -188,8 +188,9 @@ class ApplicationDescriptorUpdateServiceTest {
       .modules(List.of(new ModuleDefinition().name("module1").version("1.0.0")))
       .uiModules(List.of());
 
-    updateService.update(application, "", "", UpdateConfig.defaults());
+    var result = updateService.update(application, "", "", UpdateConfig.defaults());
 
+    assertThat(result).isFalse();
     verify(jsonProvider, never()).writeApplication(any(), any());
   }
 
@@ -245,8 +246,9 @@ class ApplicationDescriptorUpdateServiceTest {
     when(mavenProject.getBuild()).thenReturn(build);
     doNothing().when(jsonProvider).writeApplication(applicationCaptor.capture(), any());
 
-    updateService.update(application, "module1-1.1.0", "", UpdateConfig.defaults());
+    var result = updateService.update(application, "module1-1.1.0", "", UpdateConfig.defaults());
 
+    assertThat(result).isTrue();
     assertThat(applicationCaptor.getValue().getVersion()).isEqualTo("1.0.0-SNAPSHOT.125");
   }
 

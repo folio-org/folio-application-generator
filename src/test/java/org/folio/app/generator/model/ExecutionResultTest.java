@@ -22,11 +22,12 @@ class ExecutionResultTest {
     assertThat(result.errorCategory()).isNull();
     assertThat(result.errorMessage()).isNull();
     assertThat(result.errors()).isEmpty();
+    assertThat(result.changesDetected()).isNull();
   }
 
   @Test
-  void success_createsCorrectResult() {
-    var result = ExecutionResult.success("generateFromJson", "app-platform", "1.0.0");
+  void success_withChangesDetected_createsCorrectResult() {
+    var result = ExecutionResult.success("generateFromJson", "app-platform", "1.0.0", true);
 
     assertThat(result.status()).isEqualTo("COMPLETED");
     assertThat(result.success()).isTrue();
@@ -36,6 +37,22 @@ class ExecutionResultTest {
     assertThat(result.errorCategory()).isEqualTo("NONE");
     assertThat(result.errorMessage()).isNull();
     assertThat(result.errors()).isEmpty();
+    assertThat(result.changesDetected()).isTrue();
+  }
+
+  @Test
+  void success_withNoChangesDetected_createsCorrectResult() {
+    var result = ExecutionResult.success("updateFromJson", "app-platform", "1.0.0", false);
+
+    assertThat(result.status()).isEqualTo("COMPLETED");
+    assertThat(result.success()).isTrue();
+    assertThat(result.goal()).isEqualTo("updateFromJson");
+    assertThat(result.appName()).isEqualTo("app-platform");
+    assertThat(result.appVersion()).isEqualTo("1.0.0");
+    assertThat(result.errorCategory()).isEqualTo("NONE");
+    assertThat(result.errorMessage()).isNull();
+    assertThat(result.errors()).isEmpty();
+    assertThat(result.changesDetected()).isFalse();
   }
 
   @Test
@@ -55,6 +72,7 @@ class ExecutionResultTest {
     assertThat(result.errorCategory()).isEqualTo("MODULE_NOT_FOUND");
     assertThat(result.errorMessage()).isEqualTo("Failed to load modules");
     assertThat(result.errors()).containsExactly(error1, error2);
+    assertThat(result.changesDetected()).isNull();
   }
 
   @Test
