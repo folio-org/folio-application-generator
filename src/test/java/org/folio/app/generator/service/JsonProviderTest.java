@@ -170,9 +170,9 @@ class JsonProviderTest {
       assumeTrue(permissionChanged && !testFile.canRead(),
         "Skipping test: cannot make file non-readable on this system");
 
+      var testFilePath = testFile.getAbsolutePath();
       var exception = assertThrows(ApplicationGeneratorException.class,
-        () -> jsonProvider.readJsonFromFile(testFile.getAbsolutePath(),
-          ApplicationDescriptor.class, false));
+        () -> jsonProvider.readJsonFromFile(testFilePath, ApplicationDescriptor.class, false));
 
       assertThat(exception.getMessage()).contains("Failed to read file:");
       assertThat(exception.getCategory()).isEqualTo(ErrorCategory.CONFIGURATION_ERROR);
@@ -256,8 +256,9 @@ class JsonProviderTest {
       assumeTrue(permissionChanged && !tempDir.toFile().canWrite(),
         "Skipping test: cannot make directory non-writable on this system");
 
+      var targetPath = tempDir.toAbsolutePath().toString();
       var exception = assertThrows(ApplicationGeneratorException.class,
-        () -> jsonProvider.writeExecutionResult(executionResult, tempDir.toAbsolutePath().toString()));
+        () -> jsonProvider.writeExecutionResult(executionResult, targetPath));
 
       assertThat(exception.getMessage()).contains("Target directory is not writable");
       assertThat(exception.getCategory()).isEqualTo(ErrorCategory.CONFIGURATION_ERROR);
