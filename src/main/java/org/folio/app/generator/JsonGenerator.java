@@ -38,7 +38,7 @@ public class JsonGenerator extends AbstractGeneratorMojo {
     try {
       var applicationDescriptorService = ctx.getBean(ApplicationDescriptorGenerator.class);
       applicationDescriptorService.generate(readTemplate());
-      writeExecutionSuccess(ctx, "generateFromJson", appName, mavenProject.getVersion());
+      writeExecutionSuccess(ctx, "generateFromJson", appName, mavenProject.getVersion(), true);
     } catch (Exception e) {
       var category = classifyException(e);
       List<ErrorDetail> errors = e instanceof ApplicationGeneratorException age ? age.getErrors() : List.of();
