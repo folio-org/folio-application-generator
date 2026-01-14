@@ -117,8 +117,9 @@ public class ModuleVersionService {
       .orElseThrow();
 
     var resolvedVersionString = greatestVersion.original();
-    log.info(String.format("Resolved %s module '%s' version constraint '%s' to '%s'",
-      type, moduleName, versionConstraint, resolvedVersionString));
+    var registryName = greatestVersion.registry().getType().name();
+    log.info(String.format("Resolved %s module '%s' version constraint '%s' to '%s' from %s registry",
+      type, moduleName, versionConstraint, resolvedVersionString, registryName));
 
     return new Dependency(moduleName, resolvedVersionString, dependency.getPreRelease());
   }
@@ -154,7 +155,7 @@ public class ModuleVersionService {
     }
 
     var matchingVersions = availableVersions.stream()
-      .map(original -> new VersionCandidate(original, SemverUtils.parse(original)))
+      .map(original -> new VersionCandidate(original, SemverUtils.parse(original), registry))
       .filter(vc -> vc.semver() != null)
       .filter(vc -> rangeList.isSatisfiedBy(vc.semver()))
       .sorted(Comparator.comparing(VersionCandidate::semver).reversed())
@@ -191,8 +192,8 @@ public class ModuleVersionService {
   }
 
   /**
-   * Holds both the original version string and the parsed Semver object.
+   * Holds both the original version string, parsed Semver object, and source registry.
    * The original string is needed because SemverUtils normalizes UI module versions.
    */
-  private record VersionCandidate(String original, Semver semver) {}
+  private record VersionCandidate(String original, Semver semver, ModuleRegistry registry) {}
 }
