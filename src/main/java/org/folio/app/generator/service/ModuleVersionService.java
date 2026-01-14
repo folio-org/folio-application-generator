@@ -117,9 +117,9 @@ public class ModuleVersionService {
       .orElseThrow();
 
     var resolvedVersionString = greatestVersion.original();
-    var registryName = greatestVersion.registry().getType().name();
-    log.info(String.format("Resolved %s module '%s' version constraint '%s' to '%s' from %s registry",
-      type, moduleName, versionConstraint, resolvedVersionString, registryName));
+    var registryIdentifier = greatestVersion.registry().getRegistryIdentifier();
+    log.info(String.format("Resolved %s module '%s' version constraint '%s' to '%s' from %s",
+      type, moduleName, versionConstraint, resolvedVersionString, registryIdentifier));
 
     return new Dependency(moduleName, resolvedVersionString, dependency.getPreRelease());
   }
