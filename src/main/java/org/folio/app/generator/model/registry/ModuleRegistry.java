@@ -35,4 +35,12 @@ public interface ModuleRegistry {
   default ModuleRegistry withGeneratedFields() {
     return this;
   }
+
+  /**
+   * Returns a unique identifier for this registry instance.
+   * Used for logging to distinguish between multiple registries of the same type.
+   *
+   * @return registry identifier (e.g., URL for Okapi/Simple, bucket/path for S3)
+   */
+  String getRegistryIdentifier();
 }
