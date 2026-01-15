@@ -160,6 +160,11 @@ class OkapiModuleVersionResolverTest {
     var result = resolver.getAvailableVersions(okapiRegistry(), dependency, ModuleType.BE);
 
     assertThat(result).isEmpty();
+    verify(log).debug("Retrying request due to status code 500 (attempt 1)");
+    verify(log).debug("Retrying request due to status code 500 (attempt 2)");
+    verify(log).debug("Retrying request due to status code 500 (attempt 3)");
+    verify(log).debug("Retrying request due to status code 500 (attempt 4)");
+    verify(log).debug("Retrying request due to status code 500 (attempt 5)");
     verify(log).warn("Failed to fetch versions for module 'mod-foo' from http://localhost: HTTP 500");
   }
 

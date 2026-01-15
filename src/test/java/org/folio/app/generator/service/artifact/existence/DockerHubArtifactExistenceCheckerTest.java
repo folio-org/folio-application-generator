@@ -17,7 +17,9 @@ import java.net.http.HttpResponse;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.registry.artifact.DockerHubArtifactRegistry;
+import org.folio.app.generator.model.types.ErrorCategory;
 import org.folio.app.generator.model.types.ModuleType;
+import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 import org.folio.app.generator.support.UnitTest;
 import org.folio.app.generator.utils.JsonConverter;
 import org.junit.jupiter.api.BeforeEach;
@@ -147,7 +149,7 @@ class DockerHubArtifactExistenceCheckerTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  void exists_negative_retryLimitExhausted() throws Exception {
+  void exists_negative_rateLimitRetryExhausted_throwsInfrastructureError() throws Exception {
     var module = new ModuleDefinition().name("mod-users").version("1.0.0");
     var registry = new DockerHubArtifactRegistry().namespace("folioorg");
 
@@ -157,9 +159,12 @@ class DockerHubArtifactExistenceCheckerTest {
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
       .thenReturn(rateLimitResponse);
 
-    var result = checker.exists(module, registry);
+    assertThatThrownBy(() -> checker.exists(module, registry))
+      .isInstanceOf(ApplicationGeneratorException.class)
+      .hasMessageContaining("Docker Hub access error 429 for mod-users:1.0.0")
+      .satisfies(e -> assertThat(((ApplicationGeneratorException) e).getCategory())
+        .isEqualTo(ErrorCategory.INFRASTRUCTURE));
 
-    assertThat(result).isFalse();
     verify(httpClient, times(6)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
   }
 
@@ -231,5 +236,83 @@ class DockerHubArtifactExistenceCheckerTest {
       .hasMessage("Connection reset");
 
     verify(httpClient, times(5)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void exists_positive_retryOn500ThenSuccess() throws Exception {
+    var module = new ModuleDefinition().name("mod-users").version("1.0.0");
+    var registry = new DockerHubArtifactRegistry().namespace("folioorg");
+
+    HttpResponse<InputStream> serverErrorResponse = org.mockito.Mockito.mock(HttpResponse.class);
+    HttpResponse<InputStream> successResponse = org.mockito.Mockito.mock(HttpResponse.class);
+
+    when(serverErrorResponse.statusCode()).thenReturn(500);
+    when(successResponse.statusCode()).thenReturn(200);
+
+    when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+      .thenReturn(serverErrorResponse)
+      .thenReturn(successResponse);
+
+    var result = checker.exists(module, registry);
+
+    assertThat(result).isTrue();
+    verify(httpClient, times(2)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
+    verify(log).debug("Retrying request due to status code 500 (attempt 1)");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void exists_negative_serverError500AfterRetries_throwsInfrastructureError() throws Exception {
+    var module = new ModuleDefinition().name("mod-users").version("1.0.0");
+    var registry = new DockerHubArtifactRegistry().namespace("folioorg");
+
+    HttpResponse<InputStream> serverErrorResponse = org.mockito.Mockito.mock(HttpResponse.class);
+    when(serverErrorResponse.statusCode()).thenReturn(500);
+
+    when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+      .thenReturn(serverErrorResponse);
+
+    assertThatThrownBy(() -> checker.exists(module, registry))
+      .isInstanceOf(ApplicationGeneratorException.class)
+      .hasMessageContaining("Docker Hub server error 500 for mod-users:1.0.0")
+      .satisfies(e -> assertThat(((ApplicationGeneratorException) e).getCategory())
+        .isEqualTo(ErrorCategory.INFRASTRUCTURE));
+
+    verify(httpClient, times(6)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void exists_negative_unauthorized401_throwsInfrastructureError() throws Exception {
+    var module = new ModuleDefinition().name("mod-users").version("1.0.0");
+    var registry = new DockerHubArtifactRegistry().namespace("folioorg");
+
+    when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+      .thenReturn(httpResponse);
+    when(httpResponse.statusCode()).thenReturn(401);
+
+    assertThatThrownBy(() -> checker.exists(module, registry))
+      .isInstanceOf(ApplicationGeneratorException.class)
+      .hasMessageContaining("Docker Hub access error 401 for mod-users:1.0.0")
+      .satisfies(e -> assertThat(((ApplicationGeneratorException) e).getCategory())
+        .isEqualTo(ErrorCategory.INFRASTRUCTURE));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void exists_negative_forbidden403_throwsInfrastructureError() throws Exception {
+    var module = new ModuleDefinition().name("mod-users").version("1.0.0");
+    var registry = new DockerHubArtifactRegistry().namespace("folioorg");
+
+    when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+      .thenReturn(httpResponse);
+    when(httpResponse.statusCode()).thenReturn(403);
+
+    assertThatThrownBy(() -> checker.exists(module, registry))
+      .isInstanceOf(ApplicationGeneratorException.class)
+      .hasMessageContaining("Docker Hub access error 403 for mod-users:1.0.0")
+      .satisfies(e -> assertThat(((ApplicationGeneratorException) e).getCategory())
+        .isEqualTo(ErrorCategory.INFRASTRUCTURE));
   }
 }

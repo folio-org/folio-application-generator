@@ -187,7 +187,7 @@ class HttpRetryHelperTest {
 
   @Test
   void constants_haveExpectedValues() {
-    assertThat(HttpRetryHelper.RETRYABLE_STATUS_CODES).containsExactlyInAnyOrder(429, 502, 503, 504);
+    assertThat(HttpRetryHelper.RETRYABLE_STATUS_CODES).containsExactlyInAnyOrder(429, 500, 502, 503, 504);
     assertThat(HttpRetryHelper.RETRYABLE_ATTEMPTS_NUMBER).isEqualTo(5);
     assertThat(HttpRetryHelper.RETRY_DELAY_MS).isEqualTo(1000);
   }
