@@ -15,7 +15,7 @@ import org.apache.maven.plugin.logging.Log;
 @UtilityClass
 public class HttpRetryHelper {
 
-  public static final Set<Integer> RETRYABLE_STATUS_CODES = Set.of(429, 502, 503, 504);
+  public static final Set<Integer> RETRYABLE_STATUS_CODES = Set.of(429, 500, 502, 503, 504);
   public static final int RETRYABLE_ATTEMPTS_NUMBER = 5;
   public static final long RETRY_DELAY_MS = 1000;
 

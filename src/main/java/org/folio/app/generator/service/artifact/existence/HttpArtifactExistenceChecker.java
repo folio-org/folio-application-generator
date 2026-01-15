@@ -16,7 +16,7 @@ import org.folio.app.generator.utils.JsonConverter;
 @RequiredArgsConstructor
 public abstract class HttpArtifactExistenceChecker implements ArtifactExistenceChecker {
 
-  protected static final Set<Integer> RETRYABLE_STATUS_CODES = Set.of(429, 502, 503, 504);
+  protected static final Set<Integer> RETRYABLE_STATUS_CODES = Set.of(429, 500, 502, 503, 504);
   protected static final int RETRYABLE_ATTEMPTS_NUMBER = 5;
   protected static final long RETRY_DELAY_MS = 1000;
 
