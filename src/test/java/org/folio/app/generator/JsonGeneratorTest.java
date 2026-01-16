@@ -22,6 +22,7 @@ import org.folio.app.generator.model.ExecutionResult;
 import org.folio.app.generator.model.types.ErrorCategory;
 import org.folio.app.generator.service.ApplicationDescriptorGenerator;
 import org.folio.app.generator.service.JsonProvider;
+import org.folio.app.generator.service.ModuleRegistryProvider;
 import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 import org.folio.app.generator.support.UnitTest;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +37,7 @@ import org.springframework.context.support.GenericApplicationContext;
 @ExtendWith(MockitoExtension.class)
 class JsonGeneratorTest {
 
+  @Mock private ModuleRegistryProvider mockRegistryProvider;
   @Mock private ApplicationContextBuilder mockContextBuilder;
   @Mock private GenericApplicationContext mockGenericApplicationContext;
   @Mock private ApplicationDescriptorGenerator mockAppDescriptorGenerator;
