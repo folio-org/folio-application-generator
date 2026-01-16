@@ -98,18 +98,20 @@ public class ModuleVersionService {
 
     if (allMatchingVersions.isEmpty()) {
       var allRegistriesFailed = registryErrorCount == registries.size() && !registries.isEmpty();
-      var category = allRegistriesFailed ? ErrorCategory.INFRASTRUCTURE : ErrorCategory.MODULE_NOT_FOUND;
-      var message = String.format("No version matching constraint '%s' found for %s module '%s' in any registry",
-        versionConstraint, type, moduleName);
 
       if (allRegistriesFailed) {
         var exMsg = lastException.getMessage();
         var errorMsg = exMsg != null ? exMsg : lastException.getClass().getSimpleName();
+        var message = String.format("Infrastructure error while resolving %s module '%s': %s",
+          type, moduleName, errorMsg);
         var errorDetail = ErrorDetail.infrastructureError(null, errorMsg);
-        throw new ApplicationGeneratorException(message, category, errorDetail, lastException);
+        throw new ApplicationGeneratorException(message, ErrorCategory.INFRASTRUCTURE, errorDetail, lastException);
       }
+
+      var message = String.format("No version matching constraint '%s' found for %s module '%s' in any registry",
+        versionConstraint, type, moduleName);
       var errorDetail = ErrorDetail.moduleNotFound(moduleName, versionConstraint, versionConstraint);
-      throw new ApplicationGeneratorException(message, category, errorDetail);
+      throw new ApplicationGeneratorException(message, ErrorCategory.MODULE_NOT_FOUND, errorDetail);
     }
 
     var greatestVersion = allMatchingVersions.stream()
