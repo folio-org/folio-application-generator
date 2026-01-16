@@ -478,7 +478,7 @@ class ModuleVersionServiceTest {
     var dependencies = List.of(dependency);
     assertThatThrownBy(() -> service.resolveModulesConstraints(dependencies, ModuleType.BE))
         .isInstanceOf(ApplicationGeneratorException.class)
-        .hasMessageContaining("No version matching constraint '^1.0.0' found for BE module 'mod-foo'")
+        .hasMessageContaining("Infrastructure error while resolving BE module 'mod-foo'")
         .satisfies(e -> assertThat(((ApplicationGeneratorException) e).getCategory())
             .isEqualTo(ErrorCategory.INFRASTRUCTURE));
   }
@@ -516,7 +516,7 @@ class ModuleVersionServiceTest {
     var dependencies = List.of(dependency);
     assertThatThrownBy(() -> service.resolveModulesConstraints(dependencies, ModuleType.BE))
         .isInstanceOf(ApplicationGeneratorException.class)
-        .hasMessageContaining("No version matching constraint '^1.0.0' found for BE module 'mod-foo'")
+        .hasMessageContaining("Infrastructure error while resolving BE module 'mod-foo': Network error")
         .satisfies(e -> assertThat(((ApplicationGeneratorException) e).getCategory())
             .isEqualTo(ErrorCategory.INFRASTRUCTURE));
   }
@@ -525,8 +525,7 @@ class ModuleVersionServiceTest {
   void resolveModulesConstraints_negative_singleRegistryNetworkErrorWithNullMessage_infrastructure() {
     var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
     var registry = okapiRegistry();
-    var networkException = new ApplicationGeneratorException(
-      (String) null, ErrorCategory.INFRASTRUCTURE);
+    var networkException = new ApplicationGeneratorException(null, ErrorCategory.INFRASTRUCTURE);
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
     when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE)).thenThrow(networkException);
@@ -534,7 +533,7 @@ class ModuleVersionServiceTest {
     var dependencies = List.of(dependency);
     assertThatThrownBy(() -> service.resolveModulesConstraints(dependencies, ModuleType.BE))
         .isInstanceOf(ApplicationGeneratorException.class)
-        .hasMessageContaining("No version matching constraint '^1.0.0' found for BE module 'mod-foo'")
+        .hasMessageContaining("Infrastructure error while resolving BE module 'mod-foo': ApplicationGeneratorException")
         .satisfies(e -> {
           var appEx = (ApplicationGeneratorException) e;
           assertThat(appEx.getCategory()).isEqualTo(ErrorCategory.INFRASTRUCTURE);
