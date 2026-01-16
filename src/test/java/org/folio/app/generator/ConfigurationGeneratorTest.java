@@ -16,6 +16,7 @@ import org.apache.maven.model.Build;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.configuration.ApplicationContextBuilder;
+import org.folio.app.generator.model.ApplicationDescriptor;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
 import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.ErrorDetail;
@@ -23,7 +24,6 @@ import org.folio.app.generator.model.ExecutionResult;
 import org.folio.app.generator.model.types.ErrorCategory;
 import org.folio.app.generator.service.ApplicationDescriptorGenerator;
 import org.folio.app.generator.service.JsonProvider;
-import org.folio.app.generator.service.ModuleRegistryProvider;
 import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 import org.folio.app.generator.support.UnitTest;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +40,6 @@ import org.springframework.context.support.GenericApplicationContext;
 @ExtendWith(MockitoExtension.class)
 class ConfigurationGeneratorTest {
 
-  @Mock private ModuleRegistryProvider mockRegistryProvider;
   @Mock private ApplicationContextBuilder mockContextBuilder;
   @Mock private GenericApplicationContext mockGenericApplicationContext;
   @Mock private ApplicationDescriptorGenerator mockAppDescriptorGenerator;
@@ -63,6 +62,8 @@ class ConfigurationGeneratorTest {
     mojo.dependencies = List.of(new Dependency("app-core", "1.0.0", null));
 
     setupContextMocks();
+    var application = new ApplicationDescriptor().version("1.0.0");
+    when(mockAppDescriptorGenerator.generate(any(ApplicationDescriptorTemplate.class))).thenReturn(application);
 
     assertDoesNotThrow(() -> mojo.execute());
 
@@ -81,6 +82,8 @@ class ConfigurationGeneratorTest {
     mojo.dependencies = null;
 
     setupContextMocks();
+    var application = new ApplicationDescriptor().version("1.0.0");
+    when(mockAppDescriptorGenerator.generate(any(ApplicationDescriptorTemplate.class))).thenReturn(application);
 
     assertDoesNotThrow(() -> mojo.execute());
 
