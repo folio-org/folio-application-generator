@@ -7,13 +7,16 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import lombok.SneakyThrows;
 import org.apache.maven.plugin.logging.Log;
+import org.folio.app.generator.conditions.DockerHubCondition;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.registry.artifact.ArtifactRegistry;
 import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.utils.JsonConverter;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
+@Conditional(DockerHubCondition.class)
 public class DockerHubArtifactExistenceChecker extends HttpArtifactExistenceChecker {
 
   private static final int SUCCESS_STATUS_CODE = 200;

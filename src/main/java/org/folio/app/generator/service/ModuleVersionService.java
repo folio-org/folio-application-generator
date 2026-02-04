@@ -18,6 +18,7 @@ import org.folio.app.generator.utils.PluginConfig;
 import org.folio.app.generator.utils.SemverUtils;
 import org.semver4j.RangesListFactory;
 import org.semver4j.Semver;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -28,8 +29,8 @@ public class ModuleVersionService {
   private final ModuleRegistries moduleRegistries;
   private final ModuleVersionResolverFacade moduleVersionResolverFacade;
   private final PluginConfig pluginConfig;
-  private final ArtifactExistenceCheckerFacade artifactExistenceCheckerFacade;
   private final ArtifactRegistryProvider artifactRegistryProvider;
+  @Autowired(required = false) private ArtifactExistenceCheckerFacade artifactExistenceCheckerFacade;
 
   /**
    * Resolves version constraints to exact versions for a list of dependencies.
@@ -159,6 +160,14 @@ public class ModuleVersionService {
   }
 
   private boolean artifactExists(String moduleName, VersionCandidate candidate, ModuleType type) {
+    if (artifactExistenceCheckerFacade == null) {
+      log.warn(String.format(
+        "Artifact validation is enabled but no artifact checkers are available. "
+          + "This may indicate a configuration issue. Skipping validation for %s-%s.",
+        moduleName, candidate.original()));
+      return true;
+    }
+
     var registries = artifactRegistryProvider.getArtifactRegistries(pluginConfig);
     var isPreRelease = SemverUtils.isPreRelease(candidate.original());
     var artifactRegistries = registries.getRegistries(type, isPreRelease);

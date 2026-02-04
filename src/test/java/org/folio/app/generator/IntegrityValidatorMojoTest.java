@@ -57,6 +57,8 @@ class IntegrityValidatorMojoTest {
 
     when(mockGenericApplicationContext.getBean(ApplicationDescriptorService.class))
       .thenReturn(mockApplicationDescriptorService);
+    when(mockGenericApplicationContext.containsBean("applicationModulesIntegrityValidator"))
+      .thenReturn(true);
     when(mockGenericApplicationContext.getBean(ApplicationModulesIntegrityValidator.class))
       .thenReturn(mockApplicationModulesIntegrityValidator);
     when(mockGenericApplicationContext.getBean(JsonProvider.class))

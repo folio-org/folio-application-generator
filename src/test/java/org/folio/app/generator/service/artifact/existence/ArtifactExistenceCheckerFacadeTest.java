@@ -1,6 +1,7 @@
 package org.folio.app.generator.service.artifact.existence;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -79,9 +80,9 @@ class ArtifactExistenceCheckerFacadeTest {
 
     var facadeWithLimitedCheckers = new ArtifactExistenceCheckerFacade(log, List.of(beChecker));
 
-    var result = facadeWithLimitedCheckers.exists(module, registry, ModuleType.UI);
-
-    assertThat(result).isFalse();
-    verify(log).warn("Failed to find artifact existence checker for module type: UI");
+    assertThatThrownBy(() -> facadeWithLimitedCheckers.exists(module, registry, ModuleType.UI))
+      .isInstanceOf(IllegalStateException.class)
+      .hasMessageContaining("No artifact existence checker found for module type: UI")
+      .hasMessageContaining("configuration or programming error");
   }
 }

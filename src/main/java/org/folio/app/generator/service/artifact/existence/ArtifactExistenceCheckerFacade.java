@@ -6,13 +6,16 @@ import static java.util.stream.Collectors.toMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.maven.plugin.logging.Log;
+import org.folio.app.generator.conditions.ArtifactValidationCondition;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.registry.artifact.ArtifactRegistry;
 import org.folio.app.generator.model.types.ModuleType;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
+@Conditional(ArtifactValidationCondition.class)
 public class ArtifactExistenceCheckerFacade {
 
   private final Log log;
@@ -27,8 +30,9 @@ public class ArtifactExistenceCheckerFacade {
   public boolean exists(ModuleDefinition module, ArtifactRegistry registry, ModuleType type) {
     var checker = checkersMap.get(type);
     if (checker == null) {
-      log.warn("Failed to find artifact existence checker for module type: " + type);
-      return false;
+      throw new IllegalStateException(
+        "No artifact existence checker found for module type: " + type
+          + ". This indicates a configuration or programming error.");
     }
 
     return checker.exists(module, registry);

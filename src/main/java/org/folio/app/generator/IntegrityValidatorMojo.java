@@ -34,6 +34,15 @@ public class IntegrityValidatorMojo extends JsonGenerator {
 
     var ctx = buildApplicationContext();
     var applicationDescriptorService = ctx.getBean(ApplicationDescriptorService.class);
+
+    // ApplicationModulesIntegrityValidator requires HTTP connectivity
+    // It won't be available when using only S3 registries without OKAPI or Simple registries
+    if (!ctx.containsBean("applicationModulesIntegrityValidator")) {
+      throw new MojoExecutionException(
+        "Integrity validation requires HTTP-based module registries (OKAPI or Simple) "
+          + "or artifact validation to be enabled. Current configuration uses only S3 registries.");
+    }
+
     var applicationModulesValidator = ctx.getBean(ApplicationModulesIntegrityValidator.class);
 
     var template = readTemplate();
