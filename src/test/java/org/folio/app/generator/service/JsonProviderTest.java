@@ -12,12 +12,14 @@ import java.io.File;
 import java.nio.file.Files;
 import java.util.List;
 import lombok.SneakyThrows;
-import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.model.ApplicationDescriptor;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
+import org.folio.app.generator.model.ExecutionResult;
 import org.folio.app.generator.model.UpdateResult;
+import org.folio.app.generator.model.types.ErrorCategory;
+import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 import org.folio.app.generator.support.UnitTest;
 import org.folio.app.generator.utils.JsonConverter;
 import org.junit.jupiter.api.Test;
@@ -51,7 +53,7 @@ class JsonProviderTest {
 
   @Test
   void readJsonFromFile_negative_fileNotFound() {
-    var message = assertThrows(MojoExecutionException.class,
+    var message = assertThrows(ApplicationGeneratorException.class,
       () -> jsonProvider.readJsonFromFile("invalid/path/application.json", ApplicationDescriptor.class, true))
       .getMessage();
     assertThat(message).contains("ApplicationDescriptor is not found");
@@ -106,7 +108,7 @@ class JsonProviderTest {
       List.of(), List.of(), List.of(), List.of());
 
     try {
-      var exception = assertThrows(MojoExecutionException.class,
+      var exception = assertThrows(ApplicationGeneratorException.class,
         () -> jsonProvider.writeUpdateResult(updateResult, invalidPath));
 
       assertThat(exception.getMessage()).contains("Could not create target directory");
@@ -128,10 +130,138 @@ class JsonProviderTest {
       assumeTrue(permissionChanged && !tempDir.toFile().canWrite(),
         "Skipping test: cannot make directory non-writable on this system");
 
-      var exception = assertThrows(MojoExecutionException.class,
-        () -> jsonProvider.writeUpdateResult(updateResult, tempDir.toAbsolutePath().toString()));
+      var targetPath = tempDir.toAbsolutePath().toString();
+      var exception = assertThrows(ApplicationGeneratorException.class,
+        () -> jsonProvider.writeUpdateResult(updateResult, targetPath));
 
       assertThat(exception.getMessage()).contains("Target directory is not writable");
+    } finally {
+      tempDir.toFile().setWritable(true);
+      Files.deleteIfExists(tempDir);
+    }
+  }
+
+  @Test
+  @SneakyThrows
+  void readJsonFromFile_negative_pathIsDirectory() {
+    var tempDir = Files.createTempDirectory("json-provider-dir-test");
+
+    try {
+      var tempPath = tempDir.toAbsolutePath().toString();
+      var exception = assertThrows(ApplicationGeneratorException.class,
+        () -> jsonProvider.readJsonFromFile(tempPath, ApplicationDescriptor.class, true));
+
+      assertThat(exception.getMessage()).contains("ApplicationDescriptor is not found");
+      assertThat(exception.getCategory()).isEqualTo(ErrorCategory.CONFIGURATION_ERROR);
+    } finally {
+      Files.deleteIfExists(tempDir);
+    }
+  }
+
+  @Test
+  @SneakyThrows
+  void readJsonFromFile_negative_ioExceptionOnRead() {
+    var tempDir = Files.createTempDirectory("json-provider-io-test");
+    var testFile = new File(tempDir.toFile(), "test.json");
+    testFile.createNewFile();
+
+    try {
+      var permissionChanged = testFile.setReadable(false);
+      assumeTrue(permissionChanged && !testFile.canRead(),
+        "Skipping test: cannot make file non-readable on this system");
+
+      var testFilePath = testFile.getAbsolutePath();
+      var exception = assertThrows(ApplicationGeneratorException.class,
+        () -> jsonProvider.readJsonFromFile(testFilePath, ApplicationDescriptor.class, false));
+
+      assertThat(exception.getMessage()).contains("Failed to read file:");
+      assertThat(exception.getCategory()).isEqualTo(ErrorCategory.CONFIGURATION_ERROR);
+    } finally {
+      testFile.setReadable(true);
+      Files.deleteIfExists(testFile.toPath());
+      Files.deleteIfExists(tempDir);
+    }
+  }
+
+  @Test
+  @SneakyThrows
+  void writeApplication_negative_cannotCreateDirectory() {
+    var tempFile = Files.createTempFile("test-file", ".tmp");
+    var invalidPath = tempFile.toAbsolutePath() + "/subdir";
+    var application = new ApplicationDescriptor().id("test-app");
+
+    try {
+      var exception = assertThrows(ApplicationGeneratorException.class,
+        () -> jsonProvider.writeApplication(application, invalidPath));
+
+      assertThat(exception.getMessage()).contains("Could not create target directory");
+      assertThat(exception.getCategory()).isEqualTo(ErrorCategory.CONFIGURATION_ERROR);
+    } finally {
+      Files.deleteIfExists(tempFile);
+    }
+  }
+
+  @Test
+  @SneakyThrows
+  void writeExecutionResult_positive() {
+    var executionResult = ExecutionResult.success("generateFromJson", "app-platform", "1.0.0", true);
+
+    jsonProvider.writeExecutionResult(executionResult, PATH);
+
+    verify(jsonConverter).writeValue(any(File.class), eq(executionResult));
+  }
+
+  @Test
+  @SneakyThrows
+  void writeExecutionResult_positive_createsDirectory() {
+    var tempDir = Files.createTempDirectory("json-provider-exec-test");
+    var newDir = new File(tempDir.toFile(), "exec-subdir");
+    var executionResult = ExecutionResult.started("generateFromJson", "app-platform");
+
+    jsonProvider.writeExecutionResult(executionResult, newDir.getAbsolutePath());
+
+    verify(jsonConverter).writeValue(any(File.class), eq(executionResult));
+    assertThat(newDir).exists();
+
+    newDir.delete();
+    tempDir.toFile().delete();
+  }
+
+  @Test
+  @SneakyThrows
+  void writeExecutionResult_negative_cannotCreateDirectory() {
+    var tempFile = Files.createTempFile("test-file", ".tmp");
+    var invalidPath = tempFile.toAbsolutePath() + "/subdir";
+    var executionResult = ExecutionResult.started("generateFromJson", "app-platform");
+
+    try {
+      var exception = assertThrows(ApplicationGeneratorException.class,
+        () -> jsonProvider.writeExecutionResult(executionResult, invalidPath));
+
+      assertThat(exception.getMessage()).contains("Could not create target directory");
+      assertThat(exception.getCategory()).isEqualTo(ErrorCategory.CONFIGURATION_ERROR);
+    } finally {
+      Files.deleteIfExists(tempFile);
+    }
+  }
+
+  @Test
+  @SneakyThrows
+  void writeExecutionResult_negative_directoryNotWritable() {
+    var tempDir = Files.createTempDirectory("json-provider-exec-readonly-test");
+    var executionResult = ExecutionResult.started("generateFromJson", "app-platform");
+
+    try {
+      var permissionChanged = tempDir.toFile().setWritable(false);
+      assumeTrue(permissionChanged && !tempDir.toFile().canWrite(),
+        "Skipping test: cannot make directory non-writable on this system");
+
+      var targetPath = tempDir.toAbsolutePath().toString();
+      var exception = assertThrows(ApplicationGeneratorException.class,
+        () -> jsonProvider.writeExecutionResult(executionResult, targetPath));
+
+      assertThat(exception.getMessage()).contains("Target directory is not writable");
+      assertThat(exception.getCategory()).isEqualTo(ErrorCategory.CONFIGURATION_ERROR);
     } finally {
       tempDir.toFile().setWritable(true);
       Files.deleteIfExists(tempDir);

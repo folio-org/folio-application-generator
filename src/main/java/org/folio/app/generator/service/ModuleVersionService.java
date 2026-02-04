@@ -5,14 +5,16 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.Dependency;
+import org.folio.app.generator.model.ErrorDetail;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.registry.ModuleRegistries;
 import org.folio.app.generator.model.registry.ModuleRegistry;
+import org.folio.app.generator.model.types.ErrorCategory;
 import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.service.artifact.existence.ArtifactExistenceCheckerFacade;
+import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 import org.folio.app.generator.service.resolver.ModuleVersionResolverFacade;
 import org.folio.app.generator.utils.PluginConfig;
 import org.folio.app.generator.utils.SemverUtils;
@@ -39,10 +41,10 @@ public class ModuleVersionService {
    * @param dependencies list of dependencies (may contain constraints)
    * @param type         the module type (BE or UI)
    * @return list of dependencies with exact versions
-   * @throws MojoExecutionException if any constraint cannot be resolved
+   * @throws ApplicationGeneratorException if any constraint cannot be resolved
    */
   public List<Dependency> resolveModulesConstraints(List<Dependency> dependencies, ModuleType type)
-        throws MojoExecutionException {
+    throws ApplicationGeneratorException {
 
     var registries = moduleRegistries.getRegistries(type);
 
@@ -66,10 +68,10 @@ public class ModuleVersionService {
    * @param type       the module type (BE or UI)
    * @param registries list of module registries to query
    * @return dependency with resolved exact version
-   * @throws MojoExecutionException if no matching version is found
+   * @throws ApplicationGeneratorException if no matching version is found
    */
   private Dependency resolveModuleConstraints(Dependency dependency, ModuleType type, List<ModuleRegistry> registries)
-        throws MojoExecutionException {
+    throws ApplicationGeneratorException {
 
     var moduleName = dependency.getName();
     var versionConstraint = dependency.getVersion();
@@ -79,21 +81,37 @@ public class ModuleVersionService {
     }
 
     List<VersionCandidate> allMatchingVersions = new ArrayList<>();
+    int registryErrorCount = 0;
+    Exception lastException = null;
 
     for (var registry : registries) {
       try {
         var matchingVersion = getMatchingVersionFromRegistry(registry, dependency, type);
         matchingVersion.ifPresent(allMatchingVersions::add);
       } catch (Exception e) {
+        registryErrorCount++;
+        lastException = e;
         log.warn(String.format("Failed to resolve constraint '%s' for module '%s' from %s",
           versionConstraint, moduleName, registry.getClass().getSimpleName()), e);
       }
     }
 
     if (allMatchingVersions.isEmpty()) {
-      throw new MojoExecutionException(String.format(
-        "No version matching constraint '%s' found for %s module '%s' in any registry",
-        versionConstraint, type, moduleName));
+      var allRegistriesFailed = registryErrorCount == registries.size() && !registries.isEmpty();
+
+      if (allRegistriesFailed) {
+        var exMsg = lastException.getMessage();
+        var errorMsg = exMsg != null ? exMsg : lastException.getClass().getSimpleName();
+        var message = String.format("Infrastructure error while resolving %s module '%s': %s",
+          type, moduleName, errorMsg);
+        var errorDetail = ErrorDetail.infrastructureError(null, errorMsg);
+        throw new ApplicationGeneratorException(message, ErrorCategory.INFRASTRUCTURE, errorDetail, lastException);
+      }
+
+      var message = String.format("No version matching constraint '%s' found for %s module '%s' in any registry",
+        versionConstraint, type, moduleName);
+      var errorDetail = ErrorDetail.moduleNotFound(moduleName, versionConstraint, versionConstraint);
+      throw new ApplicationGeneratorException(message, ErrorCategory.MODULE_NOT_FOUND, errorDetail);
     }
 
     var greatestVersion = allMatchingVersions.stream()
@@ -101,8 +119,9 @@ public class ModuleVersionService {
       .orElseThrow();
 
     var resolvedVersionString = greatestVersion.original();
-    log.info(String.format("Resolved %s module '%s' version constraint '%s' to '%s'",
-      type, moduleName, versionConstraint, resolvedVersionString));
+    var registryIdentifier = greatestVersion.registry().getRegistryIdentifier();
+    log.info(String.format("Resolved %s module '%s' version constraint '%s' to '%s' from %s",
+      type, moduleName, versionConstraint, resolvedVersionString, registryIdentifier));
 
     return new Dependency(moduleName, resolvedVersionString, dependency.getPreRelease());
   }
@@ -138,7 +157,7 @@ public class ModuleVersionService {
     }
 
     var matchingVersions = availableVersions.stream()
-      .map(original -> new VersionCandidate(original, SemverUtils.parse(original)))
+      .map(original -> new VersionCandidate(original, SemverUtils.parse(original), registry))
       .filter(vc -> vc.semver() != null)
       .filter(vc -> rangeList.isSatisfiedBy(vc.semver()))
       .sorted(Comparator.comparing(VersionCandidate::semver).reversed())
@@ -175,8 +194,8 @@ public class ModuleVersionService {
   }
 
   /**
-   * Holds both the original version string and the parsed Semver object.
+   * Holds both the original version string, parsed Semver object, and source registry.
    * The original string is needed because SemverUtils normalizes UI module versions.
    */
-  private record VersionCandidate(String original, Semver semver) {}
+  private record VersionCandidate(String original, Semver semver, ModuleRegistry registry) {}
 }

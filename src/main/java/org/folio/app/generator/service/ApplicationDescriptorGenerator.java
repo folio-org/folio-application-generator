@@ -3,6 +3,7 @@ package org.folio.app.generator.service;
 import lombok.RequiredArgsConstructor;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
+import org.folio.app.generator.model.ApplicationDescriptor;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
 import org.folio.app.generator.validator.ApplicationDependencyValidator;
 import org.springframework.stereotype.Component;
@@ -20,12 +21,14 @@ public class ApplicationDescriptorGenerator {
    * Generates application descriptor from template.
    *
    * @param template - application descriptor {@link ApplicationDescriptorTemplate} object
+   * @return generated {@link ApplicationDescriptor}
    * @throws MojoExecutionException if application description was failed to generate
    */
-  public void generate(ApplicationDescriptorTemplate template) throws MojoExecutionException {
+  public ApplicationDescriptor generate(ApplicationDescriptorTemplate template) throws MojoExecutionException {
     applicationDependencyValidator.validateDependencies(template);
     var application = applicationDescriptorService.create(template);
 
     jsonProvider.writeApplication(application, mavenProject.getBuild().getDirectory());
+    return application;
   }
 }

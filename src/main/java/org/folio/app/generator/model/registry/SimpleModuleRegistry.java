@@ -61,4 +61,9 @@ public class SimpleModuleRegistry implements ModuleRegistry {
 
     return this;
   }
+
+  @Override
+  public String getRegistryIdentifier() {
+    return url;
+  }
 }

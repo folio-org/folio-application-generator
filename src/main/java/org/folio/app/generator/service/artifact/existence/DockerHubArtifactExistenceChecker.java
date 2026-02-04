@@ -9,7 +9,9 @@ import lombok.SneakyThrows;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.registry.artifact.ArtifactRegistry;
+import org.folio.app.generator.model.types.ErrorCategory;
 import org.folio.app.generator.model.types.ModuleType;
+import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 import org.folio.app.generator.utils.JsonConverter;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +19,8 @@ import org.springframework.stereotype.Component;
 public class DockerHubArtifactExistenceChecker extends HttpArtifactExistenceChecker {
 
   private static final int SUCCESS_STATUS_CODE = 200;
+  private static final int NOT_FOUND_STATUS_CODE = 404;
+  private static final int SERVER_ERROR_STATUS_CODE = 500;
 
   public DockerHubArtifactExistenceChecker(HttpClient httpClient, Log log, JsonConverter jsonConverter) {
     super(httpClient, log, jsonConverter);
@@ -47,9 +51,23 @@ public class DockerHubArtifactExistenceChecker extends HttpArtifactExistenceChec
       return true;
     }
 
-    log.debug("Docker image not found: " + module.getName() + ":" + module.getVersion()
-      + " (status: " + statusCode + ")");
-    return false;
+    if (statusCode == NOT_FOUND_STATUS_CODE) {
+      log.warn("Docker image not found: " + module.getName() + ":" + module.getVersion()
+        + " (status: " + statusCode + ", url: " + url + ")");
+      return false;
+    }
+
+    if (statusCode >= SERVER_ERROR_STATUS_CODE) {
+      throw new ApplicationGeneratorException(
+        String.format("Docker Hub server error %d for %s:%s (url: %s)",
+          statusCode, module.getName(), module.getVersion(), url),
+        ErrorCategory.INFRASTRUCTURE);
+    }
+
+    throw new ApplicationGeneratorException(
+      String.format("Docker Hub access error %d for %s:%s (url: %s)",
+        statusCode, module.getName(), module.getVersion(), url),
+      ErrorCategory.INFRASTRUCTURE);
   }
 
   private static String buildUrl(String baseUrl, String namespace, String imageName, String version) {

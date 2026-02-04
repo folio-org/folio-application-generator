@@ -12,12 +12,12 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Map;
 import lombok.SneakyThrows;
-import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
 import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.ModulesLoadResult;
+import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 import org.folio.app.generator.support.UnitTest;
 import org.folio.app.generator.utils.PluginConfig;
 import org.junit.jupiter.api.BeforeEach;
@@ -182,7 +182,7 @@ class ApplicationDescriptorServiceTest {
       .name("test-app")
       .version("1.0.0");
 
-    assertThrows(MojoExecutionException.class, () -> service.create(template));
+    assertThrows(ApplicationGeneratorException.class, () -> service.create(template));
   }
 
   @Test

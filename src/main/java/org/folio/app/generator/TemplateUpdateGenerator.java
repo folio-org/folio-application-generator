@@ -3,6 +3,7 @@ package org.folio.app.generator;
 import static org.apache.maven.plugins.annotations.ResolutionScope.RUNTIME;
 import static org.folio.app.generator.utils.PluginUtils.emptyIfNull;
 
+import java.util.List;
 import javax.inject.Inject;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -11,9 +12,11 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.folio.app.generator.configuration.ApplicationContextBuilder;
 import org.folio.app.generator.model.ApplicationDescriptor;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
+import org.folio.app.generator.model.ErrorDetail;
 import org.folio.app.generator.service.ApplicationDescriptorUpdateService;
 import org.folio.app.generator.service.JsonProvider;
 import org.folio.app.generator.service.ModuleRegistryProvider;
+import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 
 @Mojo(name = "updateFromTemplate", defaultPhase = LifecyclePhase.COMPILE, requiresDependencyResolution = RUNTIME)
 public class TemplateUpdateGenerator extends AbstractUpdateMojo {
@@ -39,19 +42,31 @@ public class TemplateUpdateGenerator extends AbstractUpdateMojo {
   @Override
   public void execute() throws MojoExecutionException {
     var ctx = buildApplicationContext();
+    var appName = mavenProject.getArtifactId();
 
-    var jsonProvider = ctx.getBean(JsonProvider.class);
-    var application = jsonProvider.readJsonFromFile(appDescriptorPath, ApplicationDescriptor.class, false);
-    var template = jsonProvider.readJsonFromFile(templatePath, ApplicationDescriptorTemplate.class, true);
+    writeExecutionStarted(ctx, "updateFromTemplate", appName);
 
-    application.setDependencies(emptyIfNull(template.getDependencies()));
+    try {
+      var jsonProvider = ctx.getBean(JsonProvider.class);
+      var application = jsonProvider.readJsonFromFile(appDescriptorPath, ApplicationDescriptor.class, false);
+      var template = jsonProvider.readJsonFromFile(templatePath, ApplicationDescriptorTemplate.class, true);
 
-    var updateConfig = buildUpdateConfig(allowDowngrade, allowAddModules, removeUnlistedModules);
+      application.setDependencies(emptyIfNull(template.getDependencies()));
 
-    var updateService = ctx.getBean(ApplicationDescriptorUpdateService.class);
-    updateService.update(application,
-      emptyIfNull(template.getModules()),
-      emptyIfNull(template.getUiModules()),
-      updateConfig);
+      var updateConfig = buildUpdateConfig(allowDowngrade, allowAddModules, removeUnlistedModules);
+
+      var updateService = ctx.getBean(ApplicationDescriptorUpdateService.class);
+      var changesDetected = updateService.update(application,
+        emptyIfNull(template.getModules()),
+        emptyIfNull(template.getUiModules()),
+        updateConfig);
+
+      writeExecutionSuccess(ctx, "updateFromTemplate", appName, application.getVersion(), changesDetected);
+    } catch (Exception e) {
+      var category = classifyException(e);
+      List<ErrorDetail> errors = e instanceof ApplicationGeneratorException age ? age.getErrors() : List.of();
+      writeExecutionFailure(ctx, "updateFromTemplate", appName, category, e.getMessage(), errors);
+      throw toMojoExecutionException(e);
+    }
   }
 }
