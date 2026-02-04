@@ -23,6 +23,12 @@ class ArtifactValidationConditionTest {
   @BeforeEach
   void setUp() {
     context = new AnnotationConfigApplicationContext();
+    // Clear any lingering properties from previous tests
+    var properties = context.getEnvironment().getSystemProperties();
+    properties.remove(DOCKER_HUB.getPropertyName());
+    properties.remove(FOLIO_NPM.getPropertyName());
+    properties.remove(AWS_S3.getPropertyName());
+    properties.remove(OKAPI.getPropertyName());
   }
 
   @AfterEach
