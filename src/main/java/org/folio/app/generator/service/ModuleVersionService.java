@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.Dependency;
@@ -30,7 +31,9 @@ public class ModuleVersionService {
   private final ModuleVersionResolverFacade moduleVersionResolverFacade;
   private final PluginConfig pluginConfig;
   private final ArtifactRegistryProvider artifactRegistryProvider;
-  @Autowired(required = false) private ArtifactExistenceCheckerFacade artifactExistenceCheckerFacade;
+  @Setter
+  @Autowired(required = false)
+  private ArtifactExistenceCheckerFacade artifactExistenceCheckerFacade;
 
   /**
    * Resolves version constraints to exact versions for a list of dependencies.
