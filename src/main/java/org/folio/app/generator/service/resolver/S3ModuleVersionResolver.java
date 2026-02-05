@@ -77,7 +77,7 @@ public class S3ModuleVersionResolver implements ModuleVersionResolver {
       return Optional.empty();
     }
 
-    log.info(format("Found %d versions for module '%s' in s3 bucket: %s", collected.size(),
+    log.debug(format("Found %d versions for module '%s' in s3 bucket: %s", collected.size(),
           moduleName, getBucketPath(s3Registry)));
 
     collected.sort(Comparator.comparing(Pair<String, Semver>::getRight).reversed());

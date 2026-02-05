@@ -63,4 +63,9 @@ public class S3ModuleRegistry implements ModuleRegistry {
 
     return this;
   }
+
+  @Override
+  public String getRegistryIdentifier() {
+    return bucket + "/" + path;
+  }
 }

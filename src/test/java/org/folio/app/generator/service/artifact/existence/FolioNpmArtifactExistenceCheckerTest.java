@@ -82,7 +82,7 @@ class FolioNpmArtifactExistenceCheckerTest {
     var result = checker.exists(module, registry);
 
     assertThat(result).isFalse();
-    verify(log).debug("NPM package not found: @folio/users (status: 404)");
+    verify(log).warn("NPM package not found: @folio/users (status: 404, url: https://repository.folio.org/repository/npm-folio/@folio/users)");
   }
 
   @Test
@@ -102,7 +102,7 @@ class FolioNpmArtifactExistenceCheckerTest {
     var result = checker.exists(module, registry);
 
     assertThat(result).isFalse();
-    verify(log).debug("NPM package version not found: @folio/users@2.0.0");
+    verify(log).warn("NPM package version not found: @folio/users@2.0.0 (url: https://repository.folio.org/repository/npm-folio/@folio/users)");
   }
 
   @Test
@@ -122,7 +122,7 @@ class FolioNpmArtifactExistenceCheckerTest {
     var result = checker.exists(module, registry);
 
     assertThat(result).isFalse();
-    verify(log).debug("NPM package version not found: @folio/users@1.0.0");
+    verify(log).warn("NPM package version not found: @folio/users@1.0.0 (url: https://repository.folio.org/repository/npm-folio/@folio/users)");
   }
 
   @ParameterizedTest

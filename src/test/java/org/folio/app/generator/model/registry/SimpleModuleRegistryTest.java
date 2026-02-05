@@ -71,4 +71,10 @@ public class SimpleModuleRegistryTest {
       arguments(MOCK_URL, MOCK_URL)
     );
   }
+
+  @Test
+  void getRegistryIdentifier_positive() {
+    simpleModuleRegistry.url(MOCK_URL);
+    assertThat(simpleModuleRegistry.getRegistryIdentifier()).isEqualTo(MOCK_URL);
+  }
 }

@@ -77,7 +77,7 @@ public class SimpleModuleVersionResolver implements ModuleVersionResolver {
         return Optional.empty();
       }
 
-      log.info(String.format("Found %d versions for module '%s' in Simple registry", versions.size(), moduleName));
+      log.debug(String.format("Found %d versions for module '%s' in Simple registry", versions.size(), moduleName));
       return Optional.of(versions);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();

@@ -9,8 +9,10 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.folio.app.generator.configuration.ApplicationContextBuilder;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
 import org.folio.app.generator.model.Dependency;
+import org.folio.app.generator.model.ErrorDetail;
 import org.folio.app.generator.service.ApplicationDescriptorGenerator;
 import org.folio.app.generator.service.ModuleRegistryProvider;
+import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 
 @Mojo(name = "generateFromConfiguration", defaultPhase = LifecyclePhase.COMPILE)
 public class ConfigurationGenerator extends AbstractGeneratorMojo {
@@ -31,13 +33,26 @@ public class ConfigurationGenerator extends AbstractGeneratorMojo {
 
   @Override
   public void execute() throws MojoExecutionException {
-    var template = new ApplicationDescriptorTemplate()
-      .dependencies(dependencies)
-      .modules(modules)
-      .uiModules(uiModules);
-
     var ctx = buildApplicationContext();
-    var appDescriptorGenerator = ctx.getBean(ApplicationDescriptorGenerator.class);
-    appDescriptorGenerator.generate(template);
+    var appName = mavenProject.getArtifactId();
+
+    writeExecutionStarted(ctx, "generateFromConfiguration", appName);
+
+    try {
+      var template = new ApplicationDescriptorTemplate()
+        .dependencies(dependencies)
+        .modules(modules)
+        .uiModules(uiModules);
+
+      var appDescriptorGenerator = ctx.getBean(ApplicationDescriptorGenerator.class);
+      var application = appDescriptorGenerator.generate(template);
+
+      writeExecutionSuccess(ctx, "generateFromConfiguration", appName, application.getVersion(), true);
+    } catch (Exception e) {
+      var category = classifyException(e);
+      List<ErrorDetail> errors = e instanceof ApplicationGeneratorException age ? age.getErrors() : List.of();
+      writeExecutionFailure(ctx, "generateFromConfiguration", appName, category, e.getMessage(), errors);
+      throw toMojoExecutionException(e);
+    }
   }
 }

@@ -32,6 +32,7 @@ import org.folio.app.generator.model.PreReleaseFilter;
 import org.folio.app.generator.model.UpdateConfig;
 import org.folio.app.generator.model.UpdateResult;
 import org.folio.app.generator.model.types.ModuleType;
+import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 import org.folio.app.generator.utils.PluginConfig;
 import org.folio.app.generator.utils.SemverUtils;
 import org.semver4j.Semver;
@@ -51,15 +52,15 @@ public class ApplicationDescriptorUpdateService {
   private final ModuleDescriptorService moduleDescriptorService;
   private final ModuleVersionService moduleVersionService;
 
-  public void update(ApplicationDescriptor application, String modulesIds, String uiModulesIds,
-                     UpdateConfig config) throws MojoExecutionException {
+  public boolean update(ApplicationDescriptor application, String modulesIds, String uiModulesIds,
+                        UpdateConfig config) throws MojoExecutionException {
     var moduleUpdates = parseModuleIdsToUpdate(modulesIds);
     var uiModuleUpdates = parseModuleIdsToUpdate(uiModulesIds);
-    update(application, moduleUpdates, uiModuleUpdates, config);
+    return update(application, moduleUpdates, uiModuleUpdates, config);
   }
 
-  public void update(ApplicationDescriptor application, List<Dependency> modules, List<Dependency> uiModules,
-                     UpdateConfig config) throws MojoExecutionException {
+  public boolean update(ApplicationDescriptor application, List<Dependency> modules, List<Dependency> uiModules,
+                        UpdateConfig config) throws MojoExecutionException {
     var moduleUpdates = emptyIfNull(modules);
     var uiModuleUpdates = emptyIfNull(uiModules);
 
@@ -73,7 +74,7 @@ public class ApplicationDescriptorUpdateService {
 
     if (!modulesResult.hasChanges() && !uiModulesResult.hasChanges()) {
       log.info("No module changes detected. Skipping descriptor update.");
-      return;
+      return false;
     }
 
     var modulesLoadResult = moduleDescriptorService.loadModules(BE, modulesResult.changedModules());
@@ -98,6 +99,7 @@ public class ApplicationDescriptorUpdateService {
       modulesResult.added(), modulesResult.upgraded(), modulesResult.downgraded(), modulesResult.removed(),
       uiModulesResult.added(), uiModulesResult.upgraded(), uiModulesResult.downgraded(), uiModulesResult.removed());
     jsonProvider.writeUpdateResult(updateResult, outputDir);
+    return true;
   }
 
   private void updateApplicationModules(ApplicationDescriptor application,
@@ -311,7 +313,7 @@ public class ApplicationDescriptorUpdateService {
   }
 
   private List<Dependency> resolveConstraints(List<Dependency> dependencies, ModuleType type)
-    throws MojoExecutionException {
+      throws ApplicationGeneratorException {
     return moduleVersionService.resolveModulesConstraints(emptyIfNull(dependencies), type);
   }
 

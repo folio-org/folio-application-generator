@@ -7,12 +7,18 @@ import java.util.List;
 import javax.inject.Inject;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.configuration.ApplicationContextBuilder;
+import org.folio.app.generator.model.ErrorDetail;
+import org.folio.app.generator.model.ExecutionResult;
 import org.folio.app.generator.model.registry.ConfigModuleRegistry;
 import org.folio.app.generator.model.registry.artifact.ConfigArtifactRegistry;
+import org.folio.app.generator.model.types.ErrorCategory;
+import org.folio.app.generator.service.JsonProvider;
 import org.folio.app.generator.service.ModuleRegistryProvider;
+import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 import org.folio.app.generator.utils.PluginConfig;
 import org.springframework.context.support.GenericApplicationContext;
 import software.amazon.awssdk.regions.Region;
@@ -131,5 +137,36 @@ public abstract class AbstractGeneratorMojo extends AbstractMojo {
       .withPluginConfig(pluginConfig)
       .withModuleRegistries(registries)
       .build();
+  }
+
+  protected void writeExecutionStarted(GenericApplicationContext ctx, String goal, String appName)
+      throws ApplicationGeneratorException {
+    var jsonProvider = ctx.getBean(JsonProvider.class);
+    var result = ExecutionResult.started(goal, appName);
+    jsonProvider.writeExecutionResult(result, mavenProject.getBuild().getDirectory());
+  }
+
+  protected void writeExecutionSuccess(GenericApplicationContext ctx, String goal, String appName, String appVersion,
+                                       boolean changesDetected) throws ApplicationGeneratorException {
+    var jsonProvider = ctx.getBean(JsonProvider.class);
+    var result = ExecutionResult.success(goal, appName, appVersion, changesDetected);
+    jsonProvider.writeExecutionResult(result, mavenProject.getBuild().getDirectory());
+  }
+
+  protected void writeExecutionFailure(GenericApplicationContext ctx, String goal, String appName,
+                                       ErrorCategory category, String message, List<ErrorDetail> errors)
+      throws ApplicationGeneratorException {
+    var jsonProvider = ctx.getBean(JsonProvider.class);
+    var result = ExecutionResult.failure(goal, appName, category, message, errors);
+    jsonProvider.writeExecutionResult(result, mavenProject.getBuild().getDirectory());
+  }
+
+  protected ErrorCategory classifyException(Exception e) {
+    return ErrorCategory.fromException(e);
+  }
+
+  protected static MojoExecutionException toMojoExecutionException(Exception e) {
+    return e instanceof MojoExecutionException mee ? mee
+      : new MojoExecutionException(e.getMessage(), e);
   }
 }

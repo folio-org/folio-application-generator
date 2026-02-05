@@ -2,6 +2,7 @@ package org.folio.app.generator;
 
 import static org.apache.maven.plugins.annotations.ResolutionScope.RUNTIME;
 
+import java.util.List;
 import javax.inject.Inject;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -9,9 +10,11 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.folio.app.generator.configuration.ApplicationContextBuilder;
+import org.folio.app.generator.model.ErrorDetail;
 import org.folio.app.generator.service.ApplicationDescriptorService;
 import org.folio.app.generator.service.ApplicationModulesIntegrityValidator;
 import org.folio.app.generator.service.ModuleRegistryProvider;
+import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 
 @Mojo(name = "validateIntegrity", defaultPhase = LifecyclePhase.COMPILE, requiresDependencyResolution = RUNTIME)
 public class IntegrityValidatorMojo extends JsonGenerator {
@@ -33,22 +36,35 @@ public class IntegrityValidatorMojo extends JsonGenerator {
     prevalidateParameters();
 
     var ctx = buildApplicationContext();
-    var applicationDescriptorService = ctx.getBean(ApplicationDescriptorService.class);
+    var appName = mavenProject.getArtifactId();
 
-    // ApplicationModulesIntegrityValidator requires HTTP connectivity
-    // It won't be available when using only S3 registries without OKAPI or Simple registries
-    if (!ctx.containsBean("applicationModulesIntegrityValidator")) {
-      throw new MojoExecutionException(
-        "Integrity validation requires HTTP-based module registries (OKAPI or Simple) "
-          + "or artifact validation to be enabled. Current configuration uses only S3 registries.");
+    writeExecutionStarted(ctx, "validateIntegrity", appName);
+
+    try {
+      var applicationDescriptorService = ctx.getBean(ApplicationDescriptorService.class);
+
+      // ApplicationModulesIntegrityValidator requires HTTP connectivity
+      // It won't be available when using only S3 registries without OKAPI or Simple registries
+      if (!ctx.containsBean("applicationModulesIntegrityValidator")) {
+        throw new MojoExecutionException(
+          "Integrity validation requires HTTP-based module registries (OKAPI or Simple) "
+            + "or artifact validation to be enabled. Current configuration uses only S3 registries.");
+      }
+
+      var applicationModulesValidator = ctx.getBean(ApplicationModulesIntegrityValidator.class);
+
+      var template = readTemplate();
+      var application = applicationDescriptorService.create(template);
+
+      applicationModulesValidator.validateApplication(application, baseUrl, token);
+
+      writeExecutionSuccess(ctx, "validateIntegrity", appName, application.getVersion(), true);
+    } catch (Exception e) {
+      var category = classifyException(e);
+      List<ErrorDetail> errors = e instanceof ApplicationGeneratorException age ? age.getErrors() : List.of();
+      writeExecutionFailure(ctx, "validateIntegrity", appName, category, e.getMessage(), errors);
+      throw toMojoExecutionException(e);
     }
-
-    var applicationModulesValidator = ctx.getBean(ApplicationModulesIntegrityValidator.class);
-
-    var template = readTemplate();
-    var application = applicationDescriptorService.create(template);
-
-    applicationModulesValidator.validateApplication(application, baseUrl, token);
   }
 
   private void prevalidateParameters() throws MojoExecutionException {

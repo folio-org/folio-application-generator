@@ -1,11 +1,11 @@
 package org.folio.app.generator.service.resolver;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpClient.Version;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -14,11 +14,15 @@ import lombok.RequiredArgsConstructor;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.conditions.OkapiCondition;
 import org.folio.app.generator.model.Dependency;
+import org.folio.app.generator.model.ErrorDetail;
 import org.folio.app.generator.model.PreReleaseFilter;
 import org.folio.app.generator.model.registry.ModuleRegistry;
 import org.folio.app.generator.model.registry.OkapiModuleRegistry;
+import org.folio.app.generator.model.types.ErrorCategory;
 import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.model.types.RegistryType;
+import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
+import org.folio.app.generator.utils.HttpRetryHelper;
 import org.folio.app.generator.utils.JsonConverter;
 import org.folio.app.generator.utils.PluginUtils;
 import org.springframework.context.annotation.Conditional;
@@ -39,6 +43,14 @@ public class OkapiModuleVersionResolver implements ModuleVersionResolver {
     var url = okapiRegistry.getUrl();
     try {
       return getVersions(url, module, type);
+    } catch (IOException e) {
+      log.warn(String.format("Failed to fetch versions for module '%s' from %s", module.getName(), url), e);
+      var errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+      var errorDetail = ErrorDetail.infrastructureError(url, errorMsg);
+      throw new ApplicationGeneratorException(
+        String.format("Network error while fetching versions for module '%s' from %s: %s",
+          module.getName(), url, errorMsg),
+        ErrorCategory.INFRASTRUCTURE, errorDetail, e);
     } catch (Exception e) {
       log.warn(String.format("Failed to fetch versions for module '%s' from %s", module.getName(), url), e);
       return Optional.empty();
@@ -54,7 +66,7 @@ public class OkapiModuleVersionResolver implements ModuleVersionResolver {
     var request = prepareHttpRequest(url, module, type);
     var moduleName = module.getName();
 
-    var response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+    var response = HttpRetryHelper.sendWithRetry(httpClient, log, request);
     var responseStatus = response.statusCode();
 
     if (responseStatus != 200) {
@@ -84,12 +96,8 @@ public class OkapiModuleVersionResolver implements ModuleVersionResolver {
     return Optional.of(versions);
   }
 
-  private static String cleanUrl(String url) {
-    return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
-  }
-
   private static HttpRequest prepareHttpRequest(String url, Dependency module, ModuleType type) {
-    var baseUrl = cleanUrl(url);
+    var baseUrl = HttpRetryHelper.cleanUrl(url);
     return HttpRequest.newBuilder()
       .GET()
       .uri(URI.create(prepareUriString(baseUrl, module, type)))
