@@ -17,15 +17,19 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.apache.maven.plugin.logging.Log;
+import org.folio.app.generator.conditions.HttpCondition;
 import org.folio.app.generator.model.ApplicationDescriptor;
 import org.folio.app.generator.model.ApplicationDescriptorCollection;
 import org.folio.app.generator.service.exceptions.ModulesIntegrityValidatorException;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 /**
  * Service for validating application module descriptors by sending them to a remote validator endpoint.
+ * This service requires HTTP client to communicate with the validation endpoint.
  */
 @Component
+@Conditional(HttpCondition.class)
 @RequiredArgsConstructor
 public class ApplicationModulesIntegrityValidator {
   private static final String VALIDATOR_PATH = "/applications/validate-descriptors";

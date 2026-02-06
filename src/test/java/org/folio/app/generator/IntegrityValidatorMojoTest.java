@@ -81,6 +81,8 @@ class IntegrityValidatorMojoTest {
 
     when(mockGenericApplicationContext.getBean(ApplicationDescriptorService.class))
       .thenReturn(mockApplicationDescriptorService);
+    when(mockGenericApplicationContext.containsBean("applicationModulesIntegrityValidator"))
+      .thenReturn(true);
     when(mockGenericApplicationContext.getBean(ApplicationModulesIntegrityValidator.class))
       .thenReturn(mockApplicationModulesIntegrityValidator);
     when(mockGenericApplicationContext.getBean(JsonProvider.class))
@@ -175,6 +177,31 @@ class IntegrityValidatorMojoTest {
     verify(mockJsonProvider, times(2)).writeExecutionResult(any(ExecutionResult.class), eq("/target"));
   }
 
+  @Test
+  void execute_negative_validatorBeanMissing_throwsMojoExecutionException() {
+    mockMojo.baseUrl = "baseUrl";
+    mockMojo.token = "token";
+
+    when(mavenProject.getArtifactId()).thenReturn("test-app");
+    when(mavenProject.getBuild()).thenReturn(build);
+    when(build.getDirectory()).thenReturn("/target");
+    when(mockContextBuilder.withLog(any())).thenReturn(mockContextBuilder);
+    when(mockContextBuilder.withMavenSession(any())).thenReturn(mockContextBuilder);
+    when(mockContextBuilder.withMavenProject(any())).thenReturn(mockContextBuilder);
+    when(mockContextBuilder.withPluginConfig(any())).thenReturn(mockContextBuilder);
+    when(mockContextBuilder.withModuleRegistries(any())).thenReturn(mockContextBuilder);
+    when(mockMojo.buildApplicationContext()).thenReturn(mockGenericApplicationContext);
+    when(mockGenericApplicationContext.getBean(JsonProvider.class)).thenReturn(mockJsonProvider);
+    when(mockGenericApplicationContext.getBean(ApplicationDescriptorService.class))
+      .thenReturn(mockApplicationDescriptorService);
+    when(mockGenericApplicationContext.containsBean("applicationModulesIntegrityValidator"))
+      .thenReturn(false);
+
+    assertThatThrownBy(() -> mockMojo.execute())
+      .isInstanceOf(MojoExecutionException.class)
+      .hasMessageContaining("Integrity validation requires HTTP-based module registries");
+  }
+
   private void setupContextMocks() {
     when(mavenProject.getArtifactId()).thenReturn("test-app");
     when(mavenProject.getBuild()).thenReturn(build);
@@ -185,6 +212,8 @@ class IntegrityValidatorMojoTest {
     when(mockContextBuilder.withPluginConfig(any())).thenReturn(mockContextBuilder);
     when(mockContextBuilder.withModuleRegistries(any())).thenReturn(mockContextBuilder);
     when(mockMojo.buildApplicationContext()).thenReturn(mockGenericApplicationContext);
+    when(mockGenericApplicationContext.containsBean("applicationModulesIntegrityValidator"))
+      .thenReturn(true);
     when(mockGenericApplicationContext.getBean(ApplicationDescriptorService.class))
       .thenReturn(mockApplicationDescriptorService);
     when(mockGenericApplicationContext.getBean(ApplicationModulesIntegrityValidator.class))

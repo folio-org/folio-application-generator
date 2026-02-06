@@ -9,13 +9,16 @@ import java.time.Duration;
 import java.util.Map;
 import lombok.SneakyThrows;
 import org.apache.maven.plugin.logging.Log;
+import org.folio.app.generator.conditions.FolioNpmCondition;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.registry.artifact.ArtifactRegistry;
 import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.utils.JsonConverter;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
+@Conditional(FolioNpmCondition.class)
 public class FolioNpmArtifactExistenceChecker extends HttpArtifactExistenceChecker {
 
   private static final int SUCCESS_STATUS_CODE = 200;
