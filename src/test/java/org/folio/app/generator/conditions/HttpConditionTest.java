@@ -111,6 +111,13 @@ class HttpConditionTest {
     assertThat(context.containsBean("testBean")).isTrue();
   }
 
+  @Test
+  void matches_positive_notNull() {
+    assertThat(new HttpCondition.Okapi()).isNotNull();
+    assertThat(new HttpCondition.Simple()).isNotNull();
+    assertThat(new HttpCondition.ArtifactValidation()).isNotNull();
+  }
+
   @Configuration
   static class TestConfiguration {
 

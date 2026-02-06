@@ -97,6 +97,12 @@ class ArtifactValidationConditionTest {
     assertThat(context.containsBean("testBean")).isFalse();
   }
 
+  @Test
+  void nestedClasses_positive_notNull() {
+    assertThat(new ArtifactValidationCondition.DockerHub()).isNotNull();
+    assertThat(new ArtifactValidationCondition.FolioNpm()).isNotNull();
+  }
+
   @Configuration
   static class TestConfiguration {
 
