@@ -6,7 +6,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
-import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.registry.artifact.DockerHubArtifactRegistry;
 import org.folio.app.generator.model.registry.artifact.FolioNpmArtifactRegistry;
@@ -22,7 +21,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ArtifactExistenceCheckerFacadeTest {
 
-  @Mock private Log log;
   @Mock private ArtifactExistenceChecker beChecker;
   @Mock private ArtifactExistenceChecker uiChecker;
 
@@ -32,7 +30,7 @@ class ArtifactExistenceCheckerFacadeTest {
   void setUp() {
     when(beChecker.getModuleType()).thenReturn(ModuleType.BE);
     when(uiChecker.getModuleType()).thenReturn(ModuleType.UI);
-    facade = new ArtifactExistenceCheckerFacade(log, List.of(beChecker, uiChecker));
+    facade = new ArtifactExistenceCheckerFacade(List.of(beChecker, uiChecker));
   }
 
   @Test
@@ -78,7 +76,7 @@ class ArtifactExistenceCheckerFacadeTest {
     var module = new ModuleDefinition().name("mod-users").version("1.0.0");
     var registry = new DockerHubArtifactRegistry().namespace("folioorg");
 
-    var facadeWithLimitedCheckers = new ArtifactExistenceCheckerFacade(log, List.of(beChecker));
+    var facadeWithLimitedCheckers = new ArtifactExistenceCheckerFacade(List.of(beChecker));
 
     assertThatThrownBy(() -> facadeWithLimitedCheckers.exists(module, registry, ModuleType.UI))
       .isInstanceOf(IllegalStateException.class)

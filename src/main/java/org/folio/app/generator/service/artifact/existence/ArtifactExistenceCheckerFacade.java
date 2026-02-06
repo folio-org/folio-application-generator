@@ -5,7 +5,6 @@ import static java.util.stream.Collectors.toMap;
 
 import java.util.List;
 import java.util.Map;
-import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.conditions.ArtifactValidationCondition;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.registry.artifact.ArtifactRegistry;
@@ -18,12 +17,10 @@ import org.springframework.stereotype.Component;
 @Conditional(ArtifactValidationCondition.class)
 public class ArtifactExistenceCheckerFacade {
 
-  private final Log log;
   private final Map<ModuleType, ArtifactExistenceChecker> checkersMap;
 
   @Autowired
-  public ArtifactExistenceCheckerFacade(Log log, List<ArtifactExistenceChecker> checkers) {
-    this.log = log;
+  public ArtifactExistenceCheckerFacade(List<ArtifactExistenceChecker> checkers) {
     this.checkersMap = checkers.stream().collect(toMap(ArtifactExistenceChecker::getModuleType, identity()));
   }
 

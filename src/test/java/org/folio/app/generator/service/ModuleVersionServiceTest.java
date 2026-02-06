@@ -50,8 +50,7 @@ class ModuleVersionServiceTest {
   @BeforeEach
   void setUp() {
     service = new ModuleVersionService(log, moduleRegistries, resolverFacade,
-      pluginConfig, artifactRegistryProvider);
-    service.setArtifactExistenceCheckerFacade(artifactExistenceCheckerFacade);
+      pluginConfig, artifactRegistryProvider, Optional.of(artifactExistenceCheckerFacade));
   }
 
   @Test
@@ -466,8 +465,7 @@ class ModuleVersionServiceTest {
   void resolveModulesConstraints_positive_nullFacadeLogsWarningAndReturnsHighestVersion() {
     // Create a service without injecting the artifactExistenceCheckerFacade
     var serviceWithoutFacade = new ModuleVersionService(log, moduleRegistries, resolverFacade,
-      pluginConfig, artifactRegistryProvider);
-    // Explicitly NOT calling setArtifactExistenceCheckerFacade() - facade remains null
+      pluginConfig, artifactRegistryProvider, Optional.empty());
 
     var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
     var registry = okapiRegistry();

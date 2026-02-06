@@ -5,7 +5,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.ErrorDetail;
@@ -21,7 +20,6 @@ import org.folio.app.generator.utils.PluginConfig;
 import org.folio.app.generator.utils.SemverUtils;
 import org.semver4j.RangesListFactory;
 import org.semver4j.Semver;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -33,9 +31,7 @@ public class ModuleVersionService {
   private final ModuleVersionResolverFacade moduleVersionResolverFacade;
   private final PluginConfig pluginConfig;
   private final ArtifactRegistryProvider artifactRegistryProvider;
-  @Setter
-  @Autowired(required = false)
-  private ArtifactExistenceCheckerFacade artifactExistenceCheckerFacade;
+  private final Optional<ArtifactExistenceCheckerFacade> artifactExistenceCheckerFacade;
 
   /**
    * Resolves version constraints to exact versions for a list of dependencies.
@@ -182,7 +178,7 @@ public class ModuleVersionService {
   }
 
   private boolean artifactExists(String moduleName, VersionCandidate candidate, ModuleType type) {
-    if (artifactExistenceCheckerFacade == null) {
+    if (artifactExistenceCheckerFacade.isEmpty()) {
       log.warn(String.format(
         "Artifact validation is enabled but no artifact checkers are available. "
           + "This may indicate a configuration issue. Skipping validation for %s-%s.",
@@ -196,7 +192,7 @@ public class ModuleVersionService {
     var module = new ModuleDefinition().name(moduleName).version(candidate.original());
 
     for (var registry : artifactRegistries) {
-      if (artifactExistenceCheckerFacade.exists(module, registry, type)) {
+      if (artifactExistenceCheckerFacade.get().exists(module, registry, type)) {
         log.info(String.format("Artifact found: %s-%s", moduleName, candidate.original()));
         return true;
       }
