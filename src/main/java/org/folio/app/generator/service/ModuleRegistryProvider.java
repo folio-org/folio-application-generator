@@ -42,7 +42,11 @@ public class ModuleRegistryProvider {
   public ModuleRegistries getModuleRegistries(PluginConfig config) {
     var processor = new ModuleRegistryProcessor(config);
     handleInvalidRegistries(processor.getInvalidRegistries());
-    return new ModuleRegistries(processor.getBeRegistries(), processor.getUiRegistries());
+    return new ModuleRegistries(
+      processor.getBeRegistries(),
+      processor.getUiRegistries(),
+      processor.getBeFallbackRegistries(),
+      processor.getUiFallbackRegistries());
   }
 
   private ModuleRegistryProcessingResult processCommandLineRegistries(String registryString) {
@@ -129,10 +133,14 @@ public class ModuleRegistryProvider {
     @Getter private final List<String> invalidRegistries;
     @Getter private final List<ModuleRegistry> beRegistries;
     @Getter private final List<ModuleRegistry> uiRegistries;
+    @Getter private final List<ModuleRegistry> beFallbackRegistries;
+    @Getter private final List<ModuleRegistry> uiFallbackRegistries;
 
     private final PluginConfig pluginConfig;
     private final List<ModuleRegistry> registries;
     private final List<ModuleRegistry> cmdRegistries;
+    private final List<ModuleRegistry> fallbackRegistries;
+    private final List<ModuleRegistry> cmdFallbackRegistries;
 
     ModuleRegistryProcessor(PluginConfig config) {
       this.pluginConfig = config;
@@ -147,8 +155,22 @@ public class ModuleRegistryProvider {
       this.registries = registriesProcessingResult.registries();
       this.cmdRegistries = cmdRegistriesProcessingResult.registries();
 
+      var fallbackRegistriesProcessingResult = processConfigurationRegistries(config.getFallbackRegistries());
+      var cmdFallbackRegistriesProcessingResult = processCommandLineRegistries(config.getCmdFallbackRegistryString());
+
+      this.invalidRegistries.addAll(cmdFallbackRegistriesProcessingResult.invalidRegistries());
+      this.invalidRegistries.addAll(fallbackRegistriesProcessingResult.invalidRegistries());
+
+      this.fallbackRegistries = fallbackRegistriesProcessingResult.registries();
+      this.cmdFallbackRegistries = cmdFallbackRegistriesProcessingResult.registries();
+
       this.beRegistries = processModuleRegistries(config.getBeCmdRegistryString(), config.getBeRegistries());
       this.uiRegistries = processModuleRegistries(config.getUiCmdRegistryString(), config.getUiRegistries());
+
+      this.beFallbackRegistries = processFallbackRegistries(
+        config.getBeCmdFallbackRegistryString(), config.getBeFallbackRegistries());
+      this.uiFallbackRegistries = processFallbackRegistries(
+        config.getUiCmdFallbackRegistryString(), config.getUiFallbackRegistries());
     }
 
     private List<ModuleRegistry> processModuleRegistries(String registryStr,
@@ -163,6 +185,21 @@ public class ModuleRegistryProvider {
       var registriesResultForType = processConfigurationRegistries(moduleRegistries);
       invalidRegistries.addAll(cmdRegistriesResultForType.invalidRegistries());
       return merge(cmdRegistriesForType, cmdRegistries, registriesResultForType.registries(), registries);
+    }
+
+    private List<ModuleRegistry> processFallbackRegistries(String registryStr,
+      List<ConfigModuleRegistry> moduleRegistries) {
+      var cmdRegistriesResultForType = processCommandLineRegistries(registryStr);
+      invalidRegistries.addAll(cmdRegistriesResultForType.invalidRegistries());
+      var cmdRegistriesForType = cmdRegistriesResultForType.registries();
+      if (pluginConfig.isOverrideConfigRegistries()) {
+        return merge(cmdRegistriesForType, cmdFallbackRegistries);
+      }
+
+      var registriesResultForType = processConfigurationRegistries(moduleRegistries);
+      invalidRegistries.addAll(registriesResultForType.invalidRegistries());
+      return merge(cmdRegistriesForType, cmdFallbackRegistries, registriesResultForType.registries(),
+        fallbackRegistries);
     }
   }
 
