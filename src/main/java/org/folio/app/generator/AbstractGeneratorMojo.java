@@ -55,6 +55,24 @@ public abstract class AbstractGeneratorMojo extends AbstractMojo {
   @Parameter(name = "uiModuleRegistries")
   protected List<ConfigModuleRegistry> uiModuleRegistries;
 
+  @Parameter(defaultValue = "${fallbackRegistries}")
+  protected String cmdFallbackRegistriesString;
+
+  @Parameter(defaultValue = "${beFallbackRegistries}")
+  protected String cmdBeFallbackRegistriesString;
+
+  @Parameter(defaultValue = "${uiFallbackRegistries}")
+  protected String cmdUiFallbackRegistriesString;
+
+  @Parameter(name = "fallbackModuleRegistries")
+  protected List<ConfigModuleRegistry> fallbackModuleRegistries;
+
+  @Parameter(name = "beFallbackModuleRegistries")
+  protected List<ConfigModuleRegistry> beFallbackModuleRegistries;
+
+  @Parameter(name = "uiFallbackModuleRegistries")
+  protected List<ConfigModuleRegistry> uiFallbackModuleRegistries;
+
   @Parameter(name = "moduleUrlsOnly", property = "moduleUrlsOnly", defaultValue = "false")
   protected String moduleUrlsOnly;
 
@@ -112,6 +130,12 @@ public abstract class AbstractGeneratorMojo extends AbstractMojo {
       .cmdRegistryString(cmdRegistriesString)
       .beCmdRegistryString(cmdBeRegistriesString)
       .uiCmdRegistryString(cmdUiRegistriesString)
+      .fallbackRegistries(fallbackModuleRegistries)
+      .beFallbackRegistries(beFallbackModuleRegistries)
+      .uiFallbackRegistries(uiFallbackModuleRegistries)
+      .cmdFallbackRegistryString(cmdFallbackRegistriesString)
+      .beCmdFallbackRegistryString(cmdBeFallbackRegistriesString)
+      .uiCmdFallbackRegistryString(cmdUiFallbackRegistriesString)
       .overrideConfigRegistries(parseBoolean(overrideConfigRegistries))
       .moduleUrlsOnly(parseBoolean(moduleUrlsOnly))
       .awsRegion(isNotBlank(awsRegion) ? Region.of(awsRegion) : Region.US_EAST_1)

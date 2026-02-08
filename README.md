@@ -516,6 +516,58 @@ The error category can be used to route alerts appropriately:
 3. Processed registries from `uiModuleRegistries` plugin configuration (can be empty)
 4. Processed registries from `moduleRegistries` plugin configuration (can be empty)
 
+### Fallback Registries
+
+Fallback registries serve as backup sources when modules cannot be found in the main registries. The plugin will first search all main registries, and only if a module is not found, it will try the fallback registries.
+
+#### pom.xml Configuration
+
+```xml
+<configuration>
+  <!-- Main registries -->
+  <moduleRegistries>
+    <registry>
+      <type>okapi</type>
+      <url>https://folio-registry.dev.folio.org</url>
+    </registry>
+  </moduleRegistries>
+
+  <!-- Fallback registries (used when module not found in main registries) -->
+  <fallbackModuleRegistries>
+    <registry>
+      <type>okapi</type>
+      <url>https://folio-registry-fallback.example.com</url>
+    </registry>
+  </fallbackModuleRegistries>
+
+  <!-- Type-specific fallback registries -->
+  <beFallbackModuleRegistries>
+    <registry>
+      <type>s3</type>
+      <bucket>fallback-be-modules</bucket>
+      <path>be/</path>
+    </registry>
+  </beFallbackModuleRegistries>
+
+  <uiFallbackModuleRegistries>
+    <registry>
+      <type>okapi</type>
+      <url>https://ui-fallback.example.com</url>
+    </registry>
+  </uiFallbackModuleRegistries>
+</configuration>
+```
+
+#### Fallback Registry Resolution Order
+
+**Backend modules:**
+1. Try main BE registries (beModuleRegistries, moduleRegistries)
+2. If not found, try BE fallback registries (beFallbackModuleRegistries, fallbackModuleRegistries)
+
+**UI modules:**
+1. Try main UI registries (uiModuleRegistries, moduleRegistries)
+2. If not found, try UI fallback registries (uiFallbackModuleRegistries, fallbackModuleRegistries)
+
 ### Command-line parameters
 
 These parameters can be specified in the job run using following notation
@@ -531,6 +583,9 @@ mvn install -DbuildNumber="123" -DawsRegion=us-east-1
 | registries                     |                                                 | Comma-separated list of custom module-descriptor registries in formats: `s3::{{bucket-name}}:{{path-to-folder}}`, `okapi::{{okapi-base}}`, `simple::{{okapi-base}}` |
 | beRegistries                   |                                                 | Comma-separated list of custom back-end module-descriptor registries in the same format as `registries` parameter                                                   |
 | uiRegistries                   |                                                 | Comma-separated list of custom ui module-descriptor registries in the same format as `registries` parameter                                                         |
+| fallbackRegistries             |                                                 | Comma-separated list of fallback module-descriptor registries (same format as `registries`)                                                                         |
+| beFallbackRegistries           |                                                 | Comma-separated list of fallback back-end module-descriptor registries (same format as `registries`)                                                                |
+| uiFallbackRegistries           |                                                 | Comma-separated list of fallback UI module-descriptor registries (same format as `registries`)                                                                      |
 | moduleUrlsOnly                 | false                                           | If `true` only URLs of modules will be included to the modules. Modules descriptors will be empty.                                                                  |
 | appDescriptorPath              | `${project.artifactId}-${project.version}.json` | File path of the application descriptor to update                                                                                                                   |
 | modules                        |                                                 | Comma-separated list of BE module ids to be updated in format: `module1-1.1.0,module2-2.1.0`                                                                        |

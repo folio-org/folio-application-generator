@@ -83,7 +83,11 @@ public class ApplicationContextBuilder {
   }
 
   void setSpringContextProperties(GenericApplicationContext context) {
-    var usedRegistryTypes = Stream.of(moduleRegistries.beRegistries(), moduleRegistries.uiRegistries())
+    var usedRegistryTypes = Stream.of(
+        moduleRegistries.beRegistries(),
+        moduleRegistries.uiRegistries(),
+        moduleRegistries.beFallbackRegistries(),
+        moduleRegistries.uiFallbackRegistries())
       .filter(Objects::nonNull)
       .flatMap(Collection::stream)
       .map(ModuleRegistry::getType)

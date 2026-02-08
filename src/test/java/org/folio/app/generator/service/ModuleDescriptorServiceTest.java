@@ -3,6 +3,7 @@ package org.folio.app.generator.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -190,6 +191,107 @@ class ModuleDescriptorServiceTest {
         var ex = (ApplicationGeneratorException) e;
         assertThat(ex.getCategory()).isEqualTo(ErrorCategory.CONFIGURATION_ERROR);
       });
+  }
+
+  @Test
+  void loadModules_positive_moduleFoundInFallbackRegistry() throws MalformedURLException {
+    var module = moduleDefinition("mod-users", "1.0.0");
+    var mainRegistry = okapiRegistry();
+    var fallbackRegistry = new OkapiModuleRegistry().url("http://fallback").withGeneratedFields();
+
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(mainRegistry));
+    when(moduleRegistries.getFallbackRegistries(ModuleType.BE)).thenReturn(List.of(fallbackRegistry));
+    when(moduleDescriptorLoaderFacade.find(mainRegistry, module)).thenReturn(Optional.empty());
+    when(moduleDescriptorLoaderFacade.find(fallbackRegistry, module))
+      .thenReturn(Optional.of(loaderResult("mod-users", "1.0.0")));
+
+    var result = service.loadModules(ModuleType.BE, List.of(module));
+
+    assertThat(result.artifacts()).hasSize(1);
+    assertThat(result.descriptors()).hasSize(1);
+    verify(log).info("Trying fallback registries for 1 module(s) of type: BE");
+    verify(log).info("Found mod-users-1.0.0 in fallback registry: http://fallback");
+  }
+
+  @Test
+  void loadModules_positive_moduleFoundInMainRegistryFallbackNotUsed() throws MalformedURLException {
+    var module = moduleDefinition("mod-users", "1.0.0");
+    var mainRegistry = okapiRegistry();
+
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(mainRegistry));
+    when(moduleDescriptorLoaderFacade.find(mainRegistry, module))
+      .thenReturn(Optional.of(loaderResult("mod-users", "1.0.0")));
+
+    var result = service.loadModules(ModuleType.BE, List.of(module));
+
+    assertThat(result.artifacts()).hasSize(1);
+    verify(moduleDescriptorLoaderFacade).find(mainRegistry, module);
+    verifyNoMoreInteractions(moduleDescriptorLoaderFacade);
+    verify(moduleRegistries, never()).getFallbackRegistries(any());
+  }
+
+  @Test
+  void loadModules_negative_moduleNotFoundInMainOrFallback() {
+    var module = moduleDefinition("mod-missing", "1.0.0");
+    var mainRegistry = okapiRegistry();
+    var fallbackRegistry = new OkapiModuleRegistry().url("http://fallback").withGeneratedFields();
+
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(mainRegistry));
+    when(moduleRegistries.getFallbackRegistries(ModuleType.BE)).thenReturn(List.of(fallbackRegistry));
+    when(moduleDescriptorLoaderFacade.find(mainRegistry, module)).thenReturn(Optional.empty());
+    when(moduleDescriptorLoaderFacade.find(fallbackRegistry, module)).thenReturn(Optional.empty());
+
+    var modules = List.of(module);
+    assertThatThrownBy(() -> service.loadModules(ModuleType.BE, modules))
+      .isInstanceOf(ApplicationGeneratorException.class)
+      .satisfies(e -> {
+        var ex = (ApplicationGeneratorException) e;
+        assertThat(ex.getCategory()).isEqualTo(ErrorCategory.MODULE_NOT_FOUND);
+        assertThat(ex.getErrors()).hasSize(1);
+      });
+
+    verify(log).info("Trying fallback registries for 1 module(s) of type: BE");
+  }
+
+  @Test
+  void loadModules_positive_moduleFoundInFirstFallbackSkipsSecond() throws MalformedURLException {
+    var module = moduleDefinition("mod-users", "1.0.0");
+    var mainRegistry = okapiRegistry();
+    var fallbackRegistry1 = new OkapiModuleRegistry().url("http://fallback1").withGeneratedFields();
+    var fallbackRegistry2 = new OkapiModuleRegistry().url("http://fallback2").withGeneratedFields();
+
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(mainRegistry));
+    when(moduleRegistries.getFallbackRegistries(ModuleType.BE))
+      .thenReturn(List.of(fallbackRegistry1, fallbackRegistry2));
+    when(moduleDescriptorLoaderFacade.find(mainRegistry, module)).thenReturn(Optional.empty());
+    when(moduleDescriptorLoaderFacade.find(fallbackRegistry1, module))
+      .thenReturn(Optional.of(loaderResult("mod-users", "1.0.0")));
+
+    var result = service.loadModules(ModuleType.BE, List.of(module));
+
+    assertThat(result.artifacts()).hasSize(1);
+    verify(moduleDescriptorLoaderFacade, never()).find(fallbackRegistry2, module);
+    verify(log).info("Trying fallback registries for 1 module(s) of type: BE");
+    verify(log).info("Found mod-users-1.0.0 in fallback registry: http://fallback1");
+  }
+
+  @Test
+  void loadModules_positive_uiFallbackRegistry() throws MalformedURLException {
+    var module = moduleDefinition("folio_users", "1.0.0");
+    var mainRegistry = okapiRegistry();
+    var fallbackRegistry = new OkapiModuleRegistry().url("http://fallback").withGeneratedFields();
+
+    when(moduleRegistries.getRegistries(ModuleType.UI)).thenReturn(List.of(mainRegistry));
+    when(moduleRegistries.getFallbackRegistries(ModuleType.UI)).thenReturn(List.of(fallbackRegistry));
+    when(moduleDescriptorLoaderFacade.find(mainRegistry, module)).thenReturn(Optional.empty());
+    when(moduleDescriptorLoaderFacade.find(fallbackRegistry, module))
+      .thenReturn(Optional.of(loaderResult("folio_users", "1.0.0")));
+
+    var result = service.loadModules(ModuleType.UI, List.of(module));
+
+    assertThat(result.artifacts()).hasSize(1);
+    verify(log).info("Trying fallback registries for 1 module(s) of type: UI");
+    verify(log).info("Found folio_users-1.0.0 in fallback registry: http://fallback");
   }
 
   private static ModuleDefinition moduleDefinition(String name, String version) {

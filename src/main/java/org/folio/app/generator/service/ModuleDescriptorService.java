@@ -65,6 +65,35 @@ public class ModuleDescriptorService {
     notFoundModuleIds.removeAll(foundDescriptors.keySet());
 
     if (!notFoundModuleIds.isEmpty()) {
+      var fallbackRegistries = moduleRegistries.getFallbackRegistries(type);
+
+      if (!fallbackRegistries.isEmpty()) {
+        log.info("Trying fallback registries for " + notFoundModuleIds.size() + " module(s) of type: " + type.name());
+
+        var notFoundModules = modules.stream()
+          .filter(m -> notFoundModuleIds.contains(m.getId()))
+          .toList();
+
+        for (var registry : fallbackRegistries) {
+          for (var module : notFoundModules) {
+            var moduleId = module.getId();
+            if (foundDescriptors.containsKey(moduleId)) {
+              continue;
+            }
+
+            moduleDescriptorLoaderFacade.find(registry, module)
+              .ifPresent(md -> {
+                log.info("Found " + moduleId + " in fallback registry: " + registry.getRegistryIdentifier());
+                foundDescriptors.put(moduleId, md);
+              });
+          }
+        }
+
+        notFoundModuleIds.removeAll(foundDescriptors.keySet());
+      }
+    }
+
+    if (!notFoundModuleIds.isEmpty()) {
       var modulesString = collectToBulletedList(notFoundModuleIds);
       var errorDetails = notFoundModuleIds.stream()
         .map(ErrorDetail::moduleNotFoundById)

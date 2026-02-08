@@ -46,7 +46,7 @@ class ApplicationContextBuilderTest {
   @Test
   void setSpringContextProperties_positive_validateArtifactsEnabled() {
     when(pluginConfig.isValidateArtifacts()).thenReturn(true);
-    var moduleRegistries = new ModuleRegistries(List.of(), List.of());
+    var moduleRegistries = new ModuleRegistries(List.of(), List.of(), List.of(), List.of());
 
     var builder = new ApplicationContextBuilder()
       .withPluginConfig(pluginConfig)
@@ -63,7 +63,7 @@ class ApplicationContextBuilderTest {
   @Test
   void setSpringContextProperties_positive_validateArtifactsDisabled() {
     when(pluginConfig.isValidateArtifacts()).thenReturn(false);
-    var moduleRegistries = new ModuleRegistries(List.of(), List.of());
+    var moduleRegistries = new ModuleRegistries(List.of(), List.of(), List.of(), List.of());
 
     var builder = new ApplicationContextBuilder()
       .withPluginConfig(pluginConfig)
@@ -81,7 +81,7 @@ class ApplicationContextBuilderTest {
   void setSpringContextProperties_positive_withModuleRegistries() {
     when(pluginConfig.isValidateArtifacts()).thenReturn(false);
     var okapiRegistry = new OkapiModuleRegistry().url("http://localhost:9130");
-    var moduleRegistries = new ModuleRegistries(List.of(okapiRegistry), List.of());
+    var moduleRegistries = new ModuleRegistries(List.of(okapiRegistry), List.of(), List.of(), List.of());
 
     var builder = new ApplicationContextBuilder()
       .withPluginConfig(pluginConfig)

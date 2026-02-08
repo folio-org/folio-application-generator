@@ -276,7 +276,7 @@ class ModuleRegistryProviderTest {
   }
 
   private static ModuleRegistries registries(List<ModuleRegistry> beRegistries, List<ModuleRegistry> uiRegistries) {
-    return new ModuleRegistries(beRegistries, uiRegistries);
+    return new ModuleRegistries(beRegistries, uiRegistries, List.of(), List.of());
   }
 
   private static PluginConfig config(boolean overrideRegistries, String cmdString, ConfigModuleRegistry... registries) {
