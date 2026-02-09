@@ -3,8 +3,8 @@ package org.folio.app.generator.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -50,8 +50,7 @@ class ModuleVersionServiceTest {
   @BeforeEach
   void setUp() {
     service = new ModuleVersionService(log, moduleRegistries, resolverFacade,
-      pluginConfig, artifactExistenceCheckerFacade, artifactRegistryProvider);
-    lenient().when(pluginConfig.isValidateArtifacts()).thenReturn(false);
+      pluginConfig, artifactRegistryProvider, Optional.of(artifactExistenceCheckerFacade));
   }
 
   @Test
@@ -460,6 +459,30 @@ class ModuleVersionServiceTest {
 
     assertThat(result).hasSize(1);
     assertThat(result.get(0).getVersion()).isEqualTo("1.4.0");
+  }
+
+  @Test
+  void resolveModulesConstraints_positive_nullFacadeLogsWarningAndReturnsHighestVersion() {
+    // Create a service without injecting the artifactExistenceCheckerFacade
+    var serviceWithoutFacade = new ModuleVersionService(log, moduleRegistries, resolverFacade,
+      pluginConfig, artifactRegistryProvider, Optional.empty());
+
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var registry = okapiRegistry();
+
+    when(pluginConfig.isValidateArtifacts()).thenReturn(true);
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
+    when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE))
+        .thenReturn(Optional.of(List.of("1.5.0", "1.4.0", "1.3.0")));
+
+    var result = serviceWithoutFacade.resolveModulesConstraints(List.of(dependency), ModuleType.BE);
+
+    // Should return the highest version despite validation being enabled
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getVersion()).isEqualTo("1.5.0");
+    // Verify warning was logged with correct format (String.format with %s-%s)
+    verify(log).warn(contains("Artifact validation is enabled but no artifact checkers are available"));
+    verify(log).warn(contains("mod-foo-1.5.0"));
   }
 
   @Test

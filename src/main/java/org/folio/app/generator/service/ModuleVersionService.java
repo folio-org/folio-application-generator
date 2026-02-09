@@ -30,8 +30,8 @@ public class ModuleVersionService {
   private final ModuleRegistries moduleRegistries;
   private final ModuleVersionResolverFacade moduleVersionResolverFacade;
   private final PluginConfig pluginConfig;
-  private final ArtifactExistenceCheckerFacade artifactExistenceCheckerFacade;
   private final ArtifactRegistryProvider artifactRegistryProvider;
+  private final Optional<ArtifactExistenceCheckerFacade> artifactExistenceCheckerFacade;
 
   /**
    * Resolves version constraints to exact versions for a list of dependencies.
@@ -178,13 +178,21 @@ public class ModuleVersionService {
   }
 
   private boolean artifactExists(String moduleName, VersionCandidate candidate, ModuleType type) {
+    if (artifactExistenceCheckerFacade.isEmpty()) {
+      log.warn(String.format(
+        "Artifact validation is enabled but no artifact checkers are available. "
+          + "This may indicate a configuration issue. Skipping validation for %s-%s.",
+        moduleName, candidate.original()));
+      return true;
+    }
+
     var registries = artifactRegistryProvider.getArtifactRegistries(pluginConfig);
     var isPreRelease = SemverUtils.isPreRelease(candidate.original());
     var artifactRegistries = registries.getRegistries(type, isPreRelease);
     var module = new ModuleDefinition().name(moduleName).version(candidate.original());
 
     for (var registry : artifactRegistries) {
-      if (artifactExistenceCheckerFacade.exists(module, registry, type)) {
+      if (artifactExistenceCheckerFacade.get().exists(module, registry, type)) {
         log.info(String.format("Artifact found: %s-%s", moduleName, candidate.original()));
         return true;
       }
