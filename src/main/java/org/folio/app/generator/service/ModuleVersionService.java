@@ -96,8 +96,31 @@ public class ModuleVersionService {
       }
     }
 
+    var fallbackRegistries = moduleRegistries.getFallbackRegistries(type);
+    int totalRegistryCount = registries.size() + fallbackRegistries.size();
+
+    if (allMatchingVersions.isEmpty() && !fallbackRegistries.isEmpty()) {
+      log.info(String.format("Trying fallback registries for '%s' constraint '%s'", moduleName, versionConstraint));
+
+      for (var registry : fallbackRegistries) {
+        try {
+          var matchingVersion = getMatchingVersionFromRegistry(registry, dependency, type);
+          if (matchingVersion.isPresent()) {
+            log.info(String.format("Found '%s' in fallback registry: %s",
+              moduleName, registry.getRegistryIdentifier()));
+            allMatchingVersions.add(matchingVersion.get());
+          }
+        } catch (Exception e) {
+          registryErrorCount++;
+          lastException = e;
+          log.warn(String.format("Failed to resolve constraint '%s' for module '%s' from fallback %s",
+            versionConstraint, moduleName, registry.getClass().getSimpleName()), e);
+        }
+      }
+    }
+
     if (allMatchingVersions.isEmpty()) {
-      var allRegistriesFailed = registryErrorCount == registries.size() && !registries.isEmpty();
+      var allRegistriesFailed = registryErrorCount == totalRegistryCount && totalRegistryCount > 0;
 
       if (allRegistriesFailed) {
         var exMsg = lastException.getMessage();

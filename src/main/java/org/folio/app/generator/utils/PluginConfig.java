@@ -22,6 +22,14 @@ public class PluginConfig {
   private final String beCmdRegistryString;
   private final String uiCmdRegistryString;
 
+  private final List<ConfigModuleRegistry> fallbackRegistries;
+  private final List<ConfigModuleRegistry> beFallbackRegistries;
+  private final List<ConfigModuleRegistry> uiFallbackRegistries;
+
+  private final String cmdFallbackRegistryString;
+  private final String beCmdFallbackRegistryString;
+  private final String uiCmdFallbackRegistryString;
+
   private final boolean moduleUrlsOnly;
   private final boolean overrideConfigRegistries;
 

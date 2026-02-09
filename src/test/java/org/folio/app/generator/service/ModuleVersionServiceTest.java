@@ -585,6 +585,124 @@ class ModuleVersionServiceTest {
             .isEqualTo(ErrorCategory.MODULE_NOT_FOUND));
   }
 
+  @Test
+  void resolveModulesConstraints_positive_versionFoundInFallbackRegistry() {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var mainRegistry = okapiRegistry();
+    var fallbackRegistry = s3Registry();
+
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(mainRegistry));
+    when(moduleRegistries.getFallbackRegistries(ModuleType.BE)).thenReturn(List.of(fallbackRegistry));
+    when(resolverFacade.getAvailableVersions(mainRegistry, dependency, ModuleType.BE))
+        .thenReturn(Optional.empty());
+    when(resolverFacade.getAvailableVersions(fallbackRegistry, dependency, ModuleType.BE))
+        .thenReturn(Optional.of(List.of("1.5.0", "1.2.0")));
+
+    var result = service.resolveModulesConstraints(List.of(dependency), ModuleType.BE);
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getVersion()).isEqualTo("1.5.0");
+    verify(log).info("Trying fallback registries for 'mod-foo' constraint '^1.0.0'");
+    verify(log).info("Found 'mod-foo' in fallback registry: test-bucket/modules/");
+  }
+
+  @Test
+  void resolveModulesConstraints_positive_mainRegistrySucceedsFallbackNotUsed() {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var mainRegistry = okapiRegistry();
+    var fallbackRegistry = s3Registry();
+
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(mainRegistry));
+    when(moduleRegistries.getFallbackRegistries(ModuleType.BE)).thenReturn(List.of(fallbackRegistry));
+    when(resolverFacade.getAvailableVersions(mainRegistry, dependency, ModuleType.BE))
+        .thenReturn(Optional.of(List.of("1.3.0", "1.2.0")));
+
+    var result = service.resolveModulesConstraints(List.of(dependency), ModuleType.BE);
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getVersion()).isEqualTo("1.3.0");
+    verify(resolverFacade, never()).getAvailableVersions(eq(fallbackRegistry), any(), any());
+  }
+
+  @Test
+  void resolveModulesConstraints_negative_allMainAndFallbackRegistriesFail_infrastructure() {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var mainRegistry = okapiRegistry();
+    var fallbackRegistry = s3Registry();
+
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(mainRegistry));
+    when(moduleRegistries.getFallbackRegistries(ModuleType.BE)).thenReturn(List.of(fallbackRegistry));
+    when(resolverFacade.getAvailableVersions(mainRegistry, dependency, ModuleType.BE))
+        .thenThrow(new RuntimeException("Main registry connection failed"));
+    when(resolverFacade.getAvailableVersions(fallbackRegistry, dependency, ModuleType.BE))
+        .thenThrow(new RuntimeException("Fallback registry connection failed"));
+
+    var dependencies = List.of(dependency);
+    assertThatThrownBy(() -> service.resolveModulesConstraints(dependencies, ModuleType.BE))
+        .isInstanceOf(ApplicationGeneratorException.class)
+        .hasMessageContaining("Infrastructure error while resolving BE module 'mod-foo'")
+        .satisfies(e -> assertThat(((ApplicationGeneratorException) e).getCategory())
+            .isEqualTo(ErrorCategory.INFRASTRUCTURE));
+  }
+
+  @Test
+  void resolveModulesConstraints_negative_mainEmptyFallbackEmpty_moduleNotFound() {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var mainRegistry = okapiRegistry();
+    var fallbackRegistry = s3Registry();
+
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(mainRegistry));
+    when(moduleRegistries.getFallbackRegistries(ModuleType.BE)).thenReturn(List.of(fallbackRegistry));
+    when(resolverFacade.getAvailableVersions(mainRegistry, dependency, ModuleType.BE))
+        .thenReturn(Optional.empty());
+    when(resolverFacade.getAvailableVersions(fallbackRegistry, dependency, ModuleType.BE))
+        .thenReturn(Optional.empty());
+
+    var dependencies = List.of(dependency);
+    assertThatThrownBy(() -> service.resolveModulesConstraints(dependencies, ModuleType.BE))
+        .isInstanceOf(ApplicationGeneratorException.class)
+        .hasMessageContaining("No version matching constraint '^1.0.0' found for BE module 'mod-foo'")
+        .satisfies(e -> assertThat(((ApplicationGeneratorException) e).getCategory())
+            .isEqualTo(ErrorCategory.MODULE_NOT_FOUND));
+  }
+
+  @Test
+  void resolveModulesConstraints_positive_uiFallbackRegistry() {
+    var dependency = new Dependency("folio_users", "^1.0.0", PreReleaseFilter.FALSE);
+    var mainRegistry = okapiRegistry();
+    var fallbackRegistry = s3Registry();
+
+    when(moduleRegistries.getRegistries(ModuleType.UI)).thenReturn(List.of(mainRegistry));
+    when(moduleRegistries.getFallbackRegistries(ModuleType.UI)).thenReturn(List.of(fallbackRegistry));
+    when(resolverFacade.getAvailableVersions(mainRegistry, dependency, ModuleType.UI))
+        .thenReturn(Optional.empty());
+    when(resolverFacade.getAvailableVersions(fallbackRegistry, dependency, ModuleType.UI))
+        .thenReturn(Optional.of(List.of("1.5.0", "1.2.0")));
+
+    var result = service.resolveModulesConstraints(List.of(dependency), ModuleType.UI);
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getVersion()).isEqualTo("1.5.0");
+    verify(log).info("Trying fallback registries for 'folio_users' constraint '^1.0.0'");
+  }
+
+  @Test
+  void resolveModulesConstraints_negative_emptyMainAndFallbackRegistries_moduleNotFound() {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of());
+    when(moduleRegistries.getFallbackRegistries(ModuleType.BE)).thenReturn(List.of());
+
+    var dependencies = List.of(dependency);
+    assertThatThrownBy(() -> service.resolveModulesConstraints(dependencies, ModuleType.BE))
+        .isInstanceOf(ApplicationGeneratorException.class)
+        .hasMessageContaining("No version matching constraint '^1.0.0' found for BE module 'mod-foo'")
+        .satisfies(e -> assertThat(((ApplicationGeneratorException) e).getCategory())
+            .isEqualTo(ErrorCategory.MODULE_NOT_FOUND));
+
+    verify(log).warn("Module registries are empty for type: BE");
+  }
+
   private static OkapiModuleRegistry okapiRegistry() {
     return new OkapiModuleRegistry().url("http://localhost").withGeneratedFields();
   }
