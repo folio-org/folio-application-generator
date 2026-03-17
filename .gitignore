@@ -40,6 +40,7 @@ build/
 .mcp.json
 .cursor*
 claude*
+.codemie/
 
 ### OS ###
 .DS_Store
