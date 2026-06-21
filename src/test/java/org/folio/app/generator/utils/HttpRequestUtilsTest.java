@@ -204,9 +204,9 @@ class HttpRequestUtilsTest {
 
     HttpRequestUtils.applyHeaders(builder, headers);
 
-    var request = builder.GET().build();
-    assertThat(request.headers().firstValue("X-Okapi-Token")).contains("secret");
-    assertThat(request.headers().firstValue("X-App")).contains("folio");
+    var builtRequest = builder.GET().build();
+    assertThat(builtRequest.headers().firstValue("X-Okapi-Token")).contains("secret");
+    assertThat(builtRequest.headers().firstValue("X-App")).contains("folio");
   }
 
   @Test
