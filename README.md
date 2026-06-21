@@ -88,6 +88,59 @@ Or via command-line: `-DmoduleUrlsOnly=true`
 
 ```
 
+#### Custom registry headers
+
+Okapi and Simple module registries can carry custom HTTP headers (for example, a security header
+required by a registry). Headers are attached per registry and are sent with every
+request the plugin makes to that specific registry (module-descriptor loading and version
+resolution). They are not sent to any other registry, which keeps secret values scoped to the
+registry they belong to.
+
+> Headers apply to `okapi` and `simple` (HTTP) registries. S3 registries use the AWS SDK and ignore
+> this setting.
+
+Via plugin configuration — add a `<headers>` block to a registry. Each header is a `<header>` with a
+`<name>` and `<value>`; **both** support Maven property and `${env.*}` interpolation, so the header
+name *and* value can be injected from secrets at build time:
+
+```xml
+<moduleRegistries>
+  <registry>
+    <type>okapi</type>
+    <url>https://folio-registry.dev.folio.org</url>
+    <headers>
+      <header>
+        <name>${env.HEADER_KEY}</name>
+        <value>${env.HEADER_VALUE}</value>
+      </header>
+    </headers>
+  </registry>
+</moduleRegistries>
+```
+
+> **Missing or empty secret:** if a header's name or value resolves to blank or is left as an
+> unresolved `${...}` placeholder (e.g. the secret is not set), that single header is **skipped with a
+> warning** and the request proceeds without it — the build does not fail and no malformed header is
+> sent.
+
+Via command-line — append an optional `::headers=` segment to the registry string. Multiple headers
+are separated by `;`, and each header is a `Name:Value` pair (only the first `:` separates the name
+from the value, so values may themselves contain `:`)
+
+```shell
+# single header
+-Dregistries="okapi::https://folio-registry.dev.folio.org::headers=X-Okapi-Token:${EUREKA_HEADER_VALUE}"
+
+# multiple headers
+-Dregistries="okapi::https://folio-registry.dev.folio.org::headers=X-Okapi-Token:secret;X-App:folio"
+
+# combined with a public url template
+-Dregistries="okapi::https://folio-registry.dev.folio.org::https://public.sample/{id}::headers=X-Okapi-Token:secret"
+```
+
+> Because `,` separates registries on the command line, it cannot be used inside a header segment —
+> use `;` to separate multiple headers for one registry.
+
 #### JSON Template example
 
 ```json
@@ -580,7 +633,7 @@ mvn install -DbuildNumber="123" -DawsRegion=us-east-1
 |--------------------------------|-------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | awsRegion                      | us-east-1                                       | AWS Region for S3 client                                                                                                                                            |
 | buildNumber                    |                                                 | Build number from CI tool (will be added for any '-SNAPSHOT' version of generated application                                                                       |
-| registries                     |                                                 | Comma-separated list of custom module-descriptor registries in formats: `s3::{{bucket-name}}:{{path-to-folder}}`, `okapi::{{okapi-base}}`, `simple::{{okapi-base}}` |
+| registries                     |                                                 | Comma-separated list of custom module-descriptor registries in formats: `s3::{{bucket-name}}:{{path-to-folder}}`, `okapi::{{okapi-base}}`, `simple::{{okapi-base}}`. An optional `::headers=Key:Value;Key2:Value2` suffix adds custom HTTP headers sent with every request to that registry (see [Custom registry headers](#custom-registry-headers)) |
 | beRegistries                   |                                                 | Comma-separated list of custom back-end module-descriptor registries in the same format as `registries` parameter                                                   |
 | uiRegistries                   |                                                 | Comma-separated list of custom ui module-descriptor registries in the same format as `registries` parameter                                                         |
 | fallbackRegistries             |                                                 | Comma-separated list of fallback module-descriptor registries (same format as `registries`)                                                                         |
