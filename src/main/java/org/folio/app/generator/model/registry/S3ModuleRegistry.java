@@ -2,6 +2,8 @@ package org.folio.app.generator.model.registry;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Setter;
@@ -17,6 +19,7 @@ public class S3ModuleRegistry implements ModuleRegistry {
   private String path;
   private String bucket;
   private String publicUrl;
+  private Map<String, String> headers = new LinkedHashMap<>();
 
   /**
    * Sets path field and returns {@link S3ModuleRegistry}.
@@ -45,6 +48,16 @@ public class S3ModuleRegistry implements ModuleRegistry {
    */
   public S3ModuleRegistry publicUrl(String publicUrl) {
     this.publicUrl = publicUrl;
+    return this;
+  }
+
+  /**
+   * Sets headers field and returns {@link S3ModuleRegistry}.
+   *
+   * @return modified {@link S3ModuleRegistry} value
+   */
+  public S3ModuleRegistry headers(Map<String, String> headers) {
+    this.headers = headers;
     return this;
   }
 
