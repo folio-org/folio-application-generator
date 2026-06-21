@@ -4,9 +4,18 @@ import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
+import org.apache.maven.plugin.logging.Log;
+import org.folio.app.generator.model.registry.ConfigHeader;
 import org.folio.app.generator.model.registry.ConfigModuleRegistry;
 import org.folio.app.generator.model.registry.ModuleRegistries;
 import org.folio.app.generator.model.registry.ModuleRegistry;
@@ -26,6 +35,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class ModuleRegistryProviderTest {
 
   private ModuleRegistryProvider moduleRegistryProvider;
+  private final Log log = mock(Log.class);
 
   @BeforeEach
   void setUp() {
@@ -36,15 +46,81 @@ class ModuleRegistryProviderTest {
   @ParameterizedTest(name = "[{index}] {0}")
   void getModuleRegistries_positive_parameterized(@SuppressWarnings("unused") String name,
     PluginConfig config, ModuleRegistries expected) {
-    var result = moduleRegistryProvider.getModuleRegistries(config);
+    var result = moduleRegistryProvider.getModuleRegistries(config, log);
     assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void getModuleRegistries_positive_configHeadersFlowToRegistry() {
+    var configRegistry = okapiConfigRegistry();
+    configRegistry.setHeaders(List.of(configHeader("X-Okapi-Token", "secret"), configHeader("X-App", "folio")));
+    var config = PluginConfig.builder().registries(List.of(configRegistry)).build();
+
+    var result = moduleRegistryProvider.getModuleRegistries(config, log);
+
+    assertThat(result.beRegistries()).singleElement()
+      .satisfies(registry -> assertThat(registry.getHeaders())
+        .containsExactlyEntriesOf(orderedHeaders("X-Okapi-Token", "secret", "X-App", "folio")));
+    verify(log, never()).warn(any(CharSequence.class));
+  }
+
+  @Test
+  void getModuleRegistries_positive_nullConfigHeadersBecomeEmptyMap() {
+    var config = PluginConfig.builder().registries(List.of(okapiConfigRegistry())).build();
+
+    var result = moduleRegistryProvider.getModuleRegistries(config, log);
+
+    assertThat(result.beRegistries()).singleElement()
+      .satisfies(registry -> assertThat(registry.getHeaders()).isEmpty());
+  }
+
+  @Test
+  void getModuleRegistries_positive_dropsHeaderWithUnresolvedValue() {
+    var configRegistry = okapiConfigRegistry();
+    configRegistry.setHeaders(List.of(
+      configHeader("X-Okapi-Token", "${env.EUREKA_HEADER_VALUE}"),
+      configHeader("X-App", "folio")));
+    var config = PluginConfig.builder().registries(List.of(configRegistry)).build();
+
+    var result = moduleRegistryProvider.getModuleRegistries(config, log);
+
+    assertThat(result.beRegistries()).singleElement()
+      .satisfies(registry -> assertThat(registry.getHeaders())
+        .containsExactlyEntriesOf(Map.of("X-App", "folio")));
+    verify(log).warn(contains("Skipping header 'X-Okapi-Token'"));
+  }
+
+  @Test
+  void getModuleRegistries_positive_dropsHeaderWithBlankValue() {
+    var configRegistry = okapiConfigRegistry();
+    configRegistry.setHeaders(List.of(configHeader("X-Okapi-Token", "  ")));
+    var config = PluginConfig.builder().registries(List.of(configRegistry)).build();
+
+    var result = moduleRegistryProvider.getModuleRegistries(config, log);
+
+    assertThat(result.beRegistries()).singleElement()
+      .satisfies(registry -> assertThat(registry.getHeaders()).isEmpty());
+    verify(log).warn(contains("Skipping header 'X-Okapi-Token'"));
+  }
+
+  @Test
+  void getModuleRegistries_positive_dropsHeaderWithUnresolvedName() {
+    var configRegistry = okapiConfigRegistry();
+    configRegistry.setHeaders(List.of(configHeader("${env.EUREKA_HEADER_KEY}", "secret")));
+    var config = PluginConfig.builder().registries(List.of(configRegistry)).build();
+
+    var result = moduleRegistryProvider.getModuleRegistries(config, log);
+
+    assertThat(result.beRegistries()).singleElement()
+      .satisfies(registry -> assertThat(registry.getHeaders()).isEmpty());
+    verify(log).warn(contains("Skipping header"));
   }
 
   @Test
   void getModuleRegistries_negative_unsupportedType() {
     var config = PluginConfig.builder().registries(List.of(unknownModuleRegistry())).build();
 
-    assertThatThrownBy(() -> moduleRegistryProvider.getModuleRegistries(config))
+    assertThatThrownBy(() -> moduleRegistryProvider.getModuleRegistries(config, log))
       .isInstanceOf(IllegalArgumentException.class)
       .hasMessage("""
         Invalid registries found, check documentation at README.md and provided registry list:
@@ -55,7 +131,7 @@ class ModuleRegistryProviderTest {
   void getModuleRegistries_negative_invalidCommandLineRegistry() {
     var config = PluginConfig.builder().cmdRegistryString("unknown::test").build();
 
-    assertThatThrownBy(() -> moduleRegistryProvider.getModuleRegistries(config))
+    assertThatThrownBy(() -> moduleRegistryProvider.getModuleRegistries(config, log))
       .isInstanceOf(IllegalArgumentException.class)
       .hasMessage("""
         Invalid registries found, check documentation at README.md and provided registry list:
@@ -66,7 +142,7 @@ class ModuleRegistryProviderTest {
   void getModuleRegistries_negative_invalidUrl() {
     var config = PluginConfig.builder().registries(List.of(okapiConfigRegistry("unknown-url"))).build();
 
-    assertThatThrownBy(() -> moduleRegistryProvider.getModuleRegistries(config))
+    assertThatThrownBy(() -> moduleRegistryProvider.getModuleRegistries(config, log))
       .isInstanceOf(IllegalArgumentException.class)
       .hasMessage("""
         Invalid registries found, check documentation at README.md and provided registry list:
@@ -79,7 +155,7 @@ class ModuleRegistryProviderTest {
     registry.setType("s3");
     var config = PluginConfig.builder().registries(List.of(registry)).build();
 
-    assertThatThrownBy(() -> moduleRegistryProvider.getModuleRegistries(config))
+    assertThatThrownBy(() -> moduleRegistryProvider.getModuleRegistries(config, log))
       .isInstanceOf(IllegalArgumentException.class)
       .hasMessage("""
         Invalid registries found, check documentation at README.md and provided registry list:
@@ -292,6 +368,21 @@ class ModuleRegistryProviderTest {
     configModuleRegistry.setType("unknown");
     configModuleRegistry.setUrl("https://localhost:8000/registry");
     return configModuleRegistry;
+  }
+
+  private static ConfigHeader configHeader(String name, String value) {
+    var header = new ConfigHeader();
+    header.setName(name);
+    header.setValue(value);
+    return header;
+  }
+
+  private static Map<String, String> orderedHeaders(String... pairs) {
+    var headers = new LinkedHashMap<String, String>();
+    for (int i = 0; i < pairs.length; i += 2) {
+      headers.put(pairs[i], pairs[i + 1]);
+    }
+    return headers;
   }
 
   private static ModuleRegistry okapiRegistry() {
