@@ -1,5 +1,6 @@
 package org.folio.app.generator.model.registry;
 
+import java.util.Map;
 import org.folio.app.generator.model.types.RegistryType;
 
 public interface ModuleRegistry {
@@ -8,6 +9,13 @@ public interface ModuleRegistry {
    * Retrieves registry type.
    */
   RegistryType getType();
+
+  /**
+   * Retrieves custom HTTP headers to be sent with every request to this registry.
+   *
+   * @return map of header name to value, never {@code null} (empty when none configured)
+   */
+  Map<String, String> getHeaders();
 
   /**
    * Retrieves public URL template.
