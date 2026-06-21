@@ -1,5 +1,6 @@
 package org.folio.app.generator.model.registry;
 
+import java.util.List;
 import lombok.Data;
 import lombok.ToString;
 
@@ -31,4 +32,14 @@ public class ConfigModuleRegistry {
    * A name of the S3 bucket (used in S3 configuration).
    */
   private String bucket;
+
+  /**
+   * Custom HTTP headers sent with every request to this registry.
+   *
+   * <p>Each {@code <header>} has a {@code <name>} and {@code <value>}; both support Maven property
+   * and {@code ${env.*}} interpolation, so a secret header name and value can be injected at build
+   * time.</p>
+   */
+  @ToString.Exclude
+  private List<ConfigHeader> headers;
 }
