@@ -13,11 +13,17 @@ import static org.folio.app.generator.utils.PluginUtils.collectToBulletedList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import javax.inject.Inject;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.registry.ConfigModuleRegistry;
 import org.folio.app.generator.model.registry.ModuleRegistries;
 import org.folio.app.generator.model.registry.ModuleRegistry;
@@ -37,16 +43,44 @@ public class ModuleRegistryProvider {
    * Provides list of validated registries to load module descriptors.
    *
    * @param config -  initial plugin configuration as {@link PluginConfig} object
+   * @param log - Maven {@link Log} used to warn about skipped (unresolved/empty) headers
    * @return {@link List} with {@link ModuleRegistry} objects
    */
-  public ModuleRegistries getModuleRegistries(PluginConfig config) {
+  public ModuleRegistries getModuleRegistries(PluginConfig config, Log log) {
     var processor = new ModuleRegistryProcessor(config);
     handleInvalidRegistries(processor.getInvalidRegistries());
-    return new ModuleRegistries(
+    var registries = new ModuleRegistries(
       processor.getBeRegistries(),
       processor.getUiRegistries(),
       processor.getBeFallbackRegistries(),
       processor.getUiFallbackRegistries());
+
+    sanitizeHeaders(registries, log);
+    return registries;
+  }
+
+  private static void sanitizeHeaders(ModuleRegistries registries, Log log) {
+    Set<ModuleRegistry> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+    var all = merge(registries.beRegistries(), registries.uiRegistries(),
+      registries.beFallbackRegistries(), registries.uiFallbackRegistries());
+
+    for (var registry : all) {
+      if (visited.add(registry)) {
+        registry.getHeaders().entrySet().removeIf(entry -> {
+          if (isUnresolvedOrBlank(entry.getKey()) || isUnresolvedOrBlank(entry.getValue())) {
+            log.warn(String.format("Skipping header '%s' for registry '%s': name or value is empty or "
+              + "unresolved (a required secret/property may not be set)", entry.getKey(),
+              registry.getRegistryIdentifier()));
+            return true;
+          }
+          return false;
+        });
+      }
+    }
+  }
+
+  private static boolean isUnresolvedOrBlank(String value) {
+    return isBlank(value) || value.contains("${");
   }
 
   private ModuleRegistryProcessingResult processCommandLineRegistries(String registryString) {
@@ -101,24 +135,38 @@ public class ModuleRegistryProvider {
   }
 
   private static ModuleRegistry toModuleRegistry(ConfigModuleRegistry registry) {
+    var headers = headersOf(registry);
     if ("s3".equals(registry.getType())) {
       var path = defaultIfBlank(registry.getPath(), "");
       path = removeEnd(removeStart(path, PATH_DELIMITER), PATH_DELIMITER);
       return new S3ModuleRegistry()
         .path(StringUtils.isEmpty(path) ? path : path + PATH_DELIMITER)
         .bucket(trim(registry.getBucket()))
-        .publicUrl(trim(registry.getPublicUrlTemplate()));
+        .publicUrl(trim(registry.getPublicUrlTemplate()))
+        .headers(headers);
     }
 
     if ("simple".equals(registry.getType())) {
       return new SimpleModuleRegistry()
           .url(removeEnd(trim(registry.getUrl()), PATH_DELIMITER))
-          .publicUrl(trim(registry.getPublicUrlTemplate()));
+          .publicUrl(trim(registry.getPublicUrlTemplate()))
+          .headers(headers);
     }
 
     return new OkapiModuleRegistry()
       .url(removeEnd(trim(registry.getUrl()), PATH_DELIMITER))
-      .publicUrl(trim(registry.getPublicUrlTemplate()));
+      .publicUrl(trim(registry.getPublicUrlTemplate()))
+      .headers(headers);
+  }
+
+  private static Map<String, String> headersOf(ConfigModuleRegistry registry) {
+    var headers = new LinkedHashMap<String, String>();
+    if (registry.getHeaders() != null) {
+      for (var header : registry.getHeaders()) {
+        headers.put(header.getName(), header.getValue());
+      }
+    }
+    return headers;
   }
 
   @SafeVarargs
