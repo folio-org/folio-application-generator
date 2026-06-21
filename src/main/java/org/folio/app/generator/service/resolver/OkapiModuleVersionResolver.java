@@ -22,7 +22,7 @@ import org.folio.app.generator.model.types.ErrorCategory;
 import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.model.types.RegistryType;
 import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
-import org.folio.app.generator.utils.HttpRetryHelper;
+import org.folio.app.generator.utils.HttpRequestUtils;
 import org.folio.app.generator.utils.JsonConverter;
 import org.folio.app.generator.utils.PluginUtils;
 import org.springframework.context.annotation.Conditional;
@@ -42,7 +42,7 @@ public class OkapiModuleVersionResolver implements ModuleVersionResolver {
     var okapiRegistry = (OkapiModuleRegistry) registry;
     var url = okapiRegistry.getUrl();
     try {
-      return getVersions(url, module, type);
+      return getVersions(url, module, type, okapiRegistry.getHeaders());
     } catch (IOException e) {
       log.warn(String.format("Failed to fetch versions for module '%s' from %s", module.getName(), url), e);
       var errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
@@ -62,11 +62,12 @@ public class OkapiModuleVersionResolver implements ModuleVersionResolver {
     return RegistryType.OKAPI;
   }
 
-  private Optional<List<String>> getVersions(String url, Dependency module, ModuleType type) throws Exception {
-    var request = prepareHttpRequest(url, module, type);
+  private Optional<List<String>> getVersions(String url, Dependency module, ModuleType type,
+    Map<String, String> headers) throws Exception {
+    var request = prepareHttpRequest(url, module, type, headers);
     var moduleName = module.getName();
 
-    var response = HttpRetryHelper.sendWithRetry(httpClient, log, request);
+    var response = HttpRequestUtils.sendWithRetry(httpClient, log, request);
     var responseStatus = response.statusCode();
 
     if (responseStatus != 200) {
@@ -96,14 +97,18 @@ public class OkapiModuleVersionResolver implements ModuleVersionResolver {
     return Optional.of(versions);
   }
 
-  private static HttpRequest prepareHttpRequest(String url, Dependency module, ModuleType type) {
-    var baseUrl = HttpRetryHelper.cleanUrl(url);
-    return HttpRequest.newBuilder()
+  private static HttpRequest prepareHttpRequest(String url, Dependency module, ModuleType type,
+    Map<String, String> headers) {
+    var baseUrl = HttpRequestUtils.cleanUrl(url);
+    var builder = HttpRequest.newBuilder()
       .GET()
       .uri(URI.create(prepareUriString(baseUrl, module, type)))
       .timeout(Duration.ofMinutes(5))
-      .version(Version.HTTP_1_1)
-      .build();
+      .version(Version.HTTP_1_1);
+
+    HttpRequestUtils.applyHeaders(builder, headers);
+
+    return builder.build();
   }
 
   private static String prepareUriString(String baseUrl, Dependency module, ModuleType type) {
