@@ -8,12 +8,13 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
+import java.util.Map;
 import java.util.Set;
 import lombok.experimental.UtilityClass;
 import org.apache.maven.plugin.logging.Log;
 
 @UtilityClass
-public class HttpRetryHelper {
+public class HttpRequestUtils {
 
   public static final Set<Integer> RETRYABLE_STATUS_CODES = Set.of(429, 500, 502, 503, 504);
   public static final int RETRYABLE_ATTEMPTS_NUMBER = 5;
@@ -50,5 +51,19 @@ public class HttpRetryHelper {
 
   public static String cleanUrl(String url) {
     return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
+  }
+
+  /**
+   * Adds the provided custom headers to the given request builder.
+   *
+   * @param builder - {@link HttpRequest.Builder} to enrich with headers
+   * @param headers - map of header name to value, may be {@code null} or empty
+   */
+  public static void applyHeaders(HttpRequest.Builder builder, Map<String, String> headers) {
+    if (headers == null || headers.isEmpty()) {
+      return;
+    }
+
+    headers.forEach(builder::header);
   }
 }

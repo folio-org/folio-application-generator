@@ -152,7 +152,7 @@ public abstract class AbstractGeneratorMojo extends AbstractMojo {
       .cmdUiPreReleaseArtifactRegistries(cmdUiPreReleaseArtifactRegistries)
       .build();
 
-    var registries = moduleRegistryProvider.getModuleRegistries(pluginConfig);
+    var registries = moduleRegistryProvider.getModuleRegistries(pluginConfig, getLog());
 
     return applicationContextBuilder
       .withLog(getLog())
