@@ -16,6 +16,7 @@ import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.registry.ModuleRegistry;
 import org.folio.app.generator.model.registry.SimpleModuleRegistry;
 import org.folio.app.generator.model.types.RegistryType;
+import org.folio.app.generator.utils.HttpRequestUtils;
 import org.folio.app.generator.utils.JsonConverter;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -32,7 +33,7 @@ public class SimpleModuleDescriptorLoader extends HttpModuleDescriptorLoader {
   public Optional<LoaderResultContainer> findModuleDescriptor(ModuleRegistry registry,
     ModuleDefinition module) {
     var simpleRegistry = (SimpleModuleRegistry) registry;
-    var request = prepareHttpRequest(simpleRegistry.getUrl(), module);
+    var request = prepareHttpRequest(simpleRegistry.getUrl(), module, simpleRegistry.getHeaders());
 
     try {
       return loadModuleDescriptor(request, module).map(
@@ -81,13 +82,16 @@ public class SimpleModuleDescriptorLoader extends HttpModuleDescriptorLoader {
     return new URL(cleanBaseUrl + "/" + moduleId);
   }
 
-  private static HttpRequest prepareHttpRequest(String url, ModuleDefinition module) {
-    return HttpRequest.newBuilder()
+  private static HttpRequest prepareHttpRequest(String url, ModuleDefinition module, Map<String, String> headers) {
+    var builder = HttpRequest.newBuilder()
       .GET()
       .uri(URI.create(prepareUriString(url, module)))
       .timeout(Duration.ofMinutes(5))
-      .version(Version.HTTP_1_1)
-      .build();
+      .version(Version.HTTP_1_1);
+
+    HttpRequestUtils.applyHeaders(builder, headers);
+
+    return builder.build();
   }
 
   private static String prepareUriString(String url, ModuleDefinition module) {
