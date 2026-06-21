@@ -7,7 +7,7 @@ import java.net.http.HttpResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.maven.plugin.logging.Log;
-import org.folio.app.generator.utils.HttpRetryHelper;
+import org.folio.app.generator.utils.HttpRequestUtils;
 import org.folio.app.generator.utils.JsonConverter;
 import org.springframework.stereotype.Component;
 
@@ -21,10 +21,10 @@ public abstract class HttpModuleDescriptorLoader implements ModuleDescriptorLoad
 
   @SneakyThrows
   protected HttpResponse<InputStream> retryLoad(HttpRequest request) {
-    return HttpRetryHelper.sendWithRetry(httpClient, log, request);
+    return HttpRequestUtils.sendWithRetry(httpClient, log, request);
   }
 
   protected static String cleanUrl(String url) {
-    return HttpRetryHelper.cleanUrl(url);
+    return HttpRequestUtils.cleanUrl(url);
   }
 }
