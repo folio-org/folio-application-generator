@@ -17,6 +17,7 @@ import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.registry.ModuleRegistry;
 import org.folio.app.generator.model.registry.OkapiModuleRegistry;
 import org.folio.app.generator.model.types.RegistryType;
+import org.folio.app.generator.utils.HttpRequestUtils;
 import org.folio.app.generator.utils.JsonConverter;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -35,7 +36,7 @@ public class OkapiModuleDescriptorLoader extends HttpModuleDescriptorLoader {
     var okapiRegistry = (OkapiModuleRegistry) registry;
     var url = okapiRegistry.getUrl();
     try {
-      return loadModuleDescriptor(url, module).map(
+      return loadModuleDescriptor(url, module, okapiRegistry.getHeaders()).map(
         md -> new LoaderResultContainer()
           .sourceUrl(createDirectUrl(url, String.valueOf(md.get("id"))))
           .moduleDescriptor(md));
@@ -50,8 +51,9 @@ public class OkapiModuleDescriptorLoader extends HttpModuleDescriptorLoader {
     return RegistryType.OKAPI;
   }
 
-  private Optional<Map<String, Object>> loadModuleDescriptor(String url, ModuleDefinition module) {
-    var request = prepareHttpRequest(url, module);
+  private Optional<Map<String, Object>> loadModuleDescriptor(String url, ModuleDefinition module,
+    Map<String, String> headers) {
+    var request = prepareHttpRequest(url, module, headers);
     var moduleId = module.getId();
 
     var response = retryLoad(request);
@@ -79,14 +81,17 @@ public class OkapiModuleDescriptorLoader extends HttpModuleDescriptorLoader {
     return new URL(cleanBaseUrl + "/_/proxy/modules/" + moduleId);
   }
 
-  private static HttpRequest prepareHttpRequest(String url, ModuleDefinition module) {
+  private static HttpRequest prepareHttpRequest(String url, ModuleDefinition module, Map<String, String> headers) {
     var baseUrl = cleanUrl(url);
-    return HttpRequest.newBuilder()
+    var builder = HttpRequest.newBuilder()
       .GET()
       .uri(URI.create(prepareUriString(baseUrl, module)))
       .timeout(Duration.ofMinutes(5))
-      .version(Version.HTTP_1_1)
-      .build();
+      .version(Version.HTTP_1_1);
+
+    HttpRequestUtils.applyHeaders(builder, headers);
+
+    return builder.build();
   }
 
   private static String prepareUriString(String baseUrl, ModuleDefinition module) {
