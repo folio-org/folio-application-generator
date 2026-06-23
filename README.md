@@ -141,6 +141,27 @@ from the value, so values may themselves contain `:`)
 > Because `,` separates registries on the command line, it cannot be used inside a header segment —
 > use `;` to separate multiple headers for one registry.
 
+##### Applying headers to pom-defined registries without changing them: `registryHeaders`
+
+When registries are defined in the pom and you only want to attach a header (e.g. a CI secret)
+without restating the registry list or editing each pom, use the `registryHeaders` parameter. It
+merges headers into the registries that are already configured (pom or command line):
+
+```shell
+# applies to ALL module registries
+-DregistryHeaders="X-Okapi-Token:secret"
+
+# only registries of a given type (okapi | simple | s3) via an optional "type::" prefix
+-DregistryHeaders="okapi::X-Okapi-Token:secret"
+
+# mix: X-App on all registries, X-Okapi-Token only on okapi ones (groups separated by ',')
+-DregistryHeaders="X-App:folio,okapi::X-Okapi-Token:secret"
+```
+
+Header syntax is the same `Name:Value;Name2:Value2` as above (split on the first `:`). A header
+already set on a registry (via its pom `<headers>` or `::headers=`) is **not** overridden by
+`registryHeaders` (per-registry config wins).
+
 #### JSON Template example
 
 ```json
