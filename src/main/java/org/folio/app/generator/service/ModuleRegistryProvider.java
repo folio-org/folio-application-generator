@@ -19,6 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import javax.inject.Inject;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ import org.folio.app.generator.model.registry.S3ModuleRegistry;
 import org.folio.app.generator.model.registry.SimpleModuleRegistry;
 import org.folio.app.generator.service.parsers.StringModuleRegistryParser;
 import org.folio.app.generator.utils.PluginConfig;
+import org.folio.app.generator.utils.RegistryHeaderParser;
 
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
 public class ModuleRegistryProvider {
@@ -55,26 +57,42 @@ public class ModuleRegistryProvider {
       processor.getBeFallbackRegistries(),
       processor.getUiFallbackRegistries());
 
+    applyRegistryHeaders(registries, config.getRegistryHeaders());
     sanitizeHeaders(registries, log);
     return registries;
   }
 
+  private static void applyRegistryHeaders(ModuleRegistries registries, String registryHeaders) {
+    var scoped = RegistryHeaderParser.parseScoped(registryHeaders);
+    if (scoped.isEmpty()) {
+      return;
+    }
+
+    forEachUniqueRegistry(registries, registry ->
+      scoped.forType(registry.getType()).forEach(registry.getHeaders()::putIfAbsent));
+  }
+
   private static void sanitizeHeaders(ModuleRegistries registries, Log log) {
+    forEachUniqueRegistry(registries, registry ->
+      registry.getHeaders().entrySet().removeIf(entry -> {
+        if (isUnresolvedOrBlank(entry.getKey()) || isUnresolvedOrBlank(entry.getValue())) {
+          log.warn(String.format("Skipping header '%s' for registry '%s': name or value is empty or "
+            + "unresolved (a required secret/property may not be set)", entry.getKey(),
+            registry.getRegistryIdentifier()));
+          return true;
+        }
+        return false;
+      }));
+  }
+
+  private static void forEachUniqueRegistry(ModuleRegistries registries, Consumer<ModuleRegistry> action) {
     Set<ModuleRegistry> visited = Collections.newSetFromMap(new IdentityHashMap<>());
     var all = merge(registries.beRegistries(), registries.uiRegistries(),
       registries.beFallbackRegistries(), registries.uiFallbackRegistries());
 
     for (var registry : all) {
       if (visited.add(registry)) {
-        registry.getHeaders().entrySet().removeIf(entry -> {
-          if (isUnresolvedOrBlank(entry.getKey()) || isUnresolvedOrBlank(entry.getValue())) {
-            log.warn(String.format("Skipping header '%s' for registry '%s': name or value is empty or "
-              + "unresolved (a required secret/property may not be set)", entry.getKey(),
-              registry.getRegistryIdentifier()));
-            return true;
-          }
-          return false;
-        });
+        action.accept(registry);
       }
     }
   }
