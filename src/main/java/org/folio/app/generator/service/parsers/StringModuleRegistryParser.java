@@ -20,12 +20,11 @@ import org.folio.app.generator.model.registry.ModuleRegistry;
 import org.folio.app.generator.model.registry.OkapiModuleRegistry;
 import org.folio.app.generator.model.registry.S3ModuleRegistry;
 import org.folio.app.generator.model.registry.SimpleModuleRegistry;
+import org.folio.app.generator.utils.RegistryHeaderParser;
 
 public class StringModuleRegistryParser {
 
   private static final String HEADERS_MARKER = "::headers=";
-  private static final String HEADER_PAIR_DELIMITER = ";";
-  private static final String HEADER_KEY_VALUE_DELIMITER = ":";
 
   private final Pattern okapiPattern1 = Pattern.compile("(okapi)::(.{1,1024})::(.{1,1024})");
   private final Pattern okapiPattern2 = Pattern.compile("(okapi)::(.{1,1024})");
@@ -58,7 +57,7 @@ public class StringModuleRegistryParser {
     var headers = new LinkedHashMap<String, String>();
     var headersMarkerIndex = value.indexOf(HEADERS_MARKER);
     if (headersMarkerIndex >= 0) {
-      headers.putAll(parseHeaders(value.substring(headersMarkerIndex + HEADERS_MARKER.length())));
+      headers.putAll(RegistryHeaderParser.parseHeaders(value.substring(headersMarkerIndex + HEADERS_MARKER.length())));
       value = value.substring(0, headersMarkerIndex);
     }
 
@@ -72,26 +71,6 @@ public class StringModuleRegistryParser {
     }
 
     return Optional.empty();
-  }
-
-  private static Map<String, String> parseHeaders(String headersString) {
-    var headers = new LinkedHashMap<String, String>();
-    if (StringUtils.isBlank(headersString)) {
-      return headers;
-    }
-
-    for (var pair : headersString.split(HEADER_PAIR_DELIMITER)) {
-      var delimiterIndex = pair.indexOf(HEADER_KEY_VALUE_DELIMITER);
-      if (delimiterIndex > 0) {
-        var key = trim(pair.substring(0, delimiterIndex));
-        var headerValue = trim(pair.substring(delimiterIndex + 1));
-        if (StringUtils.isNotEmpty(key)) {
-          headers.put(key, headerValue);
-        }
-      }
-    }
-
-    return headers;
   }
 
   private static String[] convertToStringPartsArray(Matcher matcher) {
