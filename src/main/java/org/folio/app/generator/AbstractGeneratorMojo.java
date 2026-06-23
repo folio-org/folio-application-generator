@@ -76,6 +76,9 @@ public abstract class AbstractGeneratorMojo extends AbstractMojo {
   @Parameter(name = "moduleUrlsOnly", property = "moduleUrlsOnly", defaultValue = "false")
   protected String moduleUrlsOnly;
 
+  @Parameter(defaultValue = "${registryHeaders}")
+  protected String registryHeaders;
+
   @Parameter(defaultValue = "${awsRegion}")
   protected String awsRegion;
 
@@ -138,6 +141,7 @@ public abstract class AbstractGeneratorMojo extends AbstractMojo {
       .uiCmdFallbackRegistryString(cmdUiFallbackRegistriesString)
       .overrideConfigRegistries(parseBoolean(overrideConfigRegistries))
       .moduleUrlsOnly(parseBoolean(moduleUrlsOnly))
+      .registryHeaders(registryHeaders)
       .awsRegion(isNotBlank(awsRegion) ? Region.of(awsRegion) : Region.US_EAST_1)
       .validateArtifacts(parseBoolean(validateArtifacts))
       .artifactRegistries(artifactRegistries)
