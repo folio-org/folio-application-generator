@@ -33,6 +33,8 @@ public class PluginConfig {
   private final boolean moduleUrlsOnly;
   private final boolean overrideConfigRegistries;
 
+  private final String registryHeaders;
+
   private final Region awsRegion;
   private final URI awsEndpointOverride;
 
