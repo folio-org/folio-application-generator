@@ -117,6 +117,63 @@ class ModuleRegistryProviderTest {
   }
 
   @Test
+  void getModuleRegistries_positive_registryHeadersParamMergedIntoRegistries() {
+    var config = PluginConfig.builder()
+      .registries(List.of(okapiConfigRegistry()))
+      .registryHeaders("X-Okapi-Token:secret")
+      .build();
+
+    var result = moduleRegistryProvider.getModuleRegistries(config, log);
+
+    assertThat(result.beRegistries()).singleElement()
+      .satisfies(registry -> assertThat(registry.getHeaders())
+        .containsExactlyEntriesOf(Map.of("X-Okapi-Token", "secret")));
+  }
+
+  @Test
+  void getModuleRegistries_positive_registryHeadersParamTypeScopedSkipsOtherTypes() {
+    var config = PluginConfig.builder()
+      .registries(List.of(okapiConfigRegistry()))
+      .registryHeaders("simple::X-Sim:v")
+      .build();
+
+    var result = moduleRegistryProvider.getModuleRegistries(config, log);
+
+    assertThat(result.beRegistries()).singleElement()
+      .satisfies(registry -> assertThat(registry.getHeaders()).isEmpty());
+  }
+
+  @Test
+  void getModuleRegistries_positive_perRegistryHeaderWinsOverParam() {
+    var configRegistry = okapiConfigRegistry();
+    configRegistry.setHeaders(List.of(configHeader("X-Token", "pom")));
+    var config = PluginConfig.builder()
+      .registries(List.of(configRegistry))
+      .registryHeaders("X-Token:param;X-Extra:e")
+      .build();
+
+    var result = moduleRegistryProvider.getModuleRegistries(config, log);
+
+    assertThat(result.beRegistries()).singleElement()
+      .satisfies(registry -> assertThat(registry.getHeaders())
+        .containsExactlyInAnyOrderEntriesOf(orderedHeaders("X-Token", "pom", "X-Extra", "e")));
+  }
+
+  @Test
+  void getModuleRegistries_positive_registryHeadersParamUnresolvedDropped() {
+    var config = PluginConfig.builder()
+      .registries(List.of(okapiConfigRegistry()))
+      .registryHeaders("X-Token:${env.MISSING}")
+      .build();
+
+    var result = moduleRegistryProvider.getModuleRegistries(config, log);
+
+    assertThat(result.beRegistries()).singleElement()
+      .satisfies(registry -> assertThat(registry.getHeaders()).isEmpty());
+    verify(log).warn(contains("Skipping header 'X-Token'"));
+  }
+
+  @Test
   void getModuleRegistries_negative_unsupportedType() {
     var config = PluginConfig.builder().registries(List.of(unknownModuleRegistry())).build();
 
