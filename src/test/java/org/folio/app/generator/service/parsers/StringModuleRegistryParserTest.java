@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.folio.app.generator.model.registry.ModuleRegistry;
@@ -84,8 +85,35 @@ class StringModuleRegistryParserTest {
       arguments("s3::foo-bucket::/foo/bar/", s3ModuleRegistry("foo-bucket", "foo/bar/")),
 
       arguments("s3::test-bucket::/foo/bar/::https://s3-alias.sample/${id}",
-        s3ModuleRegistry("test-bucket", "foo/bar/", "https://s3-alias.sample/${id}"))
+        s3ModuleRegistry("test-bucket", "foo/bar/", "https://s3-alias.sample/${id}")),
+
+      arguments("okapi::http://localhost:3000::headers=X-Okapi-Token:secret",
+        withHeaders(okapiModuleRegistry("http://localhost:3000"), Map.of("X-Okapi-Token", "secret"))),
+      arguments("okapi::http://localhost:3000::headers=X-Okapi-Token:secret;X-App:folio",
+        withHeaders(okapiModuleRegistry("http://localhost:3000"),
+          Map.of("X-Okapi-Token", "secret", "X-App", "folio"))),
+      arguments("okapi::http://localhost:3000::headers=  X-Okapi-Token : secret  ",
+        withHeaders(okapiModuleRegistry("http://localhost:3000"), Map.of("X-Okapi-Token", "secret"))),
+      arguments("okapi::http://localhost:3000::https://test-okapi.sample/${id}::headers=X-Okapi-Token:secret",
+        withHeaders(okapiModuleRegistry("http://localhost:3000", "https://test-okapi.sample/${id}"),
+          Map.of("X-Okapi-Token", "secret"))),
+      arguments("simple::http://localhost:3000::headers=Authorization:Bearer secret-token",
+        withHeaders(simpleModuleRegistry("http://localhost:3000"),
+          Map.of("Authorization", "Bearer secret-token"))),
+      arguments("simple::http://localhost:3000::headers=Authorization:Bearer:multi:colon",
+        withHeaders(simpleModuleRegistry("http://localhost:3000"),
+          Map.of("Authorization", "Bearer:multi:colon"))),
+
+      arguments("okapi::http://localhost:3000::headers=", okapiModuleRegistry("http://localhost:3000")),
+      arguments("okapi::http://localhost:3000::headers=NoColonHeader", okapiModuleRegistry("http://localhost:3000")),
+      arguments("okapi::http://localhost:3000::headers=   :secret", okapiModuleRegistry("http://localhost:3000"))
     );
+  }
+
+  private static ModuleRegistry withHeaders(Object registry, Map<String, String> headers) {
+    var moduleRegistry = (ModuleRegistry) registry;
+    moduleRegistry.getHeaders().putAll(headers);
+    return moduleRegistry;
   }
 
   private static Object okapiModuleRegistry(String url) {

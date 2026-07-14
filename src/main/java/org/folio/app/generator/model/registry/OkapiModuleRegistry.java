@@ -4,6 +4,8 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Setter;
@@ -17,6 +19,7 @@ public class OkapiModuleRegistry implements ModuleRegistry {
 
   private String url;
   private String publicUrl;
+  private Map<String, String> headers = new LinkedHashMap<>();
 
   /**
    * Sets url field and returns {@link OkapiModuleRegistry}.
@@ -25,6 +28,16 @@ public class OkapiModuleRegistry implements ModuleRegistry {
    */
   public OkapiModuleRegistry url(String url) {
     this.url = url;
+    return this;
+  }
+
+  /**
+   * Sets headers field and returns {@link OkapiModuleRegistry}.
+   *
+   * @return modified {@link OkapiModuleRegistry} value
+   */
+  public OkapiModuleRegistry headers(Map<String, String> headers) {
+    this.headers = headers;
     return this;
   }
 

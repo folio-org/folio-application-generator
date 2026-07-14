@@ -11,10 +11,13 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.support.UnitTest;
 import org.junit.jupiter.api.Test;
@@ -24,7 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @UnitTest
 @ExtendWith(MockitoExtension.class)
-class HttpRetryHelperTest {
+class HttpRequestUtilsTest {
 
   @Mock
   private HttpClient httpClient;
@@ -40,7 +43,7 @@ class HttpRetryHelperTest {
     when(httpClient.send(any(), any())).thenReturn(response);
     when(response.statusCode()).thenReturn(200);
 
-    var result = HttpRetryHelper.sendWithRetry(httpClient, log, request);
+    var result = HttpRequestUtils.sendWithRetry(httpClient, log, request);
 
     assertThat(result).isSameAs(response);
     verify(httpClient, times(1)).send(any(), any());
@@ -53,7 +56,7 @@ class HttpRetryHelperTest {
       .thenReturn(504)
       .thenReturn(200);
 
-    var result = HttpRetryHelper.sendWithRetry(httpClient, log, request);
+    var result = HttpRequestUtils.sendWithRetry(httpClient, log, request);
 
     assertThat(result).isSameAs(response);
     verify(httpClient, times(2)).send(any(), any());
@@ -67,7 +70,7 @@ class HttpRetryHelperTest {
       .thenReturn(response);
     when(response.statusCode()).thenReturn(200);
 
-    var result = HttpRetryHelper.sendWithRetry(httpClient, log, request);
+    var result = HttpRequestUtils.sendWithRetry(httpClient, log, request);
 
     assertThat(result).isSameAs(response);
     verify(httpClient, times(2)).send(any(), any());
@@ -81,7 +84,7 @@ class HttpRetryHelperTest {
       .thenReturn(response);
     when(response.statusCode()).thenReturn(200);
 
-    var result = HttpRetryHelper.sendWithRetry(httpClient, log, request);
+    var result = HttpRequestUtils.sendWithRetry(httpClient, log, request);
 
     assertThat(result).isSameAs(response);
     verify(httpClient, times(2)).send(any(), any());
@@ -95,7 +98,7 @@ class HttpRetryHelperTest {
       .thenReturn(response);
     when(response.statusCode()).thenReturn(200);
 
-    var result = HttpRetryHelper.sendWithRetry(httpClient, log, request);
+    var result = HttpRequestUtils.sendWithRetry(httpClient, log, request);
 
     assertThat(result).isSameAs(response);
     verify(httpClient, times(2)).send(any(), any());
@@ -111,7 +114,7 @@ class HttpRetryHelperTest {
       .thenReturn(response);
     when(response.statusCode()).thenReturn(200);
 
-    var result = HttpRetryHelper.sendWithRetry(httpClient, log, request);
+    var result = HttpRequestUtils.sendWithRetry(httpClient, log, request);
 
     assertThat(result).isSameAs(response);
     verify(log).warn("Network error, retrying (attempt 1): SocketException");
@@ -122,7 +125,7 @@ class HttpRetryHelperTest {
     var exception = new SocketException("Connection refused");
     when(httpClient.send(any(), any())).thenThrow(exception);
 
-    assertThatThrownBy(() -> HttpRetryHelper.sendWithRetry(httpClient, log, request))
+    assertThatThrownBy(() -> HttpRequestUtils.sendWithRetry(httpClient, log, request))
       .isInstanceOf(SocketException.class)
       .hasMessage("Connection refused");
 
@@ -142,7 +145,7 @@ class HttpRetryHelperTest {
       .thenReturn(504).thenReturn(504)
       .thenReturn(504).thenReturn(200);
 
-    var result = HttpRetryHelper.sendWithRetry(httpClient, log, request);
+    var result = HttpRequestUtils.sendWithRetry(httpClient, log, request);
 
     assertThat(result).isSameAs(response);
     verify(httpClient, times(6)).send(any(), any());
@@ -158,7 +161,7 @@ class HttpRetryHelperTest {
       .thenReturn(504)
       .thenReturn(200);
 
-    var result = HttpRetryHelper.sendWithRetry(httpClient, log, request);
+    var result = HttpRequestUtils.sendWithRetry(httpClient, log, request);
 
     assertThat(result).isSameAs(response);
     verify(httpClient, times(5)).send(any(), any());
@@ -166,29 +169,61 @@ class HttpRetryHelperTest {
 
   @Test
   void cleanUrl_removesTrailingSlash() {
-    var result = HttpRetryHelper.cleanUrl("http://example.com/");
+    var result = HttpRequestUtils.cleanUrl("http://example.com/");
 
     assertThat(result).isEqualTo("http://example.com");
   }
 
   @Test
   void cleanUrl_noChangeWithoutTrailingSlash() {
-    var result = HttpRetryHelper.cleanUrl("http://example.com");
+    var result = HttpRequestUtils.cleanUrl("http://example.com");
 
     assertThat(result).isEqualTo("http://example.com");
   }
 
   @Test
   void cleanUrl_handlesMultiplePathSegments() {
-    var result = HttpRetryHelper.cleanUrl("http://example.com/api/v1/");
+    var result = HttpRequestUtils.cleanUrl("http://example.com/api/v1/");
 
     assertThat(result).isEqualTo("http://example.com/api/v1");
   }
 
   @Test
   void constants_haveExpectedValues() {
-    assertThat(HttpRetryHelper.RETRYABLE_STATUS_CODES).containsExactlyInAnyOrder(429, 500, 502, 503, 504);
-    assertThat(HttpRetryHelper.RETRYABLE_ATTEMPTS_NUMBER).isEqualTo(5);
-    assertThat(HttpRetryHelper.RETRY_DELAY_MS).isEqualTo(1000);
+    assertThat(HttpRequestUtils.RETRYABLE_STATUS_CODES).containsExactlyInAnyOrder(429, 500, 502, 503, 504);
+    assertThat(HttpRequestUtils.RETRYABLE_ATTEMPTS_NUMBER).isEqualTo(5);
+    assertThat(HttpRequestUtils.RETRY_DELAY_MS).isEqualTo(1000);
+  }
+
+  @Test
+  void applyHeaders_positive_addsAllHeaders() {
+    var builder = HttpRequest.newBuilder().uri(URI.create("http://example.com"));
+    var headers = new LinkedHashMap<String, String>();
+    headers.put("X-Okapi-Token", "secret");
+    headers.put("X-App", "folio");
+
+    HttpRequestUtils.applyHeaders(builder, headers);
+
+    var builtRequest = builder.GET().build();
+    assertThat(builtRequest.headers().firstValue("X-Okapi-Token")).contains("secret");
+    assertThat(builtRequest.headers().firstValue("X-App")).contains("folio");
+  }
+
+  @Test
+  void applyHeaders_positive_nullHeadersAddsNothing() {
+    var builder = HttpRequest.newBuilder().uri(URI.create("http://example.com"));
+
+    HttpRequestUtils.applyHeaders(builder, null);
+
+    assertThat(builder.GET().build().headers().map()).isEmpty();
+  }
+
+  @Test
+  void applyHeaders_positive_emptyHeadersAddsNothing() {
+    var builder = HttpRequest.newBuilder().uri(URI.create("http://example.com"));
+
+    HttpRequestUtils.applyHeaders(builder, Map.of());
+
+    assertThat(builder.GET().build().headers().map()).isEmpty();
   }
 }

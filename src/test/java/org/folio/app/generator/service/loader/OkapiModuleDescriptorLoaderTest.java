@@ -31,6 +31,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -222,6 +223,38 @@ class OkapiModuleDescriptorLoaderTest {
     verify(log).debug("Retrying request due to status code 504 (attempt 4)");
     verify(log).debug("Retrying request due to status code 504 (attempt 5)");
     verify(log).warn("Failed to load module descriptor 'mod-foo-1.0.0' from http://localhost: 404");
+  }
+
+  @Test
+  void findModuleDescriptor_positive_appliesRegistryHeaders() throws IOException, InterruptedException {
+    ReflectionTestUtils.setField(loader, "httpClient", httpClient);
+    var requestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+    when(httpClient.send(requestCaptor.capture(), any())).thenReturn(httpResponse);
+    when(httpResponse.statusCode()).thenReturn(200);
+    mockPayloadResponse(List.of(fooModuleDescriptor("1.0.0")));
+
+    var registry = okapiRegistry("");
+    registry.setHeaders(Map.of("X-Okapi-Token", "secret"));
+
+    var result = loader.findModuleDescriptor(registry, fooModule("1.0.0"));
+
+    assertTrue(result.isPresent());
+    assertThat(requestCaptor.getValue().headers().firstValue("X-Okapi-Token")).contains("secret");
+    verify(log).info("Module descriptor 'mod-foo-1.0.0' loaded from http://localhost");
+  }
+
+  @Test
+  void findModuleDescriptor_positive_noHeadersWhenNotConfigured() throws IOException, InterruptedException {
+    ReflectionTestUtils.setField(loader, "httpClient", httpClient);
+    var requestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+    when(httpClient.send(requestCaptor.capture(), any())).thenReturn(httpResponse);
+    when(httpResponse.statusCode()).thenReturn(200);
+    mockPayloadResponse(List.of(fooModuleDescriptor("1.0.0")));
+
+    loader.findModuleDescriptor(okapiRegistry(""), fooModule("1.0.0"));
+
+    assertThat(requestCaptor.getValue().headers().firstValue("X-Okapi-Token")).isEmpty();
+    verify(log).info("Module descriptor 'mod-foo-1.0.0' loaded from http://localhost");
   }
 
   public static Stream<Arguments> statusPathRetryFailSource() {

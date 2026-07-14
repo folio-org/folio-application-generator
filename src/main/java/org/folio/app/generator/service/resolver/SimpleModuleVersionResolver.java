@@ -20,6 +20,7 @@ import org.folio.app.generator.model.registry.ModuleRegistry;
 import org.folio.app.generator.model.registry.SimpleModuleRegistry;
 import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.model.types.RegistryType;
+import org.folio.app.generator.utils.HttpRequestUtils;
 import org.folio.app.generator.utils.JsonConverter;
 import org.folio.app.generator.utils.PluginUtils;
 import org.folio.app.generator.utils.SemverUtils;
@@ -42,13 +43,15 @@ public class SimpleModuleVersionResolver implements ModuleVersionResolver {
     var preRelease = dependency.getPreRelease();
 
     try {
-      var request = HttpRequest.newBuilder()
+      var requestBuilder = HttpRequest.newBuilder()
         .GET()
         .uri(URI.create(cleanUrl(simpleRegistry.getUrl())))
         .timeout(Duration.ofMinutes(5))
-        .version(Version.HTTP_1_1)
-        .build();
+        .version(Version.HTTP_1_1);
 
+      HttpRequestUtils.applyHeaders(requestBuilder, simpleRegistry.getHeaders());
+
+      var request = requestBuilder.build();
       var response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
 
       if (response.statusCode() != 200) {
