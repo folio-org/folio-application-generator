@@ -22,20 +22,20 @@ public class StringArtifactRegistryParser {
 
   private static final String PATH_DELIMITER = "/";
 
-  private final Pattern dockerHubPattern1 = Pattern.compile("(docker-hub)::(.{1,1024})::(.{1,1024})");
-  private final Pattern dockerHubPattern2 = Pattern.compile("(docker-hub)::(.{1,1024})");
-  private final Pattern folioNpmPattern1 = Pattern.compile("(folio-npm)::(.{1,1024})::(.{1,1024})");
-  private final Pattern folioNpmPattern2 = Pattern.compile("(folio-npm)::(.{1,1024})");
-  private final Pattern ecrPattern1 = Pattern.compile("(aws-ecr)::(.{1,1024})::(.{1,1024})");
-  private final Pattern ecrPattern2 = Pattern.compile("(aws-ecr)::(.{1,1024})");
+  private static final Pattern DOCKER_HUB_PATTERN_1 = Pattern.compile("(docker-hub)::(.{1,1024})::(.{1,1024})");
+  private static final Pattern DOCKER_HUB_PATTERN_2 = Pattern.compile("(docker-hub)::(.{1,1024})");
+  private static final Pattern FOLIO_NPM_PATTERN_1 = Pattern.compile("(folio-npm)::(.{1,1024})::(.{1,1024})");
+  private static final Pattern FOLIO_NPM_PATTERN_2 = Pattern.compile("(folio-npm)::(.{1,1024})");
+  private static final Pattern ECR_PATTERN_1 = Pattern.compile("(aws-ecr)::(.{1,1024})::(.{1,1024})");
+  private static final Pattern ECR_PATTERN_2 = Pattern.compile("(aws-ecr)::(.{1,1024})");
 
-  private final List<Pair<Pattern, Function<String[], ArtifactRegistry>>> patterns = List.of(
-    Pair.of(dockerHubPattern1, StringArtifactRegistryParser::parseDockerHubString),
-    Pair.of(dockerHubPattern2, StringArtifactRegistryParser::parseDockerHubString),
-    Pair.of(folioNpmPattern1, StringArtifactRegistryParser::parseFolioNpmString),
-    Pair.of(folioNpmPattern2, StringArtifactRegistryParser::parseFolioNpmString),
-    Pair.of(ecrPattern1, StringArtifactRegistryParser::parseEcrString),
-    Pair.of(ecrPattern2, StringArtifactRegistryParser::parseEcrString));
+  private static final List<Pair<Pattern, Function<String[], ArtifactRegistry>>> PATTERNS = List.of(
+    Pair.of(DOCKER_HUB_PATTERN_1, StringArtifactRegistryParser::parseDockerHubString),
+    Pair.of(DOCKER_HUB_PATTERN_2, StringArtifactRegistryParser::parseDockerHubString),
+    Pair.of(FOLIO_NPM_PATTERN_1, StringArtifactRegistryParser::parseFolioNpmString),
+    Pair.of(FOLIO_NPM_PATTERN_2, StringArtifactRegistryParser::parseFolioNpmString),
+    Pair.of(ECR_PATTERN_1, StringArtifactRegistryParser::parseEcrString),
+    Pair.of(ECR_PATTERN_2, StringArtifactRegistryParser::parseEcrString));
 
   /**
    * Parses an artifact registry string into an {@link ArtifactRegistry}.
@@ -59,7 +59,7 @@ public class StringArtifactRegistryParser {
     }
 
     var value = registryString.trim();
-    for (var patternPair : patterns) {
+    for (var patternPair : PATTERNS) {
       var pattern = patternPair.getLeft();
       var matcher = pattern.matcher(value);
       if (matcher.matches()) {
