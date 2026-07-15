@@ -337,9 +337,11 @@ This command will generate application on a fly and validates the application's 
 
 ### Validate Module Artifacts Existence
 
-The `validateArtifacts` parameter enables validation of module artifacts in Docker and NPM registries before generating the application descriptor. When enabled, the plugin verifies that:
-- Backend (BE) modules have corresponding Docker images in the configured Docker registries
+The `validateArtifacts` parameter enables validation of module artifacts in Docker, AWS ECR, and NPM registries before generating the application descriptor. When enabled, the plugin verifies that:
+- Backend (BE) modules have corresponding Docker images in the configured Docker Hub or AWS ECR registries
 - Frontend (UI) modules have corresponding NPM packages in the configured NPM registries
+
+Supported artifact registry types: `docker-hub`, `aws-ecr`, `folio-npm`.
 
 #### Default Registries
 
@@ -392,21 +394,39 @@ Or via pom.xml configuration:
 
 #### Custom Registries
 
-Custom artifact registries can be specified via command-line:
+Each command-line entry uses a `<type>::` prefix to identify its registry type. Supported prefixes:
+
+| Prefix         | Format                                  | Notes |
+|----------------|-----------------------------------------|-------|
+| `docker-hub::` | `docker-hub::[<baseUrl>::]<namespace>`  | `baseUrl` optional; defaults to Docker Hub v2 API |
+| `aws-ecr::`    | `aws-ecr::<baseUrl>[::<namespace>]`     | `baseUrl` required; must be a valid ECR endpoint (`https://<account>.dkr.ecr.<region>.amazonaws.com`). Authenticates via the default AWS credential chain (same as the existing S3 client). |
+| `folio-npm::`  | `folio-npm::[<baseUrl>::]<namespace>`   | `baseUrl` optional; defaults to Folio Nexus repository |
+
+Category-level rules: `beArtifactRegistries` / `bePreReleaseArtifactRegistries` accept `docker-hub::` and `aws-ecr::` entries; `uiArtifactRegistries` / `uiPreReleaseArtifactRegistries` accept `folio-npm::`; `artifactRegistries` accepts all three.
+
+> **Breaking change (1.6.0):** The artifact-registry command-line grammar now requires the `<type>::` prefix. Bare-namespace strings (e.g., `-DbeArtifactRegistries="folioorg"`) are no longer accepted. Update CI scripts to include the prefix.
+
 ```shell
 mvn org.folio:folio-application-generator:generateFromJson \
   -DvalidateArtifacts=true \
-  -DbeArtifactRegistries="folioorg" \
-  -DbePreReleaseArtifactRegistries="folioci" \
-  -DuiArtifactRegistries="npm-folio" \
-  -DuiPreReleaseArtifactRegistries="npm-folioci"
+  -DbeArtifactRegistries="docker-hub::folioorg" \
+  -DbePreReleaseArtifactRegistries="docker-hub::folioci" \
+  -DuiArtifactRegistries="folio-npm::npm-folio" \
+  -DuiPreReleaseArtifactRegistries="folio-npm::npm-folioci"
 ```
 
-For custom registry URLs:
+For mixed Docker Hub + ECR:
 ```shell
 mvn org.folio:folio-application-generator:generateFromJson \
   -DvalidateArtifacts=true \
-  -DbeArtifactRegistries="https://private-registry.io/v2::my-namespace"
+  -DbeArtifactRegistries="docker-hub::folioorg,aws-ecr::https://123456789012.dkr.ecr.us-west-2.amazonaws.com::folio"
+```
+
+For private Docker Hub-compatible registries:
+```shell
+mvn org.folio:folio-application-generator:generateFromJson \
+  -DvalidateArtifacts=true \
+  -DbeArtifactRegistries="docker-hub::https://private-registry.io/v2::my-namespace"
 ```
 
 Or via pom.xml configuration:
@@ -414,11 +434,16 @@ Or via pom.xml configuration:
 <configuration>
   <validateArtifacts>true</validateArtifacts>
 
-  <!-- BE release registries -->
+  <!-- BE release registries (docker-hub and/or aws-ecr) -->
   <beArtifactRegistries>
     <registry>
       <type>docker-hub</type>
       <namespace>folioorg</namespace>
+    </registry>
+    <registry>
+      <type>aws-ecr</type>
+      <baseUrl>https://123456789012.dkr.ecr.us-west-2.amazonaws.com</baseUrl>
+      <namespace>folio</namespace>
     </registry>
   </beArtifactRegistries>
 
@@ -430,7 +455,7 @@ Or via pom.xml configuration:
     </registry>
   </bePreReleaseArtifactRegistries>
 
-  <!-- UI release registries -->
+  <!-- UI release registries (folio-npm only) -->
   <uiArtifactRegistries>
     <registry>
       <type>folio-npm</type>
@@ -446,6 +471,22 @@ Or via pom.xml configuration:
     </registry>
   </uiPreReleaseArtifactRegistries>
 </configuration>
+```
+
+#### Skipping Artifact Validation for Fallback Registries
+
+The `validateFallbackArtifacts` parameter (default `true`) controls whether modules resolved through fallback descriptor registries are still validated against artifact registries. Set it to `false` for builds that include custom modules whose artifacts are not published to any configured registry (typical for custom UI modules referenced via npm git refs, or BE modules whose images are not available in the configured ECR/Docker Hub).
+
+Semantics:
+- `validateArtifacts=false` → nothing is validated (no change to existing behavior).
+- `validateArtifacts=true` and `validateFallbackArtifacts=true` (defaults) → both primary and fallback modules are artifact-validated.
+- `validateArtifacts=true` and `validateFallbackArtifacts=false` → modules resolved from primary registries are validated; modules resolved from fallback registries skip artifact validation.
+
+```shell
+mvn org.folio:folio-application-generator:generateFromJson \
+  -DvalidateArtifacts=true \
+  -DvalidateFallbackArtifacts=false \
+  -DbeFallbackRegistries="s3::eureka-custom-registry::descriptors"
 ```
 
 #### Unified Artifact Registries
@@ -665,15 +706,16 @@ mvn install -DbuildNumber="123" -DawsRegion=us-east-1
 | modules                        |                                                 | Comma-separated list of BE module ids to be updated in format: `module1-1.1.0,module2-2.1.0`                                                                        |
 | uiModules                      |                                                 | Comma-separated list of UI module ids to be updated in the same format as `modules` parameter                                                                       |
 | overrideConfigRegistries       |                                                 | Defines if only command-line specified registries must be used (applies to `registries`, `beRegistries` and `uiRegistries` params)                                  |
+| validateArtifacts              | false                                           | Enable validation of module artifacts in configured artifact registries before generating the descriptor                                                            |
+| validateFallbackArtifacts      | true                                            | When `false`, modules resolved from fallback descriptor registries skip artifact validation. Only applies when `validateArtifacts=true`                             |
+| artifactRegistries             |                                                 | Comma-separated unified artifact registry list; entries use type-prefix grammar: `docker-hub::[<baseUrl>::]<namespace>`, `aws-ecr::<baseUrl>[::<namespace>]`, `folio-npm::[<baseUrl>::]<namespace>` |
+| beArtifactRegistries           |                                                 | BE-only artifact registries; entries must be `docker-hub::...` or `aws-ecr::...` (same format as `artifactRegistries`)                                              |
+| bePreReleaseArtifactRegistries |                                                 | BE-only pre-release artifact registries; same format as `beArtifactRegistries`                                                                                      |
+| uiArtifactRegistries           |                                                 | UI-only artifact registries; entries must be `folio-npm::...` (same format as `artifactRegistries`)                                                                 |
+| uiPreReleaseArtifactRegistries |                                                 | UI-only pre-release artifact registries; same format as `uiArtifactRegistries`                                                                                      |
 | allowDowngrade                 | false                                           | Allow downgrading module versions during update (applies to `updateFromJson` and `updateFromTemplate` goals)                                                        |
 | allowAddModules                | false                                           | Allow adding new modules not present in the original descriptor (applies to `updateFromJson` and `updateFromTemplate` goals)                                        |
 | removeUnlistedModules          | false                                           | Remove modules from descriptor that are not in the update list/template (applies to `updateFromJson` and `updateFromTemplate` goals)                                |
 | templatePath                   | `${project.artifactId}.template.json`           | Path to the template file for `updateFromTemplate` goal                                                                                                             |
 | useProjectVersion              | false                                           | When `true`, uses pom.xml version as base; when `false`, increments patch from descriptor version (applies to `updateFromJson` and `updateFromTemplate` goals)     |
 | noVersionBump                  | false                                           | Skip automatic version incrementing, keeping the version unchanged (applies to `updateFromJson` and `updateFromTemplate` goals)                                    |
-| validateArtifacts              | false                                           | If `true`, validates that Docker images (BE) and NPM packages (UI) exist before generating the descriptor                                                           |
-| artifactRegistries             |                                                 | Comma-separated unified artifact registries (fallback for both BE and UI)                                                                                           |
-| beArtifactRegistries           |                                                 | Comma-separated BE artifact registries for release versions (format: `namespace` or `url::namespace`)                                                               |
-| uiArtifactRegistries           |                                                 | Comma-separated UI artifact registries for release versions (format: `repository` or `url::repository`)                                                             |
-| bePreReleaseArtifactRegistries |                                                 | Comma-separated BE artifact registries for pre-release versions                                                                                                     |
-| uiPreReleaseArtifactRegistries |                                                 | Comma-separated UI artifact registries for pre-release versions                                                                                                     |
