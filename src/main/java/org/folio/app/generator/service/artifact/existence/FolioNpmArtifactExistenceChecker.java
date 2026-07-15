@@ -12,7 +12,7 @@ import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.conditions.FolioNpmCondition;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.registry.artifact.ArtifactRegistry;
-import org.folio.app.generator.model.types.ModuleType;
+import org.folio.app.generator.model.types.ArtifactRegistryType;
 import org.folio.app.generator.utils.JsonConverter;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -28,8 +28,8 @@ public class FolioNpmArtifactExistenceChecker extends HttpArtifactExistenceCheck
   }
 
   @Override
-  public ModuleType getModuleType() {
-    return ModuleType.UI;
+  public ArtifactRegistryType getRegistryType() {
+    return ArtifactRegistryType.FOLIO_NPM;
   }
 
   @Override
