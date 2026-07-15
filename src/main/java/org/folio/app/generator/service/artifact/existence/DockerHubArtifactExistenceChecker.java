@@ -10,8 +10,8 @@ import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.conditions.DockerHubCondition;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.registry.artifact.ArtifactRegistry;
+import org.folio.app.generator.model.types.ArtifactRegistryType;
 import org.folio.app.generator.model.types.ErrorCategory;
-import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 import org.folio.app.generator.utils.JsonConverter;
 import org.springframework.context.annotation.Conditional;
@@ -30,8 +30,8 @@ public class DockerHubArtifactExistenceChecker extends HttpArtifactExistenceChec
   }
 
   @Override
-  public ModuleType getModuleType() {
-    return ModuleType.BE;
+  public ArtifactRegistryType getRegistryType() {
+    return ArtifactRegistryType.DOCKER_HUB;
   }
 
   @Override
