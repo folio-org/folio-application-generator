@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -374,7 +375,7 @@ class ModuleVersionServiceTest {
     when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE))
         .thenReturn(Optional.of(List.of("1.5.0", "1.4.0", "1.3.0", "1.0.0")));
     when(artifactRegistryProvider.getArtifactRegistries(pluginConfig)).thenReturn(artifactRegistries);
-    when(artifactExistenceCheckerFacade.exists(any(), any(), eq(ModuleType.BE)))
+    when(artifactExistenceCheckerFacade.exists(any(), any()))
         .thenReturn(false)
         .thenReturn(false)
         .thenReturn(true);
@@ -399,7 +400,7 @@ class ModuleVersionServiceTest {
 
     assertThat(result).hasSize(1);
     assertThat(result.get(0).getVersion()).isEqualTo("1.5.0");
-    verify(artifactExistenceCheckerFacade, never()).exists(any(), any(), any());
+    verify(artifactExistenceCheckerFacade, never()).exists(any(), any());
   }
 
   @Test
@@ -413,7 +414,7 @@ class ModuleVersionServiceTest {
     when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE))
         .thenReturn(Optional.of(List.of("1.5.0", "1.4.0")));
     when(artifactRegistryProvider.getArtifactRegistries(pluginConfig)).thenReturn(artifactRegistries);
-    when(artifactExistenceCheckerFacade.exists(any(), any(), eq(ModuleType.BE))).thenReturn(false);
+    when(artifactExistenceCheckerFacade.exists(any(), any())).thenReturn(false);
 
     var dependencies = List.of(dependency);
     assertThatThrownBy(() -> service.resolveModulesConstraints(dependencies, ModuleType.BE))
@@ -432,7 +433,7 @@ class ModuleVersionServiceTest {
     when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.BE))
         .thenReturn(Optional.of(List.of("1.5.0-SNAPSHOT.123")));
     when(artifactRegistryProvider.getArtifactRegistries(pluginConfig)).thenReturn(artifactRegistries);
-    when(artifactExistenceCheckerFacade.exists(any(), any(), eq(ModuleType.BE))).thenReturn(true);
+    when(artifactExistenceCheckerFacade.exists(any(), any())).thenReturn(true);
 
     var result = service.resolveModulesConstraints(List.of(dependency), ModuleType.BE);
 
@@ -451,7 +452,7 @@ class ModuleVersionServiceTest {
     when(resolverFacade.getAvailableVersions(registry, dependency, ModuleType.UI))
         .thenReturn(Optional.of(List.of("1.5.0", "1.4.0")));
     when(artifactRegistryProvider.getArtifactRegistries(pluginConfig)).thenReturn(artifactRegistries);
-    when(artifactExistenceCheckerFacade.exists(any(), any(), eq(ModuleType.UI)))
+    when(artifactExistenceCheckerFacade.exists(any(), any()))
         .thenReturn(false)
         .thenReturn(true);
 
@@ -703,12 +704,88 @@ class ModuleVersionServiceTest {
     verify(log).warn("Module registries are empty for type: BE");
   }
 
+  @Test
+  void resolveModulesConstraints_positive_validateFallbackArtifactsFalse_fallbackSkipped() {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var mainRegistry = okapiRegistry();
+    var fallbackRegistry = fallbackS3Registry();
+
+    when(pluginConfig.isValidateArtifacts()).thenReturn(true);
+    when(pluginConfig.isValidateFallbackArtifacts()).thenReturn(false);
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(mainRegistry));
+    when(moduleRegistries.getFallbackRegistries(ModuleType.BE)).thenReturn(List.of(fallbackRegistry));
+    when(resolverFacade.getAvailableVersions(mainRegistry, dependency, ModuleType.BE))
+        .thenReturn(Optional.empty());
+    when(resolverFacade.getAvailableVersions(fallbackRegistry, dependency, ModuleType.BE))
+        .thenReturn(Optional.of(List.of("1.5.0", "1.2.0")));
+
+    var result = service.resolveModulesConstraints(List.of(dependency), ModuleType.BE);
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getVersion()).isEqualTo("1.5.0");
+    verify(artifactExistenceCheckerFacade, never()).exists(any(), any());
+  }
+
+  @Test
+  void resolveModulesConstraints_positive_validateFallbackArtifactsFalse_primaryStillValidated() {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var mainRegistry = okapiRegistry();
+    var artifactRegistries = createDefaultArtifactRegistries();
+
+    when(pluginConfig.isValidateArtifacts()).thenReturn(true);
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(mainRegistry));
+    when(resolverFacade.getAvailableVersions(mainRegistry, dependency, ModuleType.BE))
+        .thenReturn(Optional.of(List.of("1.5.0", "1.2.0")));
+    when(artifactRegistryProvider.getArtifactRegistries(pluginConfig)).thenReturn(artifactRegistries);
+    when(artifactExistenceCheckerFacade.exists(any(), any()))
+        .thenReturn(false)
+        .thenReturn(true);
+
+    var result = service.resolveModulesConstraints(List.of(dependency), ModuleType.BE);
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getVersion()).isEqualTo("1.2.0");
+    verify(artifactExistenceCheckerFacade, times(2)).exists(any(), any());
+  }
+
+  @Test
+  void resolveModulesConstraints_positive_validateFallbackArtifactsTrue_fallbackStillValidated() {
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var mainRegistry = okapiRegistry();
+    var fallbackRegistry = fallbackS3Registry();
+    var artifactRegistries = createDefaultArtifactRegistries();
+
+    when(pluginConfig.isValidateArtifacts()).thenReturn(true);
+    when(pluginConfig.isValidateFallbackArtifacts()).thenReturn(true);
+    when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(mainRegistry));
+    when(moduleRegistries.getFallbackRegistries(ModuleType.BE)).thenReturn(List.of(fallbackRegistry));
+    when(resolverFacade.getAvailableVersions(mainRegistry, dependency, ModuleType.BE))
+        .thenReturn(Optional.empty());
+    when(resolverFacade.getAvailableVersions(fallbackRegistry, dependency, ModuleType.BE))
+        .thenReturn(Optional.of(List.of("1.5.0", "1.2.0")));
+    when(artifactRegistryProvider.getArtifactRegistries(pluginConfig)).thenReturn(artifactRegistries);
+    when(artifactExistenceCheckerFacade.exists(any(), any())).thenReturn(true);
+
+    var result = service.resolveModulesConstraints(List.of(dependency), ModuleType.BE);
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getVersion()).isEqualTo("1.5.0");
+    verify(artifactExistenceCheckerFacade).exists(any(), any());
+  }
+
   private static OkapiModuleRegistry okapiRegistry() {
     return new OkapiModuleRegistry().url("http://localhost").withGeneratedFields();
   }
 
   private static S3ModuleRegistry s3Registry() {
     return new S3ModuleRegistry().bucket("test-bucket").path("modules/").withGeneratedFields();
+  }
+
+  private static S3ModuleRegistry fallbackS3Registry() {
+    var registry = (S3ModuleRegistry) new S3ModuleRegistry()
+        .bucket("test-bucket").path("modules/").withGeneratedFields();
+    registry.setFallback(true);
+    return registry;
   }
 
   private static ArtifactRegistries createDefaultArtifactRegistries() {

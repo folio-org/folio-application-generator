@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.folio.app.generator.model.registry.artifact.DockerHubArtifactRegistry;
+import org.folio.app.generator.model.registry.artifact.EcrArtifactRegistry;
 import org.folio.app.generator.model.registry.artifact.FolioNpmArtifactRegistry;
-import org.folio.app.generator.model.types.ArtifactRegistryType;
 import org.folio.app.generator.support.UnitTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,8 +21,8 @@ class StringArtifactRegistryParserTest {
   }
 
   @Test
-  void parseDocker_positive_namespaceOnly() {
-    var result = parser.parseDocker("folioorg");
+  void parse_positive_dockerHubNamespaceOnly() {
+    var result = parser.parse("docker-hub::folioorg");
 
     assertThat(result).isPresent();
     assertThat(result.get()).isInstanceOf(DockerHubArtifactRegistry.class);
@@ -31,8 +31,8 @@ class StringArtifactRegistryParserTest {
   }
 
   @Test
-  void parseDocker_positive_urlAndNamespace() {
-    var result = parser.parseDocker("https://custom-registry.io::custom-namespace");
+  void parse_positive_dockerHubBaseUrlAndNamespace() {
+    var result = parser.parse("docker-hub::https://custom-registry.io::custom-namespace");
 
     assertThat(result).isPresent();
     assertThat(result.get()).isInstanceOf(DockerHubArtifactRegistry.class);
@@ -41,37 +41,16 @@ class StringArtifactRegistryParserTest {
   }
 
   @Test
-  void parseDocker_positive_urlWithTrailingSlash() {
-    var result = parser.parseDocker("https://custom-registry.io/::namespace");
+  void parse_positive_dockerHubTrailingSlashRemoved() {
+    var result = parser.parse("docker-hub::https://custom-registry.io/::namespace");
 
     assertThat(result).isPresent();
     assertThat(result.get().getBaseUrl()).isEqualTo("https://custom-registry.io");
   }
 
   @Test
-  void parseDocker_positive_blankString() {
-    var result = parser.parseDocker("  ");
-
-    assertThat(result).isEmpty();
-  }
-
-  @Test
-  void parseDocker_positive_nullString() {
-    var result = parser.parseDocker(null);
-
-    assertThat(result).isEmpty();
-  }
-
-  @Test
-  void parseDocker_negative_invalidUrl() {
-    assertThatThrownBy(() -> parser.parseDocker("invalid-url::namespace"))
-      .isInstanceOf(IllegalArgumentException.class)
-      .hasMessageContaining("Invalid url provided");
-  }
-
-  @Test
-  void parseNpm_positive_namespaceOnly() {
-    var result = parser.parseNpm("npm-folio");
+  void parse_positive_folioNpmNamespaceOnly() {
+    var result = parser.parse("folio-npm::npm-folio");
 
     assertThat(result).isPresent();
     assertThat(result.get()).isInstanceOf(FolioNpmArtifactRegistry.class);
@@ -80,8 +59,8 @@ class StringArtifactRegistryParserTest {
   }
 
   @Test
-  void parseNpm_positive_urlAndNamespace() {
-    var result = parser.parseNpm("https://custom-npm.io::custom-repo");
+  void parse_positive_folioNpmBaseUrlAndNamespace() {
+    var result = parser.parse("folio-npm::https://custom-npm.io::custom-repo");
 
     assertThat(result).isPresent();
     assertThat(result.get()).isInstanceOf(FolioNpmArtifactRegistry.class);
@@ -90,48 +69,74 @@ class StringArtifactRegistryParserTest {
   }
 
   @Test
-  void parseNpm_positive_blankString() {
-    var result = parser.parseNpm("  ");
+  void parse_positive_ecrUrlOnly() {
+    var result = parser.parse("aws-ecr::https://123456789012.dkr.ecr.us-west-2.amazonaws.com");
 
+    assertThat(result).isPresent();
+    assertThat(result.get()).isInstanceOf(EcrArtifactRegistry.class);
+    assertThat(result.get().getBaseUrl()).isEqualTo("https://123456789012.dkr.ecr.us-west-2.amazonaws.com");
+    assertThat(result.get().getNamespace()).isNull();
+  }
+
+  @Test
+  void parse_positive_ecrUrlAndNamespace() {
+    var result = parser.parse("aws-ecr::https://123456789012.dkr.ecr.us-west-2.amazonaws.com::folio");
+
+    assertThat(result).isPresent();
+    assertThat(result.get()).isInstanceOf(EcrArtifactRegistry.class);
+    assertThat(result.get().getBaseUrl()).isEqualTo("https://123456789012.dkr.ecr.us-west-2.amazonaws.com");
+    assertThat(result.get().getNamespace()).isEqualTo("folio");
+  }
+
+  @Test
+  void parse_negative_blankString() {
+    var result = parser.parse("  ");
     assertThat(result).isEmpty();
   }
 
   @Test
-  void parseNpm_positive_nullString() {
-    var result = parser.parseNpm(null);
-
+  void parse_negative_nullString() {
+    var result = parser.parse(null);
     assertThat(result).isEmpty();
   }
 
   @Test
-  void parse_positive_dockerType() {
-    var result = parser.parse("test-namespace", ArtifactRegistryType.DOCKER_HUB);
-
-    assertThat(result).isPresent();
-    assertThat(result.get()).isInstanceOf(DockerHubArtifactRegistry.class);
-    assertThat(result.get().getNamespace()).isEqualTo("test-namespace");
+  void parse_negative_noPrefix() {
+    var result = parser.parse("folioorg");
+    assertThat(result).isEmpty();
   }
 
   @Test
-  void parse_positive_npmType() {
-    var result = parser.parse("test-repo", ArtifactRegistryType.FOLIO_NPM);
-
-    assertThat(result).isPresent();
-    assertThat(result.get()).isInstanceOf(FolioNpmArtifactRegistry.class);
-    assertThat(result.get().getNamespace()).isEqualTo("test-repo");
+  void parse_negative_unknownPrefix() {
+    var result = parser.parse("github::folio-org");
+    assertThat(result).isEmpty();
   }
 
   @Test
-  void parseDocker_positive_trimmedValue() {
-    var result = parser.parseDocker("  folioorg  ");
+  void parse_negative_dockerHubInvalidUrl() {
+    assertThatThrownBy(() -> parser.parse("docker-hub::invalid-url::namespace"))
+      .isInstanceOf(IllegalArgumentException.class)
+      .hasMessageContaining("Invalid url provided");
+  }
+
+  @Test
+  void parse_negative_ecrInvalidUrl() {
+    assertThatThrownBy(() -> parser.parse("aws-ecr::invalid-url"))
+      .isInstanceOf(IllegalArgumentException.class)
+      .hasMessageContaining("Invalid url provided");
+  }
+
+  @Test
+  void parse_positive_dockerHubTrimmedNamespace() {
+    var result = parser.parse("docker-hub::  folioorg  ");
 
     assertThat(result).isPresent();
     assertThat(result.get().getNamespace()).isEqualTo("folioorg");
   }
 
   @Test
-  void parseNpm_positive_trimmedValue() {
-    var result = parser.parseNpm("  npm-folio  ");
+  void parse_positive_folioNpmTrimmedNamespace() {
+    var result = parser.parse("folio-npm::  npm-folio  ");
 
     assertThat(result).isPresent();
     assertThat(result.get().getNamespace()).isEqualTo("npm-folio");

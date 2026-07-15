@@ -17,7 +17,7 @@ import java.util.Map;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.registry.artifact.FolioNpmArtifactRegistry;
-import org.folio.app.generator.model.types.ModuleType;
+import org.folio.app.generator.model.types.ArtifactRegistryType;
 import org.folio.app.generator.support.UnitTest;
 import org.folio.app.generator.utils.JsonConverter;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,8 +45,8 @@ class FolioNpmArtifactExistenceCheckerTest {
   }
 
   @Test
-  void getModuleType_positive() {
-    assertThat(checker.getModuleType()).isEqualTo(ModuleType.UI);
+  void getRegistryType_positive() {
+    assertThat(checker.getRegistryType()).isEqualTo(ArtifactRegistryType.FOLIO_NPM);
   }
 
   @Test

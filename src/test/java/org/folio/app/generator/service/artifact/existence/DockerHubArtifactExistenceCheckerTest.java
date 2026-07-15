@@ -17,8 +17,8 @@ import java.net.http.HttpResponse;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.registry.artifact.DockerHubArtifactRegistry;
+import org.folio.app.generator.model.types.ArtifactRegistryType;
 import org.folio.app.generator.model.types.ErrorCategory;
-import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 import org.folio.app.generator.support.UnitTest;
 import org.folio.app.generator.utils.JsonConverter;
@@ -45,8 +45,8 @@ class DockerHubArtifactExistenceCheckerTest {
   }
 
   @Test
-  void getModuleType_positive() {
-    assertThat(checker.getModuleType()).isEqualTo(ModuleType.BE);
+  void getRegistryType_positive() {
+    assertThat(checker.getRegistryType()).isEqualTo(ArtifactRegistryType.DOCKER_HUB);
   }
 
   @Test
