@@ -9,6 +9,9 @@ import org.folio.app.generator.model.registry.artifact.FolioNpmArtifactRegistry;
 import org.folio.app.generator.support.UnitTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @UnitTest
 class StringArtifactRegistryParserTest {
@@ -88,28 +91,11 @@ class StringArtifactRegistryParserTest {
     assertThat(result.get().getNamespace()).isEqualTo("folio");
   }
 
-  @Test
-  void parse_negative_blankString() {
-    var result = parser.parse("  ");
-    assertThat(result).isEmpty();
-  }
-
-  @Test
-  void parse_negative_nullString() {
-    var result = parser.parse(null);
-    assertThat(result).isEmpty();
-  }
-
-  @Test
-  void parse_negative_noPrefix() {
-    var result = parser.parse("folioorg");
-    assertThat(result).isEmpty();
-  }
-
-  @Test
-  void parse_negative_unknownPrefix() {
-    var result = parser.parse("github::folio-org");
-    assertThat(result).isEmpty();
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = {"  ", "folioorg", "github::folio-org"})
+  void parse_negative_returnsEmpty(String input) {
+    assertThat(parser.parse(input)).isEmpty();
   }
 
   @Test

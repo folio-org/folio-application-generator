@@ -53,10 +53,7 @@ class JsonConverterTest {
     jsonConverter.writeValue(target, payload);
 
     var written = Files.readString(target.toPath(), StandardCharsets.UTF_8);
-    assertThat(written).contains("\n");
-    assertThat(written).contains("  ");
-    assertThat(written).contains("\"name\"");
-    assertThat(written).contains("\"version\"");
+    assertThat(written).contains("\n", "  ", "\"name\"", "\"version\"");
   }
 
   @Test
