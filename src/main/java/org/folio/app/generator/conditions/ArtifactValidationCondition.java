@@ -4,13 +4,14 @@ import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
 import org.springframework.context.annotation.Conditional;
 
 /**
- * Condition that matches when any artifact validation is enabled. This condition is true if either Docker Hub or Folio
- * NPM artifact validation is enabled.
+ * Condition that matches when any artifact validation is enabled. This condition is true if Docker Hub, Folio NPM, or
+ * AWS ECR artifact validation is enabled.
  *
  * <p>This is a composite condition that checks:
  * <ul>
  *   <li>{@code folio-app-generator.docker-hub.enabled} (via {@link DockerHubCondition})</li>
  *   <li>{@code folio-app-generator.folio-npm.enabled} (via {@link FolioNpmCondition})</li>
+ *   <li>{@code folio-app-generator.aws-ecr.enabled} (via {@link EcrCondition})</li>
  * </ul>
  */
 public class ArtifactValidationCondition extends AnyNestedCondition {
@@ -24,4 +25,7 @@ public class ArtifactValidationCondition extends AnyNestedCondition {
 
   @Conditional(FolioNpmCondition.class)
   static class FolioNpm {}
+
+  @Conditional(EcrCondition.class)
+  static class Ecr {}
 }
