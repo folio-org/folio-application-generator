@@ -42,7 +42,7 @@ public class JsonConverter {
 
   public void writeValue(File file, Object value) {
     try {
-      objectMapper.writeValue(file, value);
+      objectMapper.writerWithDefaultPrettyPrinter().writeValue(file, value);
     } catch (IOException e) {
       throw new SerializationException("Failed to write value to file: " + file.getAbsolutePath(), e);
     }
