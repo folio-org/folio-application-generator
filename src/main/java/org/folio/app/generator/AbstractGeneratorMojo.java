@@ -85,6 +85,9 @@ public abstract class AbstractGeneratorMojo extends AbstractMojo {
   @Parameter(name = "validateArtifacts", property = "validateArtifacts", defaultValue = "false")
   protected String validateArtifacts;
 
+  @Parameter(name = "validateFallbackArtifacts", property = "validateFallbackArtifacts", defaultValue = "true")
+  protected String validateFallbackArtifacts;
+
   @Parameter(name = "artifactRegistries")
   protected List<ConfigArtifactRegistry> artifactRegistries;
 
@@ -144,6 +147,7 @@ public abstract class AbstractGeneratorMojo extends AbstractMojo {
       .registryHeaders(registryHeaders)
       .awsRegion(isNotBlank(awsRegion) ? Region.of(awsRegion) : Region.US_EAST_1)
       .validateArtifacts(parseBoolean(validateArtifacts))
+      .validateFallbackArtifacts(parseBoolean(validateFallbackArtifacts))
       .artifactRegistries(artifactRegistries)
       .beArtifactRegistries(beArtifactRegistries)
       .uiArtifactRegistries(uiArtifactRegistries)
