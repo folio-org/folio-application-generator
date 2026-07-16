@@ -96,6 +96,53 @@ class ArtifactRegistryProviderTest {
   }
 
   @Test
+  void getArtifactRegistries_positive_ecrFromConfigWithoutNamespace() {
+    var ecrRegistry = new ConfigArtifactRegistry();
+    ecrRegistry.setType("aws-ecr");
+    ecrRegistry.setBaseUrl("https://123456789012.dkr.ecr.us-west-2.amazonaws.com");
+    // namespace not set — ECR allows it (isValid requires only baseUrl)
+    var config = PluginConfig.builder()
+      .beArtifactRegistries(List.of(ecrRegistry))
+      .build();
+
+    var result = artifactRegistryProvider.getArtifactRegistries(config);
+
+    assertThat(result.beRegistries()).hasSize(1);
+    assertThat(result.beRegistries().get(0)).isInstanceOf(EcrArtifactRegistry.class);
+    assertThat(result.beRegistries().get(0).getBaseUrl())
+      .isEqualTo("https://123456789012.dkr.ecr.us-west-2.amazonaws.com");
+    assertThat(result.beRegistries().get(0).getNamespace()).isNull();
+  }
+
+  @Test
+  void getArtifactRegistries_negative_ecrFromConfigWithoutBaseUrl() {
+    var ecrRegistry = new ConfigArtifactRegistry();
+    ecrRegistry.setType("aws-ecr");
+    // baseUrl not set — ECR requires baseUrl, isValid returns false
+    ecrRegistry.setNamespace("folio");
+    var config = PluginConfig.builder()
+      .beArtifactRegistries(List.of(ecrRegistry))
+      .build();
+
+    assertThatThrownBy(() -> artifactRegistryProvider.getArtifactRegistries(config))
+      .isInstanceOf(IllegalArgumentException.class)
+      .hasMessageContaining("Invalid artifact registries found");
+  }
+
+  @Test
+  void getArtifactRegistries_negative_cliEntryParsesButIsInvalid() {
+    // parses successfully (matches docker-hub::(.{1,1024})), but namespace trims to blank
+    // so DockerHubArtifactRegistry.isValid() returns false, entry rejected
+    var config = PluginConfig.builder()
+      .cmdBeArtifactRegistries("docker-hub::   ")
+      .build();
+
+    assertThatThrownBy(() -> artifactRegistryProvider.getArtifactRegistries(config))
+      .isInstanceOf(IllegalArgumentException.class)
+      .hasMessageContaining("Invalid artifact registries found");
+  }
+
+  @Test
   void getArtifactRegistries_negative_ecrUnderUiCategory() {
     var ecrRegistry = new ConfigArtifactRegistry();
     ecrRegistry.setType("aws-ecr");
