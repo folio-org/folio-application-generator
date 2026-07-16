@@ -145,7 +145,7 @@ public class ArtifactRegistryProvider {
           continue;
         }
         var registry = parsed.get();
-        if (!allowedTypes.contains(registry.getType()) || !registry.isValid()) {
+        if (!allowedTypes.contains(registry.getType())) {
           invalid.add(value);
         } else {
           result.add(registry);
