@@ -259,13 +259,18 @@ public class ModuleRegistryProvider {
       invalidRegistries.addAll(cmdRegistriesResultForType.invalidRegistries());
       var cmdRegistriesForType = cmdRegistriesResultForType.registries();
       if (pluginConfig.isOverrideConfigRegistries()) {
-        return merge(cmdRegistriesForType, cmdFallbackRegistries);
+        return markAsFallback(merge(cmdRegistriesForType, cmdFallbackRegistries));
       }
 
       var registriesResultForType = processConfigurationRegistries(moduleRegistries);
       invalidRegistries.addAll(registriesResultForType.invalidRegistries());
-      return merge(cmdRegistriesForType, cmdFallbackRegistries, registriesResultForType.registries(),
-        fallbackRegistries);
+      return markAsFallback(merge(cmdRegistriesForType, cmdFallbackRegistries, registriesResultForType.registries(),
+        fallbackRegistries));
+    }
+
+    private List<ModuleRegistry> markAsFallback(List<ModuleRegistry> registries) {
+      registries.forEach(r -> r.setFallback(true));
+      return registries;
     }
   }
 

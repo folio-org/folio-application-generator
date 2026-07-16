@@ -20,6 +20,7 @@ public class S3ModuleRegistry implements ModuleRegistry {
   private String bucket;
   private String publicUrl;
   private Map<String, String> headers = new LinkedHashMap<>();
+  private boolean fallback;
 
   /**
    * Sets path field and returns {@link S3ModuleRegistry}.

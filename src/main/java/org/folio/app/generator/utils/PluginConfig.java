@@ -43,6 +43,9 @@ public class PluginConfig {
 
   private final boolean validateArtifacts;
 
+  @Builder.Default
+  private final boolean validateFallbackArtifacts = true;
+
   private final List<ConfigArtifactRegistry> artifactRegistries;
   private final List<ConfigArtifactRegistry> beArtifactRegistries;
   private final List<ConfigArtifactRegistry> uiArtifactRegistries;
