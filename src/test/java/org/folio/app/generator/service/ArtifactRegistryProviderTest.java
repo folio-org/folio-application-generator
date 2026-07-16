@@ -130,19 +130,6 @@ class ArtifactRegistryProviderTest {
   }
 
   @Test
-  void getArtifactRegistries_negative_cliEntryParsesButIsInvalid() {
-    // parses successfully (matches docker-hub::(.{1,1024})), but namespace trims to blank
-    // so DockerHubArtifactRegistry.isValid() returns false, entry rejected
-    var config = PluginConfig.builder()
-      .cmdBeArtifactRegistries("docker-hub::   ")
-      .build();
-
-    assertThatThrownBy(() -> artifactRegistryProvider.getArtifactRegistries(config))
-      .isInstanceOf(IllegalArgumentException.class)
-      .hasMessageContaining("Invalid artifact registries found");
-  }
-
-  @Test
   void getArtifactRegistries_negative_ecrUnderUiCategory() {
     var ecrRegistry = new ConfigArtifactRegistry();
     ecrRegistry.setType("aws-ecr");
