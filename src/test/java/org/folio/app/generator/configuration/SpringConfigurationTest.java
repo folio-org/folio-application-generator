@@ -3,16 +3,22 @@ package org.folio.app.generator.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.URI;
+import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.support.UnitTest;
 import org.folio.app.generator.utils.PluginConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.ecr.EcrClient;
 import software.amazon.awssdk.services.s3.S3Client;
 
 @UnitTest
+@ExtendWith(MockitoExtension.class)
 class SpringConfigurationTest {
+
+  @Mock private Log log;
 
   private SpringConfiguration configuration;
 
@@ -32,7 +38,7 @@ class SpringConfigurationTest {
   void amazonS3Client_positive_withoutEndpointOverride() {
     var config = PluginConfig.builder().awsRegion(Region.US_EAST_1).build();
 
-    try (S3Client client = configuration.amazonS3Client(config)) {
+    try (S3Client client = configuration.amazonS3Client(config, log)) {
       assertThat(client).isNotNull();
     }
   }
@@ -44,16 +50,7 @@ class SpringConfigurationTest {
       .awsEndpointOverride(URI.create("http://localhost:4566"))
       .build();
 
-    try (S3Client client = configuration.amazonS3Client(config)) {
-      assertThat(client).isNotNull();
-    }
-  }
-
-  @Test
-  void ecrClient_positive_isCreated() {
-    var config = PluginConfig.builder().awsRegion(Region.US_WEST_2).build();
-
-    try (EcrClient client = configuration.ecrClient(config)) {
+    try (S3Client client = configuration.amazonS3Client(config, log)) {
       assertThat(client).isNotNull();
     }
   }
