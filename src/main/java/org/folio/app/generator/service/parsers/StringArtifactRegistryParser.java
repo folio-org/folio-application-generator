@@ -4,60 +4,114 @@ import static org.apache.commons.lang3.StringUtils.removeEnd;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.folio.app.generator.model.registry.artifact.ArtifactRegistry;
 import org.folio.app.generator.model.registry.artifact.DockerHubArtifactRegistry;
+import org.folio.app.generator.model.registry.artifact.EcrArtifactRegistry;
 import org.folio.app.generator.model.registry.artifact.FolioNpmArtifactRegistry;
-import org.folio.app.generator.model.types.ArtifactRegistryType;
 import org.springframework.stereotype.Component;
 
 @Component
 public class StringArtifactRegistryParser {
 
   private static final String PATH_DELIMITER = "/";
-  private static final String URL_NAMESPACE_DELIMITER = "::";
 
-  public Optional<ArtifactRegistry> parseDocker(String registryString) {
+  private static final Pattern DOCKER_HUB_PATTERN_1 = Pattern.compile("(docker-hub)::(.{1,1024})::(.{1,1024})");
+  private static final Pattern DOCKER_HUB_PATTERN_2 = Pattern.compile("(docker-hub)::(.{1,1024})");
+  private static final Pattern FOLIO_NPM_PATTERN_1 = Pattern.compile("(folio-npm)::(.{1,1024})::(.{1,1024})");
+  private static final Pattern FOLIO_NPM_PATTERN_2 = Pattern.compile("(folio-npm)::(.{1,1024})");
+  private static final Pattern ECR_PATTERN_1 = Pattern.compile("(aws-ecr)::(.{1,1024})::(.{1,1024})");
+  private static final Pattern ECR_PATTERN_2 = Pattern.compile("(aws-ecr)::(.{1,1024})");
+
+  private static final List<Pair<Pattern, Function<String[], ArtifactRegistry>>> PATTERNS = List.of(
+    Pair.of(DOCKER_HUB_PATTERN_1, StringArtifactRegistryParser::parseDockerHubString),
+    Pair.of(DOCKER_HUB_PATTERN_2, StringArtifactRegistryParser::parseDockerHubString),
+    Pair.of(FOLIO_NPM_PATTERN_1, StringArtifactRegistryParser::parseFolioNpmString),
+    Pair.of(FOLIO_NPM_PATTERN_2, StringArtifactRegistryParser::parseFolioNpmString),
+    Pair.of(ECR_PATTERN_1, StringArtifactRegistryParser::parseEcrString),
+    Pair.of(ECR_PATTERN_2, StringArtifactRegistryParser::parseEcrString));
+
+  /**
+   * Parses an artifact registry string into an {@link ArtifactRegistry}.
+   *
+   * <p>Supported formats:
+   * <ul>
+   *   <li>{@code docker-hub::<namespace>}</li>
+   *   <li>{@code docker-hub::<baseUrl>::<namespace>}</li>
+   *   <li>{@code folio-npm::<namespace>}</li>
+   *   <li>{@code folio-npm::<baseUrl>::<namespace>}</li>
+   *   <li>{@code aws-ecr::<baseUrl>}</li>
+   *   <li>{@code aws-ecr::<baseUrl>::<namespace>}</li>
+   * </ul>
+   *
+   * @param registryString the string to parse
+   * @return parsed {@link ArtifactRegistry}, empty if the string does not match any supported format
+   */
+  public Optional<ArtifactRegistry> parse(String registryString) {
     if (StringUtils.isBlank(registryString)) {
       return Optional.empty();
     }
 
     var value = registryString.trim();
-    var delimiterIndex = value.indexOf(URL_NAMESPACE_DELIMITER);
-
-    if (delimiterIndex > 0) {
-      var baseUrl = checkAndGetUrl(value.substring(0, delimiterIndex));
-      var namespace = value.substring(delimiterIndex + URL_NAMESPACE_DELIMITER.length()).trim();
-      return Optional.of(new DockerHubArtifactRegistry()
-        .baseUrl(removeEnd(baseUrl.toString(), PATH_DELIMITER))
-        .namespace(namespace));
+    for (var patternPair : PATTERNS) {
+      var pattern = patternPair.getLeft();
+      var matcher = pattern.matcher(value);
+      if (matcher.matches()) {
+        var stringParts = convertToStringPartsArray(matcher);
+        return Optional.of(patternPair.getRight().apply(stringParts));
+      }
     }
 
-    return Optional.of(new DockerHubArtifactRegistry().namespace(value));
+    return Optional.empty();
   }
 
-  public Optional<ArtifactRegistry> parseNpm(String registryString) {
-    if (StringUtils.isBlank(registryString)) {
-      return Optional.empty();
+  private static String[] convertToStringPartsArray(Matcher matcher) {
+    var groupCount = matcher.groupCount();
+    var parts = new String[groupCount];
+    for (int i = 1; i <= groupCount; i++) {
+      parts[i - 1] = matcher.group(i);
     }
-
-    var value = registryString.trim();
-    var delimiterIndex = value.indexOf(URL_NAMESPACE_DELIMITER);
-
-    if (delimiterIndex > 0) {
-      var baseUrl = checkAndGetUrl(value.substring(0, delimiterIndex));
-      var repository = value.substring(delimiterIndex + URL_NAMESPACE_DELIMITER.length()).trim();
-      return Optional.of(new FolioNpmArtifactRegistry()
-        .baseUrl(removeEnd(baseUrl.toString(), PATH_DELIMITER))
-        .namespace(repository));
-    }
-
-    return Optional.of(new FolioNpmArtifactRegistry().namespace(value));
+    return parts;
   }
 
-  public Optional<ArtifactRegistry> parse(String registryString, ArtifactRegistryType type) {
-    return type == ArtifactRegistryType.DOCKER_HUB ? parseDocker(registryString) : parseNpm(registryString);
+  private static ArtifactRegistry parseDockerHubString(String[] parts) {
+    var registry = new DockerHubArtifactRegistry();
+    if (parts.length == 3) {
+      var baseUrl = checkAndGetUrl(parts[1]);
+      registry.baseUrl(removeEnd(baseUrl.toString(), PATH_DELIMITER));
+      registry.namespace(parts[2].trim());
+    } else {
+      registry.namespace(parts[1].trim());
+    }
+    return registry;
+  }
+
+  private static ArtifactRegistry parseFolioNpmString(String[] parts) {
+    var registry = new FolioNpmArtifactRegistry();
+    if (parts.length == 3) {
+      var baseUrl = checkAndGetUrl(parts[1]);
+      registry.baseUrl(removeEnd(baseUrl.toString(), PATH_DELIMITER));
+      registry.namespace(parts[2].trim());
+    } else {
+      registry.namespace(parts[1].trim());
+    }
+    return registry;
+  }
+
+  private static ArtifactRegistry parseEcrString(String[] parts) {
+    var registry = new EcrArtifactRegistry();
+    var baseUrl = checkAndGetUrl(parts[1]);
+    registry.baseUrl(removeEnd(baseUrl.toString(), PATH_DELIMITER));
+    if (parts.length == 3) {
+      registry.namespace(parts[2].trim());
+    }
+    return registry;
   }
 
   private static URL checkAndGetUrl(String probablyUrl) {

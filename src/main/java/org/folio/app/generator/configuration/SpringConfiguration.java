@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import org.folio.app.generator.conditions.AwsCondition;
+import org.folio.app.generator.conditions.EcrCondition;
 import org.folio.app.generator.conditions.HttpCondition;
 import org.folio.app.generator.utils.PluginConfig;
 import org.springframework.context.annotation.Bean;
@@ -12,6 +13,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.services.ecr.EcrClient;
 import software.amazon.awssdk.services.s3.S3Client;
 
 @Configuration
@@ -45,5 +47,14 @@ public class SpringConfiguration {
     }
 
     return builder.build();
+  }
+
+  @Bean(name = "ecrClient")
+  @Conditional(EcrCondition.class)
+  public EcrClient ecrClient(PluginConfig config) {
+    return EcrClient.builder()
+      .region(config.getAwsRegion())
+      .credentialsProvider(DefaultCredentialsProvider.create())
+      .build();
   }
 }

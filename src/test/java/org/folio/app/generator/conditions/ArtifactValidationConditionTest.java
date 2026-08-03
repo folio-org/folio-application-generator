@@ -1,6 +1,7 @@
 package org.folio.app.generator.conditions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.folio.app.generator.model.types.ArtifactRegistryType.AWS_ECR;
 import static org.folio.app.generator.model.types.ArtifactRegistryType.DOCKER_HUB;
 import static org.folio.app.generator.model.types.ArtifactRegistryType.FOLIO_NPM;
 import static org.folio.app.generator.model.types.RegistryType.AWS_S3;
@@ -27,6 +28,7 @@ class ArtifactValidationConditionTest {
     var properties = context.getEnvironment().getSystemProperties();
     properties.remove(DOCKER_HUB.getPropertyName());
     properties.remove(FOLIO_NPM.getPropertyName());
+    properties.remove(AWS_ECR.getPropertyName());
     properties.remove(AWS_S3.getPropertyName());
     properties.remove(OKAPI.getPropertyName());
   }
@@ -36,6 +38,7 @@ class ArtifactValidationConditionTest {
     var properties = context.getEnvironment().getSystemProperties();
     properties.remove(DOCKER_HUB.getPropertyName());
     properties.remove(FOLIO_NPM.getPropertyName());
+    properties.remove(AWS_ECR.getPropertyName());
     properties.remove(AWS_S3.getPropertyName());
     properties.remove(OKAPI.getPropertyName());
     context.close();
@@ -63,6 +66,15 @@ class ArtifactValidationConditionTest {
   void matches_positive_whenBothDockerHubAndFolioNpmEnabled() {
     context.getEnvironment().getSystemProperties().put(DOCKER_HUB.getPropertyName(), true);
     context.getEnvironment().getSystemProperties().put(FOLIO_NPM.getPropertyName(), true);
+    context.register(TestConfiguration.class);
+    context.refresh();
+
+    assertThat(context.containsBean("testBean")).isTrue();
+  }
+
+  @Test
+  void matches_positive_whenEcrEnabled() {
+    context.getEnvironment().getSystemProperties().put(AWS_ECR.getPropertyName(), true);
     context.register(TestConfiguration.class);
     context.refresh();
 
@@ -101,6 +113,7 @@ class ArtifactValidationConditionTest {
   void nestedClasses_positive_notNull() {
     assertThat(new ArtifactValidationCondition.DockerHub()).isNotNull();
     assertThat(new ArtifactValidationCondition.FolioNpm()).isNotNull();
+    assertThat(new ArtifactValidationCondition.Ecr()).isNotNull();
   }
 
   @Configuration

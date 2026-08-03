@@ -186,7 +186,8 @@ public class ModuleVersionService {
       .sorted(Comparator.comparing(VersionCandidate::semver).reversed())
       .toList();
 
-    if (!pluginConfig.isValidateArtifacts()) {
+    var skipForFallback = registry.isFallback() && !pluginConfig.isValidateFallbackArtifacts();
+    if (!pluginConfig.isValidateArtifacts() || skipForFallback) {
       return matchingVersions.stream().findFirst();
     }
 
@@ -215,7 +216,7 @@ public class ModuleVersionService {
     var module = new ModuleDefinition().name(moduleName).version(candidate.original());
 
     for (var registry : artifactRegistries) {
-      if (artifactExistenceCheckerFacade.get().exists(module, registry, type)) {
+      if (artifactExistenceCheckerFacade.get().exists(module, registry)) {
         log.info(String.format("Artifact found: %s-%s", moduleName, candidate.original()));
         return true;
       }

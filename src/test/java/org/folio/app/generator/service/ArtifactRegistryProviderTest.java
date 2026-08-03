@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 import org.folio.app.generator.model.registry.artifact.ConfigArtifactRegistry;
+import org.folio.app.generator.model.registry.artifact.EcrArtifactRegistry;
 import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.service.parsers.StringArtifactRegistryParser;
 import org.folio.app.generator.support.UnitTest;
@@ -76,9 +77,77 @@ class ArtifactRegistryProviderTest {
   }
 
   @Test
+  void getArtifactRegistries_positive_ecrBeRegistryFromConfig() {
+    var ecrRegistry = new ConfigArtifactRegistry();
+    ecrRegistry.setType("aws-ecr");
+    ecrRegistry.setBaseUrl("https://123456789012.dkr.ecr.us-west-2.amazonaws.com");
+    ecrRegistry.setNamespace("folio");
+    var config = PluginConfig.builder()
+      .beArtifactRegistries(List.of(ecrRegistry))
+      .build();
+
+    var result = artifactRegistryProvider.getArtifactRegistries(config);
+
+    assertThat(result.beRegistries()).hasSize(1);
+    assertThat(result.beRegistries().get(0)).isInstanceOf(EcrArtifactRegistry.class);
+    assertThat(result.beRegistries().get(0).getBaseUrl())
+      .isEqualTo("https://123456789012.dkr.ecr.us-west-2.amazonaws.com");
+    assertThat(result.beRegistries().get(0).getNamespace()).isEqualTo("folio");
+  }
+
+  @Test
+  void getArtifactRegistries_positive_ecrFromConfigWithoutNamespace() {
+    var ecrRegistry = new ConfigArtifactRegistry();
+    ecrRegistry.setType("aws-ecr");
+    ecrRegistry.setBaseUrl("https://123456789012.dkr.ecr.us-west-2.amazonaws.com");
+    // namespace not set — ECR allows it (isValid requires only baseUrl)
+    var config = PluginConfig.builder()
+      .beArtifactRegistries(List.of(ecrRegistry))
+      .build();
+
+    var result = artifactRegistryProvider.getArtifactRegistries(config);
+
+    assertThat(result.beRegistries()).hasSize(1);
+    assertThat(result.beRegistries().get(0)).isInstanceOf(EcrArtifactRegistry.class);
+    assertThat(result.beRegistries().get(0).getBaseUrl())
+      .isEqualTo("https://123456789012.dkr.ecr.us-west-2.amazonaws.com");
+    assertThat(result.beRegistries().get(0).getNamespace()).isNull();
+  }
+
+  @Test
+  void getArtifactRegistries_negative_ecrFromConfigWithoutBaseUrl() {
+    var ecrRegistry = new ConfigArtifactRegistry();
+    ecrRegistry.setType("aws-ecr");
+    // baseUrl not set — ECR requires baseUrl, isValid returns false
+    ecrRegistry.setNamespace("folio");
+    var config = PluginConfig.builder()
+      .beArtifactRegistries(List.of(ecrRegistry))
+      .build();
+
+    assertThatThrownBy(() -> artifactRegistryProvider.getArtifactRegistries(config))
+      .isInstanceOf(IllegalArgumentException.class)
+      .hasMessageContaining("Invalid artifact registries found");
+  }
+
+  @Test
+  void getArtifactRegistries_negative_ecrUnderUiCategory() {
+    var ecrRegistry = new ConfigArtifactRegistry();
+    ecrRegistry.setType("aws-ecr");
+    ecrRegistry.setBaseUrl("https://123456789012.dkr.ecr.us-west-2.amazonaws.com");
+    ecrRegistry.setNamespace("folio");
+    var config = PluginConfig.builder()
+      .uiArtifactRegistries(List.of(ecrRegistry))
+      .build();
+
+    assertThatThrownBy(() -> artifactRegistryProvider.getArtifactRegistries(config))
+      .isInstanceOf(IllegalArgumentException.class)
+      .hasMessageContaining("Invalid artifact registries found");
+  }
+
+  @Test
   void getArtifactRegistries_positive_customBeRegistryFromCommandLine() {
     var config = PluginConfig.builder()
-      .cmdBeArtifactRegistries("my-namespace")
+      .cmdBeArtifactRegistries("docker-hub::my-namespace")
       .build();
 
     var result = artifactRegistryProvider.getArtifactRegistries(config);
@@ -91,7 +160,7 @@ class ArtifactRegistryProviderTest {
   @Test
   void getArtifactRegistries_positive_customUiRegistryFromCommandLine() {
     var config = PluginConfig.builder()
-      .cmdUiArtifactRegistries("my-npm-repo")
+      .cmdUiArtifactRegistries("folio-npm::my-npm-repo")
       .build();
 
     var result = artifactRegistryProvider.getArtifactRegistries(config);
@@ -102,9 +171,24 @@ class ArtifactRegistryProviderTest {
   }
 
   @Test
+  void getArtifactRegistries_positive_ecrFromCommandLine() {
+    var config = PluginConfig.builder()
+      .cmdBeArtifactRegistries("aws-ecr::https://123456789012.dkr.ecr.us-west-2.amazonaws.com::folio")
+      .build();
+
+    var result = artifactRegistryProvider.getArtifactRegistries(config);
+
+    assertThat(result.beRegistries()).hasSize(1);
+    assertThat(result.beRegistries().get(0)).isInstanceOf(EcrArtifactRegistry.class);
+    assertThat(result.beRegistries().get(0).getBaseUrl())
+      .isEqualTo("https://123456789012.dkr.ecr.us-west-2.amazonaws.com");
+    assertThat(result.beRegistries().get(0).getNamespace()).isEqualTo("folio");
+  }
+
+  @Test
   void getArtifactRegistries_positive_customRegistryWithUrl() {
     var config = PluginConfig.builder()
-      .cmdBeArtifactRegistries("https://custom-registry.io::custom-ns")
+      .cmdBeArtifactRegistries("docker-hub::https://custom-registry.io::custom-ns")
       .build();
 
     var result = artifactRegistryProvider.getArtifactRegistries(config);
@@ -117,7 +201,7 @@ class ArtifactRegistryProviderTest {
   @Test
   void getArtifactRegistries_positive_multipleCommandLineRegistries() {
     var config = PluginConfig.builder()
-      .cmdBeArtifactRegistries("namespace1,namespace2,namespace3")
+      .cmdBeArtifactRegistries("docker-hub::namespace1,docker-hub::namespace2,docker-hub::namespace3")
       .build();
 
     var result = artifactRegistryProvider.getArtifactRegistries(config);
@@ -129,12 +213,26 @@ class ArtifactRegistryProviderTest {
   }
 
   @Test
+  void getArtifactRegistries_positive_mixedDockerHubAndEcrCommandLine() {
+    var config = PluginConfig.builder()
+      .cmdBeArtifactRegistries(
+        "docker-hub::folioorg,aws-ecr::https://123456789012.dkr.ecr.us-west-2.amazonaws.com::folio")
+      .build();
+
+    var result = artifactRegistryProvider.getArtifactRegistries(config);
+
+    assertThat(result.beRegistries()).hasSize(2);
+    assertThat(result.beRegistries().get(0).getNamespace()).isEqualTo("folioorg");
+    assertThat(result.beRegistries().get(1)).isInstanceOf(EcrArtifactRegistry.class);
+  }
+
+  @Test
   void getArtifactRegistries_positive_combineCommandLineAndConfigRegistries() {
     var beRegistry = new ConfigArtifactRegistry();
     beRegistry.setType("docker-hub");
     beRegistry.setNamespace("config-namespace");
     var config = PluginConfig.builder()
-      .cmdBeArtifactRegistries("cmd-namespace")
+      .cmdBeArtifactRegistries("docker-hub::cmd-namespace")
       .beArtifactRegistries(List.of(beRegistry))
       .build();
 
@@ -152,6 +250,28 @@ class ArtifactRegistryProviderTest {
     invalidRegistry.setNamespace("test");
     var config = PluginConfig.builder()
       .beArtifactRegistries(List.of(invalidRegistry))
+      .build();
+
+    assertThatThrownBy(() -> artifactRegistryProvider.getArtifactRegistries(config))
+      .isInstanceOf(IllegalArgumentException.class)
+      .hasMessageContaining("Invalid artifact registries found");
+  }
+
+  @Test
+  void getArtifactRegistries_negative_bareNamespaceCommandLineRejected() {
+    var config = PluginConfig.builder()
+      .cmdBeArtifactRegistries("folioorg")
+      .build();
+
+    assertThatThrownBy(() -> artifactRegistryProvider.getArtifactRegistries(config))
+      .isInstanceOf(IllegalArgumentException.class)
+      .hasMessageContaining("Invalid artifact registries found");
+  }
+
+  @Test
+  void getArtifactRegistries_negative_folioNpmInBeCommandLine() {
+    var config = PluginConfig.builder()
+      .cmdBeArtifactRegistries("folio-npm::npm-folio")
       .build();
 
     assertThatThrownBy(() -> artifactRegistryProvider.getArtifactRegistries(config))
@@ -243,7 +363,7 @@ class ArtifactRegistryProviderTest {
   @Test
   void getArtifactRegistries_positive_preReleaseRegistriesFromCommandLine() {
     var config = PluginConfig.builder()
-      .cmdBePreReleaseArtifactRegistries("snapshot-ns")
+      .cmdBePreReleaseArtifactRegistries("docker-hub::snapshot-ns")
       .build();
 
     var result = artifactRegistryProvider.getArtifactRegistries(config);
@@ -373,7 +493,7 @@ class ArtifactRegistryProviderTest {
   @Test
   void getArtifactRegistries_positive_unifiedRegistriesFromCommandLine() {
     var config = PluginConfig.builder()
-      .cmdArtifactRegistries("docker-ns,npm-ns")
+      .cmdArtifactRegistries("docker-hub::docker-ns,folio-npm::npm-ns")
       .build();
 
     var result = artifactRegistryProvider.getArtifactRegistries(config);

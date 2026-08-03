@@ -20,6 +20,7 @@ public class OkapiModuleRegistry implements ModuleRegistry {
   private String url;
   private String publicUrl;
   private Map<String, String> headers = new LinkedHashMap<>();
+  private boolean fallback;
 
   /**
    * Sets url field and returns {@link OkapiModuleRegistry}.
