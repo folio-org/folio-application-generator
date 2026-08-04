@@ -54,4 +54,11 @@ class SpringConfigurationTest {
       assertThat(client).isNotNull();
     }
   }
+
+  @Test
+  void ecrClientFactory_positive_isCreated() {
+    var factory = configuration.ecrClientFactory();
+
+    assertThat(factory).isNotNull();
+  }
 }
