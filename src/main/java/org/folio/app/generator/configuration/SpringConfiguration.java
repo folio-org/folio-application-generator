@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.http.HttpClient;
 import java.time.Duration;
+import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.conditions.AwsCondition;
 import org.folio.app.generator.conditions.EcrCondition;
 import org.folio.app.generator.conditions.HttpCondition;
@@ -13,7 +14,6 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.services.ecr.EcrClient;
 import software.amazon.awssdk.services.s3.S3Client;
 
 @Configuration
@@ -37,10 +37,13 @@ public class SpringConfiguration {
 
   @Bean(name = "amazonS3Client")
   @Conditional(AwsCondition.class)
-  public S3Client amazonS3Client(PluginConfig config) {
+  public S3Client amazonS3Client(PluginConfig config, Log log) {
+    var interceptor = new S3RegionMismatchInterceptor(log, config.getAwsRegion());
     var builder = S3Client.builder()
       .region(config.getAwsRegion())
-      .credentialsProvider(DefaultCredentialsProvider.create());
+      .credentialsProvider(DefaultCredentialsProvider.create())
+      .crossRegionAccessEnabled(true)
+      .overrideConfiguration(c -> c.addExecutionInterceptor(interceptor));
 
     if (config.getAwsEndpointOverride() != null) {
       builder.endpointOverride(config.getAwsEndpointOverride());
@@ -49,12 +52,9 @@ public class SpringConfiguration {
     return builder.build();
   }
 
-  @Bean(name = "ecrClient")
+  @Bean(name = "ecrClientFactory")
   @Conditional(EcrCondition.class)
-  public EcrClient ecrClient(PluginConfig config) {
-    return EcrClient.builder()
-      .region(config.getAwsRegion())
-      .credentialsProvider(DefaultCredentialsProvider.create())
-      .build();
+  public EcrClientFactory ecrClientFactory() {
+    return new EcrClientFactory();
   }
 }

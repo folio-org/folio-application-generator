@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.apache.maven.plugin.logging.Log;
+import org.folio.app.generator.configuration.EcrClientFactory;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.registry.artifact.EcrArtifactRegistry;
 import org.folio.app.generator.model.types.ArtifactRegistryType;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ecr.EcrClient;
 import software.amazon.awssdk.services.ecr.model.DescribeImagesRequest;
 import software.amazon.awssdk.services.ecr.model.DescribeImagesResponse;
@@ -31,8 +33,10 @@ import software.amazon.awssdk.services.ecr.model.RepositoryNotFoundException;
 class EcrArtifactExistenceCheckerTest {
 
   private static final String ECR_BASE_URL = "https://123456789012.dkr.ecr.us-west-2.amazonaws.com";
+  private static final String ECR_BASE_URL_EU = "https://987654321098.dkr.ecr.eu-central-1.amazonaws.com";
   private static final String REGISTRY_ID = "123456789012";
 
+  @Mock private EcrClientFactory ecrClientFactory;
   @Mock private EcrClient ecrClient;
   @Mock private Log log;
 
@@ -40,7 +44,7 @@ class EcrArtifactExistenceCheckerTest {
 
   @BeforeEach
   void setUp() {
-    checker = new EcrArtifactExistenceChecker(ecrClient, log);
+    checker = new EcrArtifactExistenceChecker(ecrClientFactory, log);
   }
 
   @Test
@@ -53,6 +57,7 @@ class EcrArtifactExistenceCheckerTest {
     var module = new ModuleDefinition().name("mod-users").version("1.2.0-SNAPSHOT.5dc446");
     var registry = new EcrArtifactRegistry().baseUrl(ECR_BASE_URL).namespace("folio");
 
+    when(ecrClientFactory.forRegion(Region.US_WEST_2)).thenReturn(ecrClient);
     when(ecrClient.describeImages(any(DescribeImagesRequest.class)))
       .thenReturn(DescribeImagesResponse.builder().build());
 
@@ -65,6 +70,7 @@ class EcrArtifactExistenceCheckerTest {
     var module = new ModuleDefinition().name("mod-users").version("1.0.0");
     var registry = new EcrArtifactRegistry().baseUrl(ECR_BASE_URL);
 
+    when(ecrClientFactory.forRegion(Region.US_WEST_2)).thenReturn(ecrClient);
     when(ecrClient.describeImages(any(DescribeImagesRequest.class)))
       .thenReturn(DescribeImagesResponse.builder().build());
 
@@ -73,10 +79,41 @@ class EcrArtifactExistenceCheckerTest {
   }
 
   @Test
+  void exists_positive_regionExtractedFromBaseUrl() {
+    var module = new ModuleDefinition().name("mod-users").version("1.0.0");
+    var registry = new EcrArtifactRegistry().baseUrl(ECR_BASE_URL_EU).namespace("folio");
+
+    when(ecrClientFactory.forRegion(Region.EU_CENTRAL_1)).thenReturn(ecrClient);
+    when(ecrClient.describeImages(any(DescribeImagesRequest.class)))
+      .thenReturn(DescribeImagesResponse.builder().build());
+
+    assertThat(checker.exists(module, registry)).isTrue();
+    verify(ecrClientFactory).forRegion(Region.EU_CENTRAL_1);
+  }
+
+  @Test
+  void exists_positive_multipleRegions() {
+    var module = new ModuleDefinition().name("mod-users").version("1.0.0");
+    var registryUsWest = new EcrArtifactRegistry().baseUrl(ECR_BASE_URL).namespace("folio");
+    var registryEu = new EcrArtifactRegistry().baseUrl(ECR_BASE_URL_EU).namespace("folio");
+
+    when(ecrClientFactory.forRegion(any(Region.class))).thenReturn(ecrClient);
+    when(ecrClient.describeImages(any(DescribeImagesRequest.class)))
+      .thenReturn(DescribeImagesResponse.builder().build());
+
+    assertThat(checker.exists(module, registryUsWest)).isTrue();
+    assertThat(checker.exists(module, registryEu)).isTrue();
+
+    verify(ecrClientFactory).forRegion(Region.US_WEST_2);
+    verify(ecrClientFactory).forRegion(Region.EU_CENTRAL_1);
+  }
+
+  @Test
   void exists_negative_imageNotFound() {
     var module = new ModuleDefinition().name("mod-users").version("1.0.0");
     var registry = new EcrArtifactRegistry().baseUrl(ECR_BASE_URL).namespace("folio");
 
+    when(ecrClientFactory.forRegion(Region.US_WEST_2)).thenReturn(ecrClient);
     when(ecrClient.describeImages(any(DescribeImagesRequest.class)))
       .thenThrow(ImageNotFoundException.builder().message("Image not found").build());
 
@@ -89,6 +126,7 @@ class EcrArtifactExistenceCheckerTest {
     var module = new ModuleDefinition().name("mod-users").version("1.0.0");
     var registry = new EcrArtifactRegistry().baseUrl(ECR_BASE_URL).namespace("folio");
 
+    when(ecrClientFactory.forRegion(Region.US_WEST_2)).thenReturn(ecrClient);
     when(ecrClient.describeImages(any(DescribeImagesRequest.class)))
       .thenThrow(RepositoryNotFoundException.builder().message("Repository not found").build());
 
@@ -106,6 +144,7 @@ class EcrArtifactExistenceCheckerTest {
       .message("Internal server error")
       .awsErrorDetails(AwsErrorDetails.builder().errorCode("InternalServerError").build())
       .build();
+    when(ecrClientFactory.forRegion(Region.US_WEST_2)).thenReturn(ecrClient);
     when(ecrClient.describeImages(any(DescribeImagesRequest.class))).thenThrow(ecrException);
 
     assertThatThrownBy(() -> checker.exists(module, registry))
