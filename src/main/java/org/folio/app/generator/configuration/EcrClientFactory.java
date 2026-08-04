@@ -2,9 +2,6 @@ package org.folio.app.generator.configuration;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import org.folio.app.generator.conditions.EcrCondition;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ecr.EcrClient;
@@ -18,8 +15,6 @@ import software.amazon.awssdk.services.ecr.EcrClient;
  * different regions in a single Maven invocation, this factory caches one {@link EcrClient}
  * per region on first request, all sharing the ambient {@link DefaultCredentialsProvider}.
  */
-@Component
-@Conditional(EcrCondition.class)
 public class EcrClientFactory {
 
   private final ConcurrentMap<Region, EcrClient> clientsByRegion = new ConcurrentHashMap<>();
