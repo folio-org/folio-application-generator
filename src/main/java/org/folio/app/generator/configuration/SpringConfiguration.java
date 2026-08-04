@@ -6,6 +6,7 @@ import java.net.http.HttpClient;
 import java.time.Duration;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.conditions.AwsCondition;
+import org.folio.app.generator.conditions.EcrCondition;
 import org.folio.app.generator.conditions.HttpCondition;
 import org.folio.app.generator.utils.PluginConfig;
 import org.springframework.context.annotation.Bean;
@@ -49,5 +50,11 @@ public class SpringConfiguration {
     }
 
     return builder.build();
+  }
+
+  @Bean(name = "ecrClientFactory")
+  @Conditional(EcrCondition.class)
+  public EcrClientFactory ecrClientFactory() {
+    return new EcrClientFactory();
   }
 }
