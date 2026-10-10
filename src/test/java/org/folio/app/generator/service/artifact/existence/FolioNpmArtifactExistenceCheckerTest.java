@@ -137,7 +137,9 @@ class FolioNpmArtifactExistenceCheckerTest {
     "folio-eis_plugin-task-list, @folio-eis/plugin-task-list",
     "example_my_module, @example/my-module",
     "ui_users, @ui/users",
-    "platform_core, @platform/core"
+    "platform_core, @platform/core",
+    "folio_, @folio/folio-",
+    "_users, @folio/-users"
   })
   void transformModuleNameToPackage_positive(String moduleName, String expected) {
     var result = FolioNpmArtifactExistenceChecker.transformModuleNameToPackage(moduleName);
@@ -170,17 +172,6 @@ class FolioNpmArtifactExistenceCheckerTest {
     var result = FolioNpmArtifactExistenceChecker.transformModuleNameToPackage("folio_user-management");
 
     assertThat(result).isEqualTo("@folio/user-management");
-  }
-
-  @ParameterizedTest
-  @CsvSource({
-    "folio_, @folio/folio-",
-    "_users, @folio/-users"
-  })
-  void transformModuleNameToPackage_positive_separatorAtEdge(String moduleName, String expected) {
-    var result = FolioNpmArtifactExistenceChecker.transformModuleNameToPackage(moduleName);
-
-    assertThat(result).isEqualTo(expected);
   }
 
   @Test
