@@ -343,6 +343,8 @@ The `validateArtifacts` parameter enables validation of module artifacts in Dock
 
 Supported artifact registry types: `docker-hub`, `aws-ecr`, `folio-npm`.
 
+UI module names are mapped to NPM package names as `<scope>_<name>` → `@<scope>/<name>`, where `<scope>` is the part before the first `_` and any further `_` in `<name>` is replaced by `-` (`folio_users` → `@folio/users`, `example_my_module` → `@example/my-module`). Names without `_` are mapped to the `@folio` scope.
+
 #### Default Registries
 
 When no custom registries are specified, the following defaults are used:
