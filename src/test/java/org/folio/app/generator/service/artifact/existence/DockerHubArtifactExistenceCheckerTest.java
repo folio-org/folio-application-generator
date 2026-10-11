@@ -3,6 +3,7 @@ package org.folio.app.generator.service.artifact.existence;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -106,8 +107,8 @@ class DockerHubArtifactExistenceCheckerTest {
     var module = new ModuleDefinition().name("mod-users").version("1.0.0");
     var registry = new DockerHubArtifactRegistry().namespace("folioorg");
 
-    HttpResponse<InputStream> rateLimitResponse = org.mockito.Mockito.mock(HttpResponse.class);
-    HttpResponse<InputStream> successResponse = org.mockito.Mockito.mock(HttpResponse.class);
+    HttpResponse<InputStream> rateLimitResponse = mock(HttpResponse.class);
+    HttpResponse<InputStream> successResponse = mock(HttpResponse.class);
 
     when(rateLimitResponse.statusCode()).thenReturn(429);
     when(successResponse.statusCode()).thenReturn(200);
@@ -129,9 +130,9 @@ class DockerHubArtifactExistenceCheckerTest {
     var module = new ModuleDefinition().name("mod-users").version("1.0.0");
     var registry = new DockerHubArtifactRegistry().namespace("folioorg");
 
-    HttpResponse<InputStream> unavailableResponse1 = org.mockito.Mockito.mock(HttpResponse.class);
-    HttpResponse<InputStream> unavailableResponse2 = org.mockito.Mockito.mock(HttpResponse.class);
-    HttpResponse<InputStream> successResponse = org.mockito.Mockito.mock(HttpResponse.class);
+    HttpResponse<InputStream> unavailableResponse1 = mock(HttpResponse.class);
+    HttpResponse<InputStream> unavailableResponse2 = mock(HttpResponse.class);
+    HttpResponse<InputStream> successResponse = mock(HttpResponse.class);
 
     when(unavailableResponse1.statusCode()).thenReturn(503);
     when(unavailableResponse2.statusCode()).thenReturn(503);
@@ -154,7 +155,7 @@ class DockerHubArtifactExistenceCheckerTest {
     var module = new ModuleDefinition().name("mod-users").version("1.0.0");
     var registry = new DockerHubArtifactRegistry().namespace("folioorg");
 
-    HttpResponse<InputStream> rateLimitResponse = org.mockito.Mockito.mock(HttpResponse.class);
+    HttpResponse<InputStream> rateLimitResponse = mock(HttpResponse.class);
     when(rateLimitResponse.statusCode()).thenReturn(429);
 
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
@@ -191,7 +192,7 @@ class DockerHubArtifactExistenceCheckerTest {
     var module = new ModuleDefinition().name("mod-users").version("1.0.0");
     var registry = new DockerHubArtifactRegistry().namespace("folioorg");
 
-    HttpResponse<InputStream> successResponse = org.mockito.Mockito.mock(HttpResponse.class);
+    HttpResponse<InputStream> successResponse = mock(HttpResponse.class);
     when(successResponse.statusCode()).thenReturn(200);
 
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
@@ -211,7 +212,7 @@ class DockerHubArtifactExistenceCheckerTest {
     var module = new ModuleDefinition().name("mod-users").version("1.0.0");
     var registry = new DockerHubArtifactRegistry().namespace("folioorg");
 
-    HttpResponse<InputStream> successResponse = org.mockito.Mockito.mock(HttpResponse.class);
+    HttpResponse<InputStream> successResponse = mock(HttpResponse.class);
     when(successResponse.statusCode()).thenReturn(200);
 
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
@@ -231,7 +232,7 @@ class DockerHubArtifactExistenceCheckerTest {
     var module = new ModuleDefinition().name("mod-users").version("1.0.0");
     var registry = new DockerHubArtifactRegistry().namespace("folioorg");
 
-    HttpResponse<InputStream> successResponse = org.mockito.Mockito.mock(HttpResponse.class);
+    HttpResponse<InputStream> successResponse = mock(HttpResponse.class);
     when(successResponse.statusCode()).thenReturn(200);
 
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
@@ -267,8 +268,8 @@ class DockerHubArtifactExistenceCheckerTest {
     var module = new ModuleDefinition().name("mod-users").version("1.0.0");
     var registry = new DockerHubArtifactRegistry().namespace("folioorg");
 
-    HttpResponse<InputStream> serverErrorResponse = org.mockito.Mockito.mock(HttpResponse.class);
-    HttpResponse<InputStream> successResponse = org.mockito.Mockito.mock(HttpResponse.class);
+    HttpResponse<InputStream> serverErrorResponse = mock(HttpResponse.class);
+    HttpResponse<InputStream> successResponse = mock(HttpResponse.class);
 
     when(serverErrorResponse.statusCode()).thenReturn(500);
     when(successResponse.statusCode()).thenReturn(200);
@@ -290,7 +291,7 @@ class DockerHubArtifactExistenceCheckerTest {
     var module = new ModuleDefinition().name("mod-users").version("1.0.0");
     var registry = new DockerHubArtifactRegistry().namespace("folioorg");
 
-    HttpResponse<InputStream> serverErrorResponse = org.mockito.Mockito.mock(HttpResponse.class);
+    HttpResponse<InputStream> serverErrorResponse = mock(HttpResponse.class);
     when(serverErrorResponse.statusCode()).thenReturn(500);
 
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
