@@ -2,12 +2,10 @@ package org.folio.app.generator.utils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.net.http.HttpTimeoutException;
+import java.net.http.HttpResponse.BodyHandler;
 import java.util.Map;
 import java.util.Set;
 import lombok.experimental.UtilityClass;
@@ -22,19 +20,35 @@ public class HttpRequestUtils {
 
   public static HttpResponse<InputStream> sendWithRetry(HttpClient httpClient, Log log, HttpRequest request)
       throws IOException, InterruptedException {
+    return sendWithRetry(httpClient, log, request, HttpResponse.BodyHandlers.ofInputStream());
+  }
+
+  /**
+   * Sends the request, retrying on retryable status codes and on any {@link IOException}
+   * (connection reset, SSL handshake failure, timeouts, etc.) with a linear back-off.
+   *
+   * @param httpClient  - {@link HttpClient} to send the request with
+   * @param log         - Maven logger
+   * @param request     - {@link HttpRequest} to send
+   * @param bodyHandler - {@link BodyHandler} for the response body
+   * @return the first response with a non-retryable status code, or the response of the final attempt
+   * @throws IOException if the last attempt fails with a network error
+   */
+  public static <T> HttpResponse<T> sendWithRetry(HttpClient httpClient, Log log, HttpRequest request,
+      BodyHandler<T> bodyHandler) throws IOException, InterruptedException {
     var attemptsCount = 0;
     IOException lastException = null;
 
     while (attemptsCount < RETRYABLE_ATTEMPTS_NUMBER) {
       try {
-        var response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        var response = httpClient.send(request, bodyHandler);
         var statusCode = response.statusCode();
         if (!RETRYABLE_STATUS_CODES.contains(statusCode)) {
           return response;
         }
         log.debug("Retrying request due to status code " + statusCode
           + " (attempt " + (attemptsCount + 1) + ")");
-      } catch (SocketException | SocketTimeoutException | HttpTimeoutException e) {
+      } catch (IOException e) {
         lastException = e;
         var errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
         log.warn("Network error, retrying (attempt " + (attemptsCount + 1) + "): " + errorMsg);
@@ -46,7 +60,7 @@ public class HttpRequestUtils {
     if (lastException != null) {
       throw lastException;
     }
-    return httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+    return httpClient.send(request, bodyHandler);
   }
 
   public static String cleanUrl(String url) {
