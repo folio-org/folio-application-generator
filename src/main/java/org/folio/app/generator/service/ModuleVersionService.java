@@ -52,12 +52,9 @@ public class ModuleVersionService {
       log.warn("Module registries are empty for type: " + type.name());
     }
 
-    List<Dependency> resolved = new ArrayList<>();
-    for (Dependency dependency : dependencies) {
-      resolved.add(resolveModuleConstraints(dependency, type, registries));
-    }
-
-    return resolved;
+    return dependencies.stream()
+      .map(dependency -> resolveModuleConstraints(dependency, type, registries))
+      .toList();
   }
 
   /**
