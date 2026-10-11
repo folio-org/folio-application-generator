@@ -63,12 +63,14 @@ public class ModuleVersionService {
   /**
    * Resolves a single dependency's version constraint to an exact version.
    * Collects matching versions from ALL registries and selects the greatest one.
+   * Fallback registries are queried only when primary registries answered without a match and without errors.
+   * If no matching version is found and any queried registry failed, an infrastructure error is raised.
    *
    * @param dependency the dependency with version constraint
    * @param type       the module type (BE or UI)
    * @param registries list of module registries to query
    * @return dependency with resolved exact version
-   * @throws ApplicationGeneratorException if no matching version is found
+   * @throws ApplicationGeneratorException if no matching version is found or a registry error occurred
    */
   private Dependency resolveModuleConstraints(Dependency dependency, ModuleType type, List<ModuleRegistry> registries)
     throws ApplicationGeneratorException {
@@ -81,7 +83,6 @@ public class ModuleVersionService {
     }
 
     List<VersionCandidate> allMatchingVersions = new ArrayList<>();
-    int registryErrorCount = 0;
     Exception lastException = null;
 
     for (var registry : registries) {
@@ -89,7 +90,6 @@ public class ModuleVersionService {
         var matchingVersion = getMatchingVersionFromRegistry(registry, dependency, type);
         matchingVersion.ifPresent(allMatchingVersions::add);
       } catch (Exception e) {
-        registryErrorCount++;
         lastException = e;
         log.warn(String.format("Failed to resolve constraint '%s' for module '%s' from %s",
           versionConstraint, moduleName, registry.getClass().getSimpleName()), e);
@@ -97,7 +97,14 @@ public class ModuleVersionService {
     }
 
     var fallbackRegistries = moduleRegistries.getFallbackRegistries(type);
-    int totalRegistryCount = registries.size() + fallbackRegistries.size();
+
+    if (allMatchingVersions.isEmpty() && lastException != null) {
+      if (!fallbackRegistries.isEmpty()) {
+        log.warn(String.format("Skipping fallback registries for '%s' constraint '%s' due to primary registry error",
+          moduleName, versionConstraint));
+      }
+      throw infrastructureError(type, moduleName, lastException);
+    }
 
     if (allMatchingVersions.isEmpty() && !fallbackRegistries.isEmpty()) {
       log.info(String.format("Trying fallback registries for '%s' constraint '%s'", moduleName, versionConstraint));
@@ -111,7 +118,6 @@ public class ModuleVersionService {
             allMatchingVersions.add(matchingVersion.get());
           }
         } catch (Exception e) {
-          registryErrorCount++;
           lastException = e;
           log.warn(String.format("Failed to resolve constraint '%s' for module '%s' from fallback %s",
             versionConstraint, moduleName, registry.getClass().getSimpleName()), e);
@@ -120,15 +126,8 @@ public class ModuleVersionService {
     }
 
     if (allMatchingVersions.isEmpty()) {
-      var allRegistriesFailed = registryErrorCount == totalRegistryCount && totalRegistryCount > 0;
-
-      if (allRegistriesFailed) {
-        var exMsg = lastException.getMessage();
-        var errorMsg = exMsg != null ? exMsg : lastException.getClass().getSimpleName();
-        var message = String.format("Infrastructure error while resolving %s module '%s': %s",
-          type, moduleName, errorMsg);
-        var errorDetail = ErrorDetail.infrastructureError(null, errorMsg);
-        throw new ApplicationGeneratorException(message, ErrorCategory.INFRASTRUCTURE, errorDetail, lastException);
+      if (lastException != null) {
+        throw infrastructureError(type, moduleName, lastException);
       }
 
       var message = String.format("No version matching constraint '%s' found for %s module '%s' in any registry",
@@ -147,6 +146,15 @@ public class ModuleVersionService {
       type, moduleName, versionConstraint, resolvedVersionString, registryIdentifier));
 
     return new Dependency(moduleName, resolvedVersionString, dependency.getPreRelease());
+  }
+
+  private static ApplicationGeneratorException infrastructureError(ModuleType type, String moduleName,
+                                                                  Exception cause) {
+    var exMsg = cause.getMessage();
+    var errorMsg = exMsg != null ? exMsg : cause.getClass().getSimpleName();
+    var message = String.format("Infrastructure error while resolving %s module '%s': %s", type, moduleName, errorMsg);
+    var errorDetail = ErrorDetail.infrastructureError(null, errorMsg);
+    return new ApplicationGeneratorException(message, ErrorCategory.INFRASTRUCTURE, errorDetail, cause);
   }
 
   /**
