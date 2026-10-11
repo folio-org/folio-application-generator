@@ -3,6 +3,8 @@ package org.folio.app.generator.service.artifact.existence;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -14,6 +16,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Map;
+import javax.net.ssl.SSLHandshakeException;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.registry.artifact.FolioNpmArtifactRegistry;
@@ -180,5 +183,31 @@ class FolioNpmArtifactExistenceCheckerTest {
     assertThatThrownBy(() -> checker.exists(module, registry))
       .isInstanceOf(IOException.class)
       .hasMessage("Connection refused");
+
+    verify(httpClient, times(5)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void exists_positive_retryOnSslHandshakeExceptionThenSuccess() throws Exception {
+    var module = new ModuleDefinition().name("folio_users").version("1.0.0");
+    var registry = new FolioNpmArtifactRegistry().namespace("npm-folio");
+    var responseBody = new ByteArrayInputStream("{}".getBytes());
+
+    HttpResponse<InputStream> successResponse = mock(HttpResponse.class);
+    when(successResponse.statusCode()).thenReturn(200);
+    when(successResponse.body()).thenReturn(responseBody);
+    when(jsonConverter.parse(any(InputStream.class), any(TypeReference.class)))
+      .thenReturn(Map.of("versions", Map.of("1.0.0", Map.of())));
+
+    when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+      .thenThrow(new SSLHandshakeException("Remote host terminated the handshake"))
+      .thenReturn(successResponse);
+
+    var result = checker.exists(module, registry);
+
+    assertThat(result).isTrue();
+    verify(httpClient, times(2)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
+    verify(log).warn("Network error, retrying (attempt 1): Remote host terminated the handshake");
   }
 }
