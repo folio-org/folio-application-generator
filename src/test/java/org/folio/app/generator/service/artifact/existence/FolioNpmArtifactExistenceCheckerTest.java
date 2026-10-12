@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -134,9 +135,14 @@ class FolioNpmArtifactExistenceCheckerTest {
     "folio_inventory, @folio/inventory",
     "folio_circulation, @folio/circulation",
     "folio_organizations, @folio/organizations",
-    "ui_users, @folio/ui-users",
-    "ui_inventory, @folio/ui-inventory",
-    "platform_core, @folio/platform-core"
+    "folio_plugin-find-user, @folio/plugin-find-user",
+    "folio-eis_panorama, @folio-eis/panorama",
+    "folio-eis_plugin-task-list, @folio-eis/plugin-task-list",
+    "example_my_module, @example/my-module",
+    "ui_users, @ui/users",
+    "platform_core, @platform/core",
+    "folio_, @folio/folio-",
+    "_users, @folio/-users"
   })
   void transformModuleNameToPackage_positive(String moduleName, String expected) {
     var result = FolioNpmArtifactExistenceChecker.transformModuleNameToPackage(moduleName);
@@ -169,6 +175,29 @@ class FolioNpmArtifactExistenceCheckerTest {
     var result = FolioNpmArtifactExistenceChecker.transformModuleNameToPackage("folio_user-management");
 
     assertThat(result).isEqualTo("@folio/user-management");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void exists_positive_scopedPackageFound() throws Exception {
+    var module = new ModuleDefinition().name("example_my-module").version("1.0.0");
+    var registry = new FolioNpmArtifactRegistry().namespace("npm-hosted");
+    var responseBody = new ByteArrayInputStream("{}".getBytes());
+    var requestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+
+    when(httpClient.send(requestCaptor.capture(), any(HttpResponse.BodyHandler.class)))
+      .thenReturn(httpResponse);
+    when(httpResponse.statusCode()).thenReturn(200);
+    when(httpResponse.body()).thenReturn(responseBody);
+    when(jsonConverter.parse(any(InputStream.class), any(TypeReference.class)))
+      .thenReturn(Map.of("versions", Map.of("1.0.0", Map.of())));
+
+    var result = checker.exists(module, registry);
+
+    assertThat(result).isTrue();
+    assertThat(requestCaptor.getValue().uri())
+      .hasToString("https://repository.folio.org/repository/npm-hosted/@example/my-module");
+    verify(log).debug("NPM package found: @example/my-module@1.0.0");
   }
 
   @Test
