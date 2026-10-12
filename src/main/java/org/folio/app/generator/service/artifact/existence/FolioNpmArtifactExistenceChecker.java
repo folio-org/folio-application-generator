@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 public class FolioNpmArtifactExistenceChecker extends HttpArtifactExistenceChecker {
 
   private static final int SUCCESS_STATUS_CODE = 200;
+  private static final String DEFAULT_SCOPE = "@folio/";
 
   public FolioNpmArtifactExistenceChecker(HttpClient httpClient, Log log, JsonConverter jsonConverter) {
     super(httpClient, log, jsonConverter);
@@ -69,12 +70,14 @@ public class FolioNpmArtifactExistenceChecker extends HttpArtifactExistenceCheck
   }
 
   public static String transformModuleNameToPackage(String moduleName) {
-    var name = moduleName;
-    if (name.startsWith("folio_")) {
-      name = name.substring(6);
+    var separatorIndex = moduleName.indexOf('_');
+    if (separatorIndex <= 0 || separatorIndex == moduleName.length() - 1) {
+      return DEFAULT_SCOPE + moduleName.replace('_', '-');
     }
-    name = name.replace('_', '-');
-    return "@folio/" + name;
+
+    var scope = moduleName.substring(0, separatorIndex);
+    var name = moduleName.substring(separatorIndex + 1).replace('_', '-');
+    return "@" + scope + "/" + name;
   }
 
   private static String buildUrl(String baseUrl, String repository, String packageName) {
