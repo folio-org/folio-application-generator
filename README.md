@@ -197,7 +197,7 @@ already set on a registry (via its pom `<headers>` or `::headers=`) is **not** o
 }
 ```
 
-#### Application dependency fields
+#### Virtual applications JSON template example
 
 | Field        | Written to descriptor | Description                                                                   |
 |--------------|-----------------------|-------------------------------------------------------------------------------|
@@ -206,8 +206,7 @@ already set on a registry (via its pom `<headers>` or `::headers=`) is **not** o
 | `optional`   | yes                   | `true` or `false`; written as given and omitted when absent from the template |
 | `preRelease` | no                    | Not used for application dependencies                                         |
 
-Virtual applications have no modules, so their templates omit `modules` and `uiModules`. For such templates the generated descriptor also omits
-`modules`, `uiModules`, `moduleDescriptors` and `uiModuleDescriptors`.
+Virtual applications have no modules, so their templates should not use `modules` and `uiModules`.
 
 ```json
 {
