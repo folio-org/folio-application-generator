@@ -67,8 +67,10 @@ class TemplateUpdateGeneratorTest {
       .uiModules(List.of(new ModuleDefinition().id("folio_test-2.0.0").name("folio_test").version("2.0.0")));
 
     template = new ApplicationDescriptorTemplate()
-      .modules(List.of(new Dependency("mod-test", "^1.0.0", null), new Dependency("mod-new", "1.0.0", null)))
-      .uiModules(List.of(new Dependency("folio_test", "^2.0.0", null)));
+      .modules(List.of(
+        new Dependency("mod-test", "^1.0.0", null, null),
+        new Dependency("mod-new", "1.0.0", null, null)))
+      .uiModules(List.of(new Dependency("folio_test", "^2.0.0", null, null)));
   }
 
   @Test
@@ -128,8 +130,8 @@ class TemplateUpdateGeneratorTest {
     mojo.allowAddModules = true;
     mojo.removeUnlistedModules = true;
 
-    inputDescriptor.setDependencies(List.of(new Dependency("app-old", "1.0.0", null)));
-    template.setDependencies(List.of(new Dependency("app-new", "2.0.0", null)));
+    inputDescriptor.setDependencies(List.of(new Dependency("app-old", "1.0.0", null, null)));
+    template.setDependencies(List.of(new Dependency("app-new", "2.0.0", null, null)));
 
     setupContextMocks();
     when(mockJsonProvider.readJsonFromFile("/path/to/descriptor.json", ApplicationDescriptor.class, false))
@@ -171,7 +173,7 @@ class TemplateUpdateGeneratorTest {
     mojo.allowAddModules = true;
     mojo.removeUnlistedModules = true;
 
-    inputDescriptor.setDependencies(List.of(new Dependency("app-old", "1.0.0", null)));
+    inputDescriptor.setDependencies(List.of(new Dependency("app-old", "1.0.0", null, null)));
     template.setDependencies(null);
 
     setupContextMocks();

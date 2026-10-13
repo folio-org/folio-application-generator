@@ -64,7 +64,15 @@ public class ApplicationDescriptorService {
       clearModuleUrls(baseAppDescriptor.getModules());
       clearModuleUrls(baseAppDescriptor.getUiModules());
     }
+
+    if (isModulesNotExist(template)) {
+      baseAppDescriptor.modules(null).uiModules(null).moduleDescriptors(null).uiModuleDescriptors(null);
+    }
     return baseAppDescriptor;
+  }
+
+  private boolean isModulesNotExist(ApplicationDescriptorTemplate template) {
+    return emptyIfNull(template.getModules()).isEmpty() && emptyIfNull(template.getUiModules()).isEmpty();
   }
 
   private List<Dependency> resolveConstraints(List<Dependency> dependencies, ModuleType type)
@@ -126,7 +134,11 @@ public class ApplicationDescriptorService {
 
   private List<Dependency> stripPreRelease(List<Dependency> dependencies) {
     return emptyIfNull(dependencies).stream()
-      .map(dep -> Dependency.builder().name(dep.getName()).version(dep.getVersion()).build())
+      .map(dep -> Dependency.builder()
+        .name(dep.getName())
+        .version(dep.getVersion())
+        .optional(dep.getOptional())
+        .build())
       .toList();
   }
 }

@@ -38,8 +38,8 @@ class ApplicationDependencyValidatorTest {
   void validateDependencies_positive_validModules() {
     var template = new ApplicationDescriptorTemplate();
     template.setModules(List.of(
-      new Dependency("mod-foo", "1.0.0", PreReleaseFilter.FALSE),
-      new Dependency("mod-bar", "^2.0.0", PreReleaseFilter.FALSE)));
+      new Dependency("mod-foo", "1.0.0", PreReleaseFilter.FALSE, null),
+      new Dependency("mod-bar", "^2.0.0", PreReleaseFilter.FALSE, null)));
 
     when(mavenProject.getVersion()).thenReturn("1.0.0");
 
@@ -50,8 +50,8 @@ class ApplicationDependencyValidatorTest {
   void validateDependencies_positive_validApplicationDependencies() {
     var template = new ApplicationDescriptorTemplate();
     template.setDependencies(List.of(
-      new Dependency("app-foo", "1.0.0", PreReleaseFilter.FALSE),
-      new Dependency("app-bar", "^2.0.0", PreReleaseFilter.FALSE)));
+      new Dependency("app-foo", "1.0.0", PreReleaseFilter.FALSE, null),
+      new Dependency("app-bar", "^2.0.0", PreReleaseFilter.FALSE, null)));
 
     when(mavenProject.getVersion()).thenReturn("1.0.0");
 
@@ -62,7 +62,7 @@ class ApplicationDependencyValidatorTest {
   void validateDependencies_positive_preReleaseVersionWithTrueFilter() {
     var template = new ApplicationDescriptorTemplate();
     template.setModules(List.of(
-      new Dependency("mod-foo", "1.0.0-SNAPSHOT", PreReleaseFilter.TRUE)));
+      new Dependency("mod-foo", "1.0.0-SNAPSHOT", PreReleaseFilter.TRUE, null)));
 
     when(mavenProject.getVersion()).thenReturn("1.0.0");
 
@@ -73,7 +73,7 @@ class ApplicationDependencyValidatorTest {
   void validateDependencies_positive_preReleaseVersionWithOnlyFilter() {
     var template = new ApplicationDescriptorTemplate();
     template.setModules(List.of(
-      new Dependency("mod-foo", "1.0.0-alpha", PreReleaseFilter.ONLY)));
+      new Dependency("mod-foo", "1.0.0-alpha", PreReleaseFilter.ONLY, null)));
 
     when(mavenProject.getVersion()).thenReturn("1.0.0");
 
@@ -84,7 +84,7 @@ class ApplicationDependencyValidatorTest {
   void validateDependencies_positive_stableVersionWithFalseFilter() {
     var template = new ApplicationDescriptorTemplate();
     template.setModules(List.of(
-      new Dependency("mod-foo", "1.0.0", PreReleaseFilter.FALSE)));
+      new Dependency("mod-foo", "1.0.0", PreReleaseFilter.FALSE, null)));
 
     when(mavenProject.getVersion()).thenReturn("1.0.0");
 
@@ -95,7 +95,7 @@ class ApplicationDependencyValidatorTest {
   void validateDependencies_positive_stableVersionWithNullFilter() {
     var template = new ApplicationDescriptorTemplate();
     template.setModules(List.of(
-      new Dependency("mod-foo", "1.0.0", null)));
+      new Dependency("mod-foo", "1.0.0", null, null)));
 
     when(mavenProject.getVersion()).thenReturn("1.0.0");
 
@@ -106,7 +106,7 @@ class ApplicationDependencyValidatorTest {
   void validateDependencies_positive_reservedVersionKeyword() {
     var template = new ApplicationDescriptorTemplate();
     template.setModules(List.of(
-      new Dependency("mod-foo", "", PreReleaseFilter.FALSE)));
+      new Dependency("mod-foo", "", PreReleaseFilter.FALSE, null)));
 
     when(mavenProject.getVersion()).thenReturn("1.0.0");
 
@@ -117,9 +117,9 @@ class ApplicationDependencyValidatorTest {
   void validateDependencies_positive_versionConstraint() {
     var template = new ApplicationDescriptorTemplate();
     template.setModules(List.of(
-      new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE),
-      new Dependency("mod-bar", "~2.0.0", PreReleaseFilter.FALSE),
-      new Dependency("mod-baz", ">=3.0.0", PreReleaseFilter.FALSE)));
+      new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null),
+      new Dependency("mod-bar", "~2.0.0", PreReleaseFilter.FALSE, null),
+      new Dependency("mod-baz", ">=3.0.0", PreReleaseFilter.FALSE, null)));
 
     when(mavenProject.getVersion()).thenReturn("1.0.0");
 
@@ -131,7 +131,7 @@ class ApplicationDependencyValidatorTest {
     var template = new ApplicationDescriptorTemplate();
     template.setVersion("2.0.0");
     template.setModules(List.of(
-      new Dependency("mod-foo", "1.0.0", PreReleaseFilter.FALSE)));
+      new Dependency("mod-foo", "1.0.0", PreReleaseFilter.FALSE, null)));
 
     validator.validateDependencies(template);
   }
@@ -151,7 +151,7 @@ class ApplicationDependencyValidatorTest {
                                                     String version, String expectedErrorFragment) {
     var template = new ApplicationDescriptorTemplate();
     template.setModules(List.of(
-      new Dependency(moduleName, version, PreReleaseFilter.FALSE)));
+      new Dependency(moduleName, version, PreReleaseFilter.FALSE, null)));
 
     when(mavenProject.getVersion()).thenReturn("1.0.0");
 
@@ -176,7 +176,7 @@ class ApplicationDependencyValidatorTest {
   void validateDependencies_negative_stableVersionWithTrueFilter() {
     var template = new ApplicationDescriptorTemplate();
     template.setModules(List.of(
-      new Dependency("mod-foo", "1.0.0", PreReleaseFilter.TRUE)));
+      new Dependency("mod-foo", "1.0.0", PreReleaseFilter.TRUE, null)));
 
     when(mavenProject.getVersion()).thenReturn("1.0.0");
 
@@ -190,7 +190,7 @@ class ApplicationDependencyValidatorTest {
   void validateDependencies_negative_stableVersionWithOnlyFilter() {
     var template = new ApplicationDescriptorTemplate();
     template.setModules(List.of(
-      new Dependency("mod-foo", "1.0.0", PreReleaseFilter.ONLY)));
+      new Dependency("mod-foo", "1.0.0", PreReleaseFilter.ONLY, null)));
 
     when(mavenProject.getVersion()).thenReturn("1.0.0");
 
@@ -204,7 +204,7 @@ class ApplicationDependencyValidatorTest {
   void validateDependencies_negative_emptyApplicationDependencyName() {
     var template = new ApplicationDescriptorTemplate();
     template.setDependencies(List.of(
-      new Dependency("", "^1.0.0", PreReleaseFilter.FALSE)));
+      new Dependency("", "^1.0.0", PreReleaseFilter.FALSE, null)));
 
     when(mavenProject.getVersion()).thenReturn("1.0.0");
 
@@ -218,7 +218,7 @@ class ApplicationDependencyValidatorTest {
   void validateDependencies_negative_invalidApplicationDependencyVersion() {
     var template = new ApplicationDescriptorTemplate();
     template.setDependencies(List.of(
-      new Dependency("app-foo", "invalid", PreReleaseFilter.FALSE)));
+      new Dependency("app-foo", "invalid", PreReleaseFilter.FALSE, null)));
 
     when(mavenProject.getVersion()).thenReturn("1.0.0");
 
@@ -232,12 +232,12 @@ class ApplicationDependencyValidatorTest {
   void validateDependencies_negative_multipleValidationErrors() {
     var template = new ApplicationDescriptorTemplate();
     template.setModules(List.of(
-      new Dependency("", "1.0.0", PreReleaseFilter.FALSE),
-      new Dependency("mod-bar", "invalid", PreReleaseFilter.FALSE),
-      new Dependency("mod-baz", "1.0.0-SNAPSHOT", PreReleaseFilter.FALSE)));
+      new Dependency("", "1.0.0", PreReleaseFilter.FALSE, null),
+      new Dependency("mod-bar", "invalid", PreReleaseFilter.FALSE, null),
+      new Dependency("mod-baz", "1.0.0-SNAPSHOT", PreReleaseFilter.FALSE, null)));
     template.setDependencies(List.of(
-      new Dependency("", "^1.0.0", PreReleaseFilter.FALSE),
-      new Dependency("app-foo", "bad-version", PreReleaseFilter.FALSE)));
+      new Dependency("", "^1.0.0", PreReleaseFilter.FALSE, null),
+      new Dependency("app-foo", "bad-version", PreReleaseFilter.FALSE, null)));
 
     when(mavenProject.getVersion()).thenReturn("1.0.0");
 
@@ -255,7 +255,7 @@ class ApplicationDependencyValidatorTest {
     var template = new ApplicationDescriptorTemplate();
     template.setVersion("invalid");
     template.setModules(List.of(
-      new Dependency("mod-foo", "1.0.0", PreReleaseFilter.FALSE)));
+      new Dependency("mod-foo", "1.0.0", PreReleaseFilter.FALSE, null)));
 
     assertThatThrownBy(() -> validator.validateDependencies(template))
         .isInstanceOf(IllegalArgumentException.class)
@@ -266,7 +266,7 @@ class ApplicationDependencyValidatorTest {
   void validateDependencies_negative_invalidProjectVersion() {
     var template = new ApplicationDescriptorTemplate();
     template.setModules(List.of(
-      new Dependency("mod-foo", "1.0.0", PreReleaseFilter.FALSE)));
+      new Dependency("mod-foo", "1.0.0", PreReleaseFilter.FALSE, null)));
 
     when(mavenProject.getVersion()).thenReturn("invalid-version");
 

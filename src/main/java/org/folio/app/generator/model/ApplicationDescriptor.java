@@ -1,6 +1,7 @@
 package org.folio.app.generator.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
 import java.util.Map;
 import lombok.Data;
@@ -32,11 +33,13 @@ public class ApplicationDescriptor {
   /**
    * A list with modules to be resolved.
    */
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private List<ModuleDefinition> modules;
 
   /**
    * A list with UI modules to be resolved.
    */
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private List<ModuleDefinition> uiModules;
 
   /**
@@ -47,11 +50,13 @@ public class ApplicationDescriptor {
   /**
    * List with module descriptor.
    */
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private List<Map<String, Object>> moduleDescriptors;
 
   /**
    * List with UI module descriptors.
    */
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private List<Map<String, Object>> uiModuleDescriptors;
 
   /**

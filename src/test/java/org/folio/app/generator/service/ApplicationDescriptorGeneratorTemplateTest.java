@@ -10,6 +10,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
@@ -89,12 +90,12 @@ class ApplicationDescriptorGeneratorTemplateTest {
   @SneakyThrows
   void generate_positive_minimalTemplateWithLatestVersions() {
     var resolvedBeModules = List.of(
-      new Dependency("mod-configuration", "5.10.0-SNAPSHOT.123", PreReleaseFilter.TRUE),
-      new Dependency("mod-permissions", "6.5.0-SNAPSHOT.456", PreReleaseFilter.TRUE),
-      new Dependency("mod-users", "19.3.0-SNAPSHOT.789", PreReleaseFilter.TRUE));
+      new Dependency("mod-configuration", "5.10.0-SNAPSHOT.123", PreReleaseFilter.TRUE, null),
+      new Dependency("mod-permissions", "6.5.0-SNAPSHOT.456", PreReleaseFilter.TRUE, null),
+      new Dependency("mod-users", "19.3.0-SNAPSHOT.789", PreReleaseFilter.TRUE, null));
     var resolvedUiModules = List.of(
-      new Dependency("folio_developer", "7.1.0", PreReleaseFilter.TRUE),
-      new Dependency("folio_tags", "4.0.0", PreReleaseFilter.TRUE));
+      new Dependency("folio_developer", "7.1.0", PreReleaseFilter.TRUE, null),
+      new Dependency("folio_tags", "4.0.0", PreReleaseFilter.TRUE, null));
     when(moduleVersionService.resolveModulesConstraints(anyList(), eq(BE))).thenReturn(resolvedBeModules);
     when(moduleVersionService.resolveModulesConstraints(anyList(), eq(UI))).thenReturn(resolvedUiModules);
     when(moduleDescriptorService.loadModules(eq(BE), anyList())).thenReturn(
@@ -174,12 +175,12 @@ class ApplicationDescriptorGeneratorTemplateTest {
   @SneakyThrows
   void generate_positive_templateWithPreReleaseFilter() {
     var resolvedBeModules = List.of(
-      new Dependency("mod-organizations", "2.2.0-SNAPSHOT.100", PreReleaseFilter.ONLY),
-      new Dependency("mod-orders", "13.1.0-SNAPSHOT.200", PreReleaseFilter.ONLY),
-      new Dependency("mod-invoice", "6.1.0-SNAPSHOT.300", PreReleaseFilter.ONLY));
+      new Dependency("mod-organizations", "2.2.0-SNAPSHOT.100", PreReleaseFilter.ONLY, null),
+      new Dependency("mod-orders", "13.1.0-SNAPSHOT.200", PreReleaseFilter.ONLY, null),
+      new Dependency("mod-invoice", "6.1.0-SNAPSHOT.300", PreReleaseFilter.ONLY, null));
     var resolvedUiModules = List.of(
-      new Dependency("folio_organizations", "5.0.0-SNAPSHOT.400", PreReleaseFilter.ONLY),
-      new Dependency("folio_orders", "6.0.0-SNAPSHOT.500", PreReleaseFilter.ONLY));
+      new Dependency("folio_organizations", "5.0.0-SNAPSHOT.400", PreReleaseFilter.ONLY, null),
+      new Dependency("folio_orders", "6.0.0-SNAPSHOT.500", PreReleaseFilter.ONLY, null));
     when(moduleVersionService.resolveModulesConstraints(anyList(), eq(BE))).thenReturn(resolvedBeModules);
     when(moduleVersionService.resolveModulesConstraints(anyList(), eq(UI))).thenReturn(resolvedUiModules);
     when(moduleDescriptorService.loadModules(eq(BE), anyList())).thenReturn(
@@ -289,6 +290,40 @@ class ApplicationDescriptorGeneratorTemplateTest {
     var result = jsonConverter.parse(outputFile, ApplicationDescriptor.class);
     assertThat(result.getName()).isEqualTo("test-app");
     assertThat(result.getVersion()).isEqualTo("1.0.0-SNAPSHOT");
+  }
+
+  @Test
+  @SneakyThrows
+  void generate_positive_templateWithVirtualAppDependencies() {
+    when(moduleDescriptorService.loadModules(eq(BE), anyList())).thenReturn(
+      new ModulesLoadResult(List.of(), List.of()));
+    when(moduleDescriptorService.loadModules(eq(UI), anyList())).thenReturn(
+      new ModulesLoadResult(List.of(), List.of()));
+    when(pluginConfig.isModuleUrlsOnly()).thenReturn(true);
+    doNothing().when(dependencyValidator).validateDependencies(any());
+
+    var template = readTemplate("template-with-virtual-app-dependencies.json", true);
+    generator.generate(template);
+
+    var outputFile = new File(tempDir.toFile(), "test-app-1.0.0-SNAPSHOT.json");
+    assertThat(outputFile).exists();
+    var result = jsonConverter.parse(outputFile, ApplicationDescriptor.class);
+    assertThat(result.getDependencies()).hasSize(3);
+    assertThat(result.getDependencies()).extracting(Dependency::getName)
+      .containsExactly("postgres", "kafka", "opensearch");
+    assertThat(result.getDependencies()).extracting(Dependency::getVersion)
+      .containsExactly(">=16.0", ">=3.5.1", ">=2.19.0");
+    assertThat(result.getDependencies().get(0).getOptional()).isNull();
+    assertThat(result.getDependencies().get(1).getOptional()).isFalse();
+    assertThat(result.getDependencies().get(2).getOptional()).isTrue();
+    assertThat(result.getDependencies()).extracting(Dependency::getPreRelease)
+      .containsOnly((PreReleaseFilter) null);
+
+    var json = new ObjectMapper().readTree(outputFile);
+    assertThat(json.has("modules")).isFalse();
+    assertThat(json.has("uiModules")).isFalse();
+    assertThat(json.has("moduleDescriptors")).isFalse();
+    assertThat(json.has("uiModuleDescriptors")).isFalse();
   }
 
   @SneakyThrows

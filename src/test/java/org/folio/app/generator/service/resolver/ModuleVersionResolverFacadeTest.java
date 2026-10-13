@@ -39,7 +39,7 @@ class ModuleVersionResolverFacadeTest {
 
   @Test
   void getAvailableVersions_positive() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var registry = okapiRegistry();
     var versions = List.of("1.2.0", "1.1.0", "1.0.0");
 
@@ -54,7 +54,7 @@ class ModuleVersionResolverFacadeTest {
 
   @Test
   void getAvailableVersions_positive_s3Registry() {
-    var dependency = new Dependency("mod-bar", "~2.0.0", PreReleaseFilter.TRUE);
+    var dependency = new Dependency("mod-bar", "~2.0.0", PreReleaseFilter.TRUE, null);
     var registry = s3Registry();
     var versions = List.of("2.0.5", "2.0.1");
 
@@ -69,7 +69,7 @@ class ModuleVersionResolverFacadeTest {
 
   @Test
   void getAvailableVersions_positive_uiModule() {
-    var dependency = new Dependency("folio_app", "^1.0.0", null);
+    var dependency = new Dependency("folio_app", "^1.0.0", null, null);
     var registry = okapiRegistry();
     var versions = List.of("1.0.10010000000123");
 
@@ -84,7 +84,7 @@ class ModuleVersionResolverFacadeTest {
 
   @Test
   void getAvailableVersions_positive_resolverReturnsEmpty() {
-    var dependency = new Dependency("mod-unknown", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-unknown", "^1.0.0", PreReleaseFilter.FALSE, null);
     var registry = okapiRegistry();
 
     when(okapiResolver.getAvailableVersions(registry, dependency, ModuleType.BE))
@@ -97,7 +97,7 @@ class ModuleVersionResolverFacadeTest {
 
   @Test
   void getAvailableVersions_negative_noResolver() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var registry = new UnknownModuleRegistry();
 
     var result = facade.getAvailableVersions(registry, dependency, ModuleType.BE);
@@ -110,7 +110,7 @@ class ModuleVersionResolverFacadeTest {
   void constructor_positive_emptyResolversList() {
     facade = new ModuleVersionResolverFacade(log, List.of());
 
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var result = facade.getAvailableVersions(okapiRegistry(), dependency, ModuleType.BE);
 
     assertThat(result).isEmpty();

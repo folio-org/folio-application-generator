@@ -47,7 +47,7 @@ class S3ModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_positive_multipleVersions() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var request = listObjectsRequest("modules/mod-foo-", null);
     var response = listObjectsResponse(
       s3Object("modules/mod-foo-1.2.0.json"),
@@ -64,7 +64,7 @@ class S3ModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_positive_singleVersion() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var request = listObjectsRequest("modules/mod-foo-", null);
     var response = listObjectsResponse(s3Object("modules/mod-foo-1.0.0.json"));
 
@@ -78,7 +78,7 @@ class S3ModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_positive_preReleaseTrue() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.TRUE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.TRUE, null);
     var request = listObjectsRequest("modules/mod-foo-", null);
     var response = listObjectsResponse(
       s3Object("modules/mod-foo-1.2.0-SNAPSHOT.json"),
@@ -94,7 +94,7 @@ class S3ModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_positive_preReleaseFalseFiltersSnapshots() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var request = listObjectsRequest("modules/mod-foo-", null);
     var response = listObjectsResponse(
       s3Object("modules/mod-foo-1.2.0-SNAPSHOT.json"),
@@ -111,7 +111,7 @@ class S3ModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_positive_preReleaseOnlyFiltersStable() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.ONLY);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.ONLY, null);
     var request = listObjectsRequest("modules/mod-foo-", null);
     var response = listObjectsResponse(
       s3Object("modules/mod-foo-1.2.0-SNAPSHOT.json"),
@@ -128,7 +128,7 @@ class S3ModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_negative_moduleNotFound() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var request = listObjectsRequest("modules/mod-foo-", null);
     var response = listObjectsResponse();
 
@@ -142,7 +142,7 @@ class S3ModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_negative_s3Exception() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var request = listObjectsRequest("modules/mod-foo-", null);
     var exception = SdkClientException.create("Connection refused");
 
@@ -156,7 +156,7 @@ class S3ModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_positive_pagination() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     var response1 = listObjectsResponse("ct1",
       s3Object("modules/mod-foo-1.0.0.json"),
@@ -176,7 +176,7 @@ class S3ModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_positive_nullPreReleaseDefaultsToTrue() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", null);
+    var dependency = new Dependency("mod-foo", "^1.0.0", null, null);
     var request = listObjectsRequest("modules/mod-foo-", null);
     var response = listObjectsResponse(
       s3Object("modules/mod-foo-1.1.0-SNAPSHOT.json"),
@@ -193,7 +193,7 @@ class S3ModuleVersionResolverTest {
   @ParameterizedTest(name = "{0}")
   @MethodSource("provideInvalidS3Objects")
   void getAvailableVersions_positive_filtersInvalidEntries(String testName, String invalidObjectKey) {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var request = listObjectsRequest("modules/mod-foo-", null);
     var response = listObjectsResponse(
       s3Object("modules/mod-foo-1.0.0.json"),
@@ -209,7 +209,7 @@ class S3ModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_positive_mixedValidAndFilteredEntries() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var request = listObjectsRequest("modules/mod-foo-", null);
     var response = listObjectsResponse(
       s3Object("modules/mod-foo-1.2.0.json"),

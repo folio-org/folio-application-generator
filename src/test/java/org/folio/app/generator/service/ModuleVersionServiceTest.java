@@ -56,7 +56,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive()  {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var registry = okapiRegistry();
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
@@ -72,7 +72,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_exactVersion()  {
-    var dependency = new Dependency("mod-foo", "1.2.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "1.2.0", PreReleaseFilter.FALSE, null);
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(okapiRegistry()));
 
@@ -85,7 +85,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_tildeConstraint()  {
-    var dependency = new Dependency("mod-foo", "~1.2.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "~1.2.0", PreReleaseFilter.FALSE, null);
     var registry = okapiRegistry();
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
@@ -100,7 +100,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_greaterOrEqualConstraint()  {
-    var dependency = new Dependency("mod-foo", ">=1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", ">=1.0.0", PreReleaseFilter.FALSE, null);
     var registry = okapiRegistry();
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
@@ -115,7 +115,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_emptyRegistries()  {
-    var dependency = new Dependency("mod-foo", "1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "1.0.0", PreReleaseFilter.FALSE, null);
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of());
 
@@ -127,7 +127,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_selectsGreatestVersionAcrossRegistries()  {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var okapiReg = okapiRegistry();
     var s3Reg = s3Registry();
 
@@ -145,8 +145,8 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_multipleDependencies()  {
-    var dep1 = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
-    var dep2 = new Dependency("mod-bar", "2.0.0", PreReleaseFilter.FALSE);
+    var dep1 = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
+    var dep2 = new Dependency("mod-bar", "2.0.0", PreReleaseFilter.FALSE, null);
     var registry = okapiRegistry();
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
@@ -162,7 +162,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_preReleaseTrue()  {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.TRUE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.TRUE, null);
     var registry = okapiRegistry();
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
@@ -177,7 +177,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_preReleaseNull()  {
-    var dependency = new Dependency("mod-foo", "^1.0.0", null);
+    var dependency = new Dependency("mod-foo", "^1.0.0", null, null);
     var registry = okapiRegistry();
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
@@ -193,7 +193,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_preReleaseOnly()  {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.ONLY);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.ONLY, null);
     var registry = okapiRegistry();
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
@@ -208,7 +208,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_uiModule()  {
-    var dependency = new Dependency("folio_app", "^1.0.0", PreReleaseFilter.TRUE);
+    var dependency = new Dependency("folio_app", "^1.0.0", PreReleaseFilter.TRUE, null);
     var registry = okapiRegistry();
 
     when(moduleRegistries.getRegistries(ModuleType.UI)).thenReturn(List.of(registry));
@@ -223,7 +223,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_negative_noMatchingVersion() {
-    var dependency = new Dependency("mod-foo", "^5.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^5.0.0", PreReleaseFilter.FALSE, null);
     var registry = okapiRegistry();
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
@@ -238,7 +238,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_negative_moduleNotFoundInRegistry() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var registry = okapiRegistry();
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
@@ -253,7 +253,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_continuesOnRegistryException()  {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var okapiReg = okapiRegistry();
     var s3Reg = s3Registry();
     var exception = new RuntimeException("Connection failed");
@@ -273,7 +273,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_negative_invalidConstraint() {
-    var dependency = new Dependency("mod-foo", "invalid", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "invalid", PreReleaseFilter.FALSE, null);
     var registry = okapiRegistry();
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
@@ -290,7 +290,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_preservesPreReleaseFilter()  {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.ONLY);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.ONLY, null);
     var registry = okapiRegistry();
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
@@ -305,7 +305,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_negative_emptyVersionsList() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var registry = okapiRegistry();
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
@@ -320,7 +320,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_negative_noVersionMatchesConstraint() {
-    var dependency = new Dependency("mod-foo", "^2.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^2.0.0", PreReleaseFilter.FALSE, null);
     var registry = okapiRegistry();
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
@@ -335,7 +335,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_filtersInvalidSemverVersions()  {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var registry = okapiRegistry();
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
@@ -351,7 +351,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_versionWithBuildMetadata()  {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var registry = okapiRegistry();
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of(registry));
@@ -366,7 +366,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_fallbackToNextVersionWhenArtifactNotFound() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var registry = okapiRegistry();
     var artifactRegistries = createDefaultArtifactRegistries();
 
@@ -388,7 +388,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_skipArtifactValidationWhenDisabled() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var registry = okapiRegistry();
 
     when(pluginConfig.isValidateArtifacts()).thenReturn(false);
@@ -405,7 +405,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_negative_noVersionWithArtifactFound() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var registry = okapiRegistry();
     var artifactRegistries = createDefaultArtifactRegistries();
 
@@ -424,7 +424,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_snapshotVersionUsesSnapshotRegistry() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.TRUE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.TRUE, null);
     var registry = okapiRegistry();
     var artifactRegistries = createDefaultArtifactRegistries();
 
@@ -443,7 +443,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_uiModuleArtifactValidation()  {
-    var dependency = new Dependency("folio_users", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("folio_users", "^1.0.0", PreReleaseFilter.FALSE, null);
     var registry = okapiRegistry();
     var artifactRegistries = createDefaultArtifactRegistries();
 
@@ -468,7 +468,7 @@ class ModuleVersionServiceTest {
     var serviceWithoutFacade = new ModuleVersionService(log, moduleRegistries, resolverFacade,
       pluginConfig, artifactRegistryProvider, Optional.empty());
 
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var registry = okapiRegistry();
 
     when(pluginConfig.isValidateArtifacts()).thenReturn(true);
@@ -488,7 +488,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_negative_allRegistriesFailWithExceptions_infrastructure() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var okapiReg = okapiRegistry();
     var s3Reg = s3Registry();
     var networkException = new ApplicationGeneratorException(
@@ -509,7 +509,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_negative_mixedEmptyAndException_moduleNotFound() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var okapiReg = okapiRegistry();
     var s3Reg = s3Registry();
 
@@ -529,7 +529,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_negative_singleRegistryNetworkError_infrastructure() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var registry = okapiRegistry();
     var networkException = new ApplicationGeneratorException(
       "Network error", ErrorCategory.INFRASTRUCTURE, new RuntimeException("Connection reset"));
@@ -547,7 +547,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_negative_singleRegistryNetworkErrorWithNullMessage_infrastructure() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var registry = okapiRegistry();
     var networkException = new ApplicationGeneratorException(null, ErrorCategory.INFRASTRUCTURE);
 
@@ -568,7 +568,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_negative_allRegistriesEmpty_moduleNotFound() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var okapiReg = okapiRegistry();
     var s3Reg = s3Registry();
 
@@ -588,7 +588,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_versionFoundInFallbackRegistry() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var mainRegistry = okapiRegistry();
     var fallbackRegistry = s3Registry();
 
@@ -609,7 +609,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_mainRegistrySucceedsFallbackNotUsed() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var mainRegistry = okapiRegistry();
     var fallbackRegistry = s3Registry();
 
@@ -627,7 +627,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_negative_allMainAndFallbackRegistriesFail_infrastructure() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var mainRegistry = okapiRegistry();
     var fallbackRegistry = s3Registry();
 
@@ -648,7 +648,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_negative_mainEmptyFallbackEmpty_moduleNotFound() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var mainRegistry = okapiRegistry();
     var fallbackRegistry = s3Registry();
 
@@ -669,7 +669,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_uiFallbackRegistry() {
-    var dependency = new Dependency("folio_users", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("folio_users", "^1.0.0", PreReleaseFilter.FALSE, null);
     var mainRegistry = okapiRegistry();
     var fallbackRegistry = s3Registry();
 
@@ -689,7 +689,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_negative_emptyMainAndFallbackRegistries_moduleNotFound() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     when(moduleRegistries.getRegistries(ModuleType.BE)).thenReturn(List.of());
     when(moduleRegistries.getFallbackRegistries(ModuleType.BE)).thenReturn(List.of());
@@ -706,7 +706,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_validateFallbackArtifactsFalse_fallbackSkipped() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var mainRegistry = okapiRegistry();
     var fallbackRegistry = fallbackS3Registry();
 
@@ -728,7 +728,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_validateFallbackArtifactsFalse_primaryStillValidated() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var mainRegistry = okapiRegistry();
     var artifactRegistries = createDefaultArtifactRegistries();
 
@@ -750,7 +750,7 @@ class ModuleVersionServiceTest {
 
   @Test
   void resolveModulesConstraints_positive_validateFallbackArtifactsTrue_fallbackStillValidated() {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var mainRegistry = okapiRegistry();
     var fallbackRegistry = fallbackS3Registry();
     var artifactRegistries = createDefaultArtifactRegistries();

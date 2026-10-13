@@ -197,6 +197,32 @@ already set on a registry (via its pom `<headers>` or `::headers=`) is **not** o
 }
 ```
 
+#### Application dependency fields
+
+| Field        | Written to descriptor | Description                                                                   |
+|--------------|-----------------------|-------------------------------------------------------------------------------|
+| `name`       | yes                   | Application dependency name (required)                                        |
+| `version`    | yes                   | Application dependency version or semver range (required)                     |
+| `optional`   | yes                   | `true` or `false`; written as given and omitted when absent from the template |
+| `preRelease` | no                    | Not used for application dependencies; it only applies to `modules` and `uiModules` and is never written to the descriptor |
+
+Virtual applications have no modules, so their templates omit `modules` and `uiModules`. For such templates the generated descriptor also omits
+`modules`, `uiModules`, `moduleDescriptors` and `uiModuleDescriptors`.
+
+```json
+{
+  "name": "${project.name}",
+  "version": "${project.version}",
+  "description": "${project.description}",
+  "dependencies": [
+    {
+      "name": "postgres",
+      "version": ">=16.0"
+    }
+  ]
+}
+```
+
 #### Excluding JAR file from build results
 
 JAR file can be excluded from `/target` folder by using the following command

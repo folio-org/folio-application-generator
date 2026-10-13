@@ -51,9 +51,9 @@ class ApplicationDescriptorServiceTest {
     var template = new ApplicationDescriptorTemplate()
       .name("test-app")
       .version("1.0.0")
-      .modules(List.of(new Dependency("mod-test", "1.0.0", null)))
-      .uiModules(List.of(new Dependency("folio_test", "2.0.0", null)))
-      .dependencies(List.of(new Dependency("app-platform", "^1.0.0", null)));
+      .modules(List.of(new Dependency("mod-test", "1.0.0", null, null)))
+      .uiModules(List.of(new Dependency("folio_test", "2.0.0", null, null)))
+      .dependencies(List.of(new Dependency("app-platform", "^1.0.0", null, null)));
 
     template.setDescription("Test application");
 
@@ -84,7 +84,7 @@ class ApplicationDescriptorServiceTest {
   @SneakyThrows
   void create_positive_withMavenProjectMetadata() {
     var template = new ApplicationDescriptorTemplate()
-      .modules(List.of(new Dependency("mod-test", "1.0.0", null)));
+      .modules(List.of(new Dependency("mod-test", "1.0.0", null, null)));
 
     when(mavenProject.getName()).thenReturn("maven-app");
     when(mavenProject.getVersion()).thenReturn("2.0.0-SNAPSHOT");
@@ -153,8 +153,8 @@ class ApplicationDescriptorServiceTest {
     var template = new ApplicationDescriptorTemplate()
       .name("test-app")
       .version("1.0.0")
-      .modules(List.of(new Dependency("mod-test", "1.0.0", null)))
-      .uiModules(List.of(new Dependency("folio_test", "2.0.0", null)));
+      .modules(List.of(new Dependency("mod-test", "1.0.0", null, null)))
+      .uiModules(List.of(new Dependency("folio_test", "2.0.0", null, null)));
 
     var beModule = new ModuleDefinition().id("mod-test-1.0.0").name("mod-test").version("1.0.0")
       .url("http://registry/mod-test");
@@ -220,8 +220,34 @@ class ApplicationDescriptorServiceTest {
 
     var result = service.create(template);
 
-    assertThat(result.getModules()).isEmpty();
-    assertThat(result.getUiModules()).isEmpty();
+    assertThat(result.getModules()).isNull();
+    assertThat(result.getUiModules()).isNull();
+    assertThat(result.getModuleDescriptors()).isNull();
+    assertThat(result.getUiModuleDescriptors()).isNull();
+  }
+
+  @Test
+  @SneakyThrows
+  void create_positive_templateWithOnlyModulesKeepsEmptyUiModules() {
+    var template = new ApplicationDescriptorTemplate()
+      .name("test-app")
+      .version("1.0.0")
+      .modules(List.of(new Dependency("mod-test", "1.0.0", null, null)));
+
+    when(moduleDescriptorService.loadModules(eq(BE), anyList())).thenReturn(
+      new ModulesLoadResult(
+        List.of(new ModuleDefinition().id("mod-test-1.0.0").name("mod-test").version("1.0.0")),
+        List.of(Map.of("id", "mod-test-1.0.0"))));
+    when(moduleDescriptorService.loadModules(eq(UI), anyList())).thenReturn(
+      new ModulesLoadResult(List.of(), List.of()));
+    when(pluginConfig.isModuleUrlsOnly()).thenReturn(true);
+
+    var result = service.create(template);
+
+    assertThat(result.getModules()).hasSize(1);
+    assertThat(result.getUiModules()).isNotNull().isEmpty();
+    assertThat(result.getModuleDescriptors()).isNotNull().isEmpty();
+    assertThat(result.getUiModuleDescriptors()).isNotNull().isEmpty();
   }
 
   @Test
