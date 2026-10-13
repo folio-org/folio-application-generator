@@ -204,7 +204,7 @@ already set on a registry (via its pom `<headers>` or `::headers=`) is **not** o
 | `name`       | yes                   | Application dependency name (required)                                        |
 | `version`    | yes                   | Application dependency version or semver range (required)                     |
 | `optional`   | yes                   | `true` or `false`; written as given and omitted when absent from the template |
-| `preRelease` | no                    | Not used for application dependencies; it only applies to `modules` and `uiModules` and is never written to the descriptor |
+| `preRelease` | no                    | Not used for application dependencies                                         |
 
 Virtual applications have no modules, so their templates omit `modules` and `uiModules`. For such templates the generated descriptor also omits
 `modules`, `uiModules`, `moduleDescriptors` and `uiModuleDescriptors`.
@@ -216,8 +216,8 @@ Virtual applications have no modules, so their templates omit `modules` and `uiM
   "description": "${project.description}",
   "dependencies": [
     {
-      "name": "postgres",
-      "version": ">=16.0"
+      "name": "kafka",
+      "version": ">=3.5.1"
     }
   ]
 }
