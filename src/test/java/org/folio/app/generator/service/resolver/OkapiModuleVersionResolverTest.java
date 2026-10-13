@@ -3,6 +3,8 @@ package org.folio.app.generator.service.resolver;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.startsWith;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -185,6 +187,8 @@ class OkapiModuleVersionResolverTest {
       .satisfies(e -> assertThat(((ApplicationGeneratorException) e).getCategory())
         .isEqualTo(ErrorCategory.INFRASTRUCTURE));
     verify(log).warn("Failed to fetch versions for module 'mod-foo' from http://localhost", exception);
+    verify(httpClient, times(5)).send(any(HttpRequest.class), any());
+    verify(log, times(5)).warn(startsWith("Network error, retrying"));
   }
 
   @Test
@@ -401,6 +405,8 @@ class OkapiModuleVersionResolverTest {
       .hasMessageContaining("IOException")
       .hasCause(exception);
     verify(log).warn("Failed to fetch versions for module 'mod-foo' from http://localhost", exception);
+    verify(httpClient, times(5)).send(any(HttpRequest.class), any());
+    verify(log, times(5)).warn(startsWith("Network error, retrying"));
   }
 
   @Test

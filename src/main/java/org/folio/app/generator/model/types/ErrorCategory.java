@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.net.http.HttpTimeoutException;
+import javax.net.ssl.SSLException;
 import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 
 public enum ErrorCategory {
@@ -20,7 +22,9 @@ public enum ErrorCategory {
     }
     if (e instanceof SocketException
         || e instanceof SocketTimeoutException
-        || e instanceof UnknownHostException) {
+        || e instanceof UnknownHostException
+        || e instanceof SSLException
+        || e instanceof HttpTimeoutException) {
       return INFRASTRUCTURE;
     }
     if (e instanceof IOException) {

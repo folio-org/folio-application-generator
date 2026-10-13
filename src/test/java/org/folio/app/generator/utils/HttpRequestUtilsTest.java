@@ -18,6 +18,7 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import javax.net.ssl.SSLHandshakeException;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.support.UnitTest;
 import org.junit.jupiter.api.Test;
@@ -135,6 +136,53 @@ class HttpRequestUtilsTest {
     verify(log).warn("Network error, retrying (attempt 3): Connection refused");
     verify(log).warn("Network error, retrying (attempt 4): Connection refused");
     verify(log).warn("Network error, retrying (attempt 5): Connection refused");
+  }
+
+  @Test
+  void sendWithRetry_positive_retryOnSslHandshakeExceptionThenSuccess() throws IOException, InterruptedException {
+    var sslException = new SSLHandshakeException("Remote host terminated the handshake");
+    sslException.initCause(new SocketException("Connection reset"));
+    when(httpClient.send(any(), any()))
+      .thenThrow(sslException)
+      .thenReturn(response);
+    when(response.statusCode()).thenReturn(200);
+
+    var result = HttpRequestUtils.sendWithRetry(httpClient, log, request);
+
+    assertThat(result).isSameAs(response);
+    verify(httpClient, times(2)).send(any(), any());
+    verify(log).warn("Network error, retrying (attempt 1): Remote host terminated the handshake");
+  }
+
+  @Test
+  void sendWithRetry_positive_retryOnIoExceptionThenSuccess() throws IOException, InterruptedException {
+    when(httpClient.send(any(), any()))
+      .thenThrow(new IOException("Connection closed"))
+      .thenReturn(response);
+    when(response.statusCode()).thenReturn(200);
+
+    var result = HttpRequestUtils.sendWithRetry(httpClient, log, request);
+
+    assertThat(result).isSameAs(response);
+    verify(httpClient, times(2)).send(any(), any());
+    verify(log).warn("Network error, retrying (attempt 1): Connection closed");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void sendWithRetry_positive_customBodyHandlerRetryOnIoExceptionThenSuccess()
+      throws IOException, InterruptedException {
+    var bodyHandler = HttpResponse.BodyHandlers.discarding();
+    HttpResponse<Void> voidResponse = mock(HttpResponse.class);
+    when(httpClient.send(request, bodyHandler))
+      .thenThrow(new IOException("Connection closed"))
+      .thenReturn(voidResponse);
+    when(voidResponse.statusCode()).thenReturn(200);
+
+    var result = HttpRequestUtils.sendWithRetry(httpClient, log, request, bodyHandler);
+
+    assertThat(result).isSameAs(voidResponse);
+    verify(httpClient, times(2)).send(request, bodyHandler);
   }
 
   @Test

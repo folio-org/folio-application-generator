@@ -537,7 +537,7 @@ For simpler configurations, use `artifactRegistries` as a fallback for both BE a
 
 #### Retry Mechanism
 
-The artifact validation includes a retry mechanism for temporary service unavailability. HTTP status codes `429`, `502`, `503`, and `504` will trigger automatic retries (up to 5 attempts).
+HTTP requests for artifact validation, module descriptor loading, and Okapi version lookup include a retry mechanism for temporary service unavailability. HTTP status codes `429`, `500`, `502`, `503`, and `504`, as well as network errors (connection reset, SSL handshake failures, timeouts), will trigger automatic retries (up to 5 attempts).
 
 ### Execution Result Output
 
@@ -709,6 +709,8 @@ Fallback registries serve as backup sources when modules cannot be found in the 
 **UI modules:**
 1. Try main UI registries (uiModuleRegistries, moduleRegistries)
 2. If not found, try UI fallback registries (uiFallbackModuleRegistries, fallbackModuleRegistries)
+
+Fallback registries are used only when the main registries respond without a matching version. If any main registry fails with an error (after retries) and no main registry returned a matching version, resolution fails with `INFRASTRUCTURE` error category instead of falling back. The same applies when a fallback registry fails and no fallback registry returned a matching version.
 
 ### Command-line parameters
 

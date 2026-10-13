@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.net.http.HttpConnectTimeoutException;
+import java.net.http.HttpTimeoutException;
+import javax.net.ssl.SSLHandshakeException;
 import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 import org.folio.app.generator.support.UnitTest;
 import org.junit.jupiter.api.Test;
@@ -52,6 +55,33 @@ class ErrorCategoryTest {
   @Test
   void fromException_unknownHostException_returnsInfrastructure() {
     var exception = new UnknownHostException("Unknown host");
+
+    var result = ErrorCategory.fromException(exception);
+
+    assertThat(result).isEqualTo(ErrorCategory.INFRASTRUCTURE);
+  }
+
+  @Test
+  void fromException_sslHandshakeException_returnsInfrastructure() {
+    var exception = new SSLHandshakeException("Remote host terminated the handshake");
+
+    var result = ErrorCategory.fromException(exception);
+
+    assertThat(result).isEqualTo(ErrorCategory.INFRASTRUCTURE);
+  }
+
+  @Test
+  void fromException_httpTimeoutException_returnsInfrastructure() {
+    var exception = new HttpTimeoutException("request timed out");
+
+    var result = ErrorCategory.fromException(exception);
+
+    assertThat(result).isEqualTo(ErrorCategory.INFRASTRUCTURE);
+  }
+
+  @Test
+  void fromException_httpConnectTimeoutException_returnsInfrastructure() {
+    var exception = new HttpConnectTimeoutException("HTTP connect timed out");
 
     var result = ErrorCategory.fromException(exception);
 
