@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.startsWith;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -118,6 +120,8 @@ class OkapiModuleDescriptorLoaderTest {
     assertThat(result).isEmpty();
     verify(log)
       .warn("Failed to load module descriptor 'mod-foo-1.0.0' from http://localhost", exception);
+    verify(httpClient, times(5)).send(any(HttpRequest.class), any());
+    verify(log, times(5)).warn(startsWith("Network error, retrying"));
   }
 
   @Test
