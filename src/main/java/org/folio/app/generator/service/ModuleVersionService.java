@@ -142,7 +142,7 @@ public class ModuleVersionService {
     log.info(String.format("Resolved %s module '%s' version constraint '%s' to '%s' from %s",
       type, moduleName, versionConstraint, resolvedVersionString, registryIdentifier));
 
-    return new Dependency(moduleName, resolvedVersionString, dependency.getPreRelease());
+    return new Dependency(moduleName, resolvedVersionString, dependency.getPreRelease(), null);
   }
 
   private static ApplicationGeneratorException infrastructureError(ModuleType type, String moduleName,

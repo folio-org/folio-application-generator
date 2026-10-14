@@ -1,5 +1,6 @@
 package org.folio.app.generator.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,5 +26,13 @@ public class Dependency {
    * Pre-release filter (optional).
    * Determines whether to include pre-release versions when resolving dependencies.
    */
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private PreReleaseFilter preRelease;
+
+  /**
+   * Optional flag (descriptor field).
+   * When {@code true}, the dependency is optional and will not block entitlement if unavailable.
+   */
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Boolean optional;
 }

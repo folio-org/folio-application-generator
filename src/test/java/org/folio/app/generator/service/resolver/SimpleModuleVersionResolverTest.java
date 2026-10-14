@@ -46,7 +46,7 @@ class SimpleModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_positive_multipleVersions() throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     mockHttpResponse(200, List.of(
       Map.of("id", "mod-foo-1.2.0"),
@@ -62,7 +62,7 @@ class SimpleModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_positive_singleVersion() throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", null);
+    var dependency = new Dependency("mod-foo", "^1.0.0", null, null);
 
     mockHttpResponse(200, List.of(Map.of("id", "mod-foo-1.0.0")));
 
@@ -75,7 +75,7 @@ class SimpleModuleVersionResolverTest {
   @Test
   void getAvailableVersions_positive_preReleaseFalseFiltersSnapshots()
       throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     mockHttpResponse(200, List.of(
       Map.of("id", "mod-foo-1.2.0-SNAPSHOT"),
@@ -91,7 +91,7 @@ class SimpleModuleVersionResolverTest {
   @Test
   void getAvailableVersions_positive_preReleaseTrueIncludesAll()
       throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.TRUE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.TRUE, null);
 
     mockHttpResponse(200, List.of(
       Map.of("id", "mod-foo-1.2.0-SNAPSHOT"),
@@ -107,7 +107,7 @@ class SimpleModuleVersionResolverTest {
   @Test
   void getAvailableVersions_positive_preReleaseOnlyFiltersStable()
       throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.ONLY);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.ONLY, null);
 
     mockHttpResponse(200, List.of(
       Map.of("id", "mod-foo-1.2.0-SNAPSHOT"),
@@ -123,7 +123,7 @@ class SimpleModuleVersionResolverTest {
   @Test
   void getAvailableVersions_positive_nullPreReleaseDefaultsToTrue()
       throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", null);
+    var dependency = new Dependency("mod-foo", "^1.0.0", null, null);
 
     mockHttpResponse(200, List.of(
       Map.of("id", "mod-foo-1.2.0-SNAPSHOT"),
@@ -138,7 +138,7 @@ class SimpleModuleVersionResolverTest {
   @Test
   void getAvailableVersions_positive_versionsSortedDescending()
       throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     mockHttpResponse(200, List.of(
       Map.of("id", "mod-foo-1.0.0"),
@@ -153,7 +153,7 @@ class SimpleModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_negative_moduleNotFound() throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     mockHttpResponse(200, List.of(Map.of("id", "mod-bar-1.0.0")));
 
@@ -165,7 +165,7 @@ class SimpleModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_negative_emptyResult() throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     mockHttpResponse(200, List.of());
 
@@ -177,7 +177,7 @@ class SimpleModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_negative_httpError() throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     mockHttpResponse(404, null);
 
@@ -189,7 +189,7 @@ class SimpleModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_negative_httpServerError() throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     mockHttpResponse(500, null);
 
@@ -201,7 +201,7 @@ class SimpleModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_negative_throwsException() throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var exception = new IOException("Connection refused");
 
     when(httpClient.send(any(HttpRequest.class), any())).thenThrow(exception);
@@ -214,7 +214,7 @@ class SimpleModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_negative_interruptedException() throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var exception = new InterruptedException("Thread interrupted");
 
     when(httpClient.send(any(HttpRequest.class), any())).thenThrow(exception);
@@ -230,7 +230,7 @@ class SimpleModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_positive_urlWithTrailingSlash() throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     mockHttpResponse(200, List.of(Map.of("id", "mod-foo-1.0.0")));
 
@@ -243,7 +243,7 @@ class SimpleModuleVersionResolverTest {
   @Test
   void getAvailableVersions_positive_invalidModuleIdSkipped()
       throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     mockHttpResponse(200, List.of(
       Map.of("id", "mod-foo-1.0.0"),

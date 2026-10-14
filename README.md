@@ -197,6 +197,31 @@ already set on a registry (via its pom `<headers>` or `::headers=`) is **not** o
 }
 ```
 
+#### Virtual applications JSON template example
+
+| Field        | Written to descriptor | Description                                                                   |
+|--------------|-----------------------|-------------------------------------------------------------------------------|
+| `name`       | yes                   | Application dependency name (required)                                        |
+| `version`    | yes                   | Application dependency version or semver range (required)                     |
+| `optional`   | yes                   | `true` or `false`; written as given and omitted when absent from the template |
+| `preRelease` | no                    | Not used for application dependencies                                         |
+
+Virtual applications have no modules, so their templates should not use `modules` and `uiModules`.
+
+```json
+{
+  "name": "${project.name}",
+  "version": "${project.version}",
+  "description": "${project.description}",
+  "dependencies": [
+    {
+      "name": "kafka",
+      "version": ">=3.5.1"
+    }
+  ]
+}
+```
+
 #### Excluding JAR file from build results
 
 JAR file can be excluded from `/target` folder by using the following command

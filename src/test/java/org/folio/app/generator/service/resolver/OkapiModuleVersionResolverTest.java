@@ -62,7 +62,7 @@ class OkapiModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_positive_multipleVersions() throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     mockHttpResponse(200, List.of(
       Map.of("id", "mod-foo-1.2.0"),
@@ -78,7 +78,7 @@ class OkapiModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_positive_singleVersion() throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", null);
+    var dependency = new Dependency("mod-foo", "^1.0.0", null, null);
 
     mockHttpResponse(200, List.of(Map.of("id", "mod-foo-1.0.0")));
 
@@ -91,7 +91,7 @@ class OkapiModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_positive_preReleaseTrue() throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.TRUE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.TRUE, null);
 
     mockHttpResponse(200, List.of(
       Map.of("id", "mod-foo-1.1.0-SNAPSHOT"),
@@ -106,7 +106,7 @@ class OkapiModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_positive_preReleaseOnly() throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.ONLY);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.ONLY, null);
 
     mockHttpResponse(200, List.of(Map.of("id", "mod-foo-1.1.0-SNAPSHOT.123")));
 
@@ -119,7 +119,7 @@ class OkapiModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_positive_uiModuleWithNpmSnapshot() throws IOException, InterruptedException {
-    var dependency = new Dependency("folio_app", "^1.0.0", PreReleaseFilter.ONLY);
+    var dependency = new Dependency("folio_app", "^1.0.0", PreReleaseFilter.ONLY, null);
 
     mockHttpResponse(200, List.of(Map.of("id", "folio_app-1.0.10010000000123")));
 
@@ -132,7 +132,7 @@ class OkapiModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_negative_emptyResult() throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     mockHttpResponse(200, List.of());
 
@@ -144,7 +144,7 @@ class OkapiModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_negative_httpError() throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     mockHttpResponse(404, null);
 
@@ -156,7 +156,7 @@ class OkapiModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_negative_httpServerError() throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     mockHttpResponse(500, null);
 
@@ -174,7 +174,7 @@ class OkapiModuleVersionResolverTest {
   @Test
   void getAvailableVersions_negative_ioExceptionThrowsApplicationGeneratorException()
       throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var exception = new IOException("Connection refused");
     var registry = okapiRegistry();
 
@@ -193,7 +193,7 @@ class OkapiModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_positive_urlWithTrailingSlash() throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     mockHttpResponse(200, List.of(Map.of("id", "mod-foo-1.0.0")));
 
@@ -206,7 +206,7 @@ class OkapiModuleVersionResolverTest {
 
   @Test
   void getAvailableVersions_positive_invalidModuleIdSkipped() throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     mockHttpResponse(200, List.of(
       Map.of("id", "mod-foo-1.0.0"),
@@ -222,7 +222,7 @@ class OkapiModuleVersionResolverTest {
   @Test
   void getAvailableVersions_positive_retryOnSocketExceptionThenSuccess()
       throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     when(httpClient.send(any(HttpRequest.class), any()))
       .thenThrow(new SocketException("Connection reset"))
@@ -243,7 +243,7 @@ class OkapiModuleVersionResolverTest {
   @Test
   void getAvailableVersions_positive_retryOnSocketTimeoutExceptionThenSuccess()
       throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     when(httpClient.send(any(HttpRequest.class), any()))
       .thenThrow(new SocketTimeoutException("Read timed out"))
@@ -264,7 +264,7 @@ class OkapiModuleVersionResolverTest {
   @Test
   void getAvailableVersions_positive_retryOnHttpTimeoutExceptionThenSuccess()
       throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     when(httpClient.send(any(HttpRequest.class), any()))
       .thenThrow(new HttpTimeoutException("request timed out"))
@@ -285,7 +285,7 @@ class OkapiModuleVersionResolverTest {
   @Test
   void getAvailableVersions_negative_httpTimeoutExceptionRetryLimitExhausted()
       throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var exception = new HttpTimeoutException("request timed out");
     var registry = okapiRegistry();
 
@@ -309,7 +309,7 @@ class OkapiModuleVersionResolverTest {
   @Test
   void getAvailableVersions_negative_socketExceptionRetryLimitExhausted()
       throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var exception = new SocketException("Connection reset");
     var registry = okapiRegistry();
 
@@ -333,7 +333,7 @@ class OkapiModuleVersionResolverTest {
   @Test
   void getAvailableVersions_positive_retryOnStatusCodeThenSuccess()
       throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
     when(httpResponse.statusCode())
@@ -354,7 +354,7 @@ class OkapiModuleVersionResolverTest {
   @Test
   void getAvailableVersions_negative_statusCodeRetryLimitExhausted()
       throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     when(httpClient.send(any(HttpRequest.class), any())).thenReturn(httpResponse);
     when(httpResponse.statusCode())
@@ -379,7 +379,7 @@ class OkapiModuleVersionResolverTest {
   @Test
   void getAvailableVersions_negative_genericExceptionReturnsEmpty()
       throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var exception = new RuntimeException("Unexpected error");
     var registry = okapiRegistry();
 
@@ -394,7 +394,7 @@ class OkapiModuleVersionResolverTest {
   @Test
   void getAvailableVersions_negative_ioExceptionWithNullMessage()
       throws IOException, InterruptedException {
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
     var exception = new IOException((String) null);
     var registry = okapiRegistry();
 
@@ -419,7 +419,7 @@ class OkapiModuleVersionResolverTest {
 
     var registry = okapiRegistry();
     registry.setHeaders(Map.of("X-Okapi-Token", "secret"));
-    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE);
+    var dependency = new Dependency("mod-foo", "^1.0.0", PreReleaseFilter.FALSE, null);
 
     var result = resolver.getAvailableVersions(registry, dependency, ModuleType.BE);
 

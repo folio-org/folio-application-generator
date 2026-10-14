@@ -59,9 +59,9 @@ class ConfigurationGeneratorTest {
   @Test
   @SneakyThrows
   void execute_positive() {
-    mojo.modules = List.of(new Dependency("mod-users", "1.0.0", null));
-    mojo.uiModules = List.of(new Dependency("folio_users", "2.0.0", null));
-    mojo.dependencies = List.of(new Dependency("app-core", "1.0.0", null));
+    mojo.modules = List.of(new Dependency("mod-users", "1.0.0", null, null));
+    mojo.uiModules = List.of(new Dependency("folio_users", "2.0.0", null, null));
+    mojo.dependencies = List.of(new Dependency("app-core", "1.0.0", null, null));
 
     setupContextMocks();
     var application = new ApplicationDescriptor().version("1.0.0");
@@ -99,7 +99,7 @@ class ConfigurationGeneratorTest {
   @Test
   @SneakyThrows
   void execute_negative_applicationGeneratorException() {
-    mojo.modules = List.of(new Dependency("mod-users", "1.0.0", null));
+    mojo.modules = List.of(new Dependency("mod-users", "1.0.0", null, null));
     setupContextMocks();
 
     var errorDetail = ErrorDetail.moduleNotFound("mod-users", "1.0.0", "^1.0.0");
@@ -117,7 +117,7 @@ class ConfigurationGeneratorTest {
   @Test
   @SneakyThrows
   void execute_negative_genericException() {
-    mojo.modules = List.of(new Dependency("mod-users", "1.0.0", null));
+    mojo.modules = List.of(new Dependency("mod-users", "1.0.0", null, null));
     setupContextMocks();
 
     var exception = new RuntimeException("Unexpected error");
@@ -134,7 +134,7 @@ class ConfigurationGeneratorTest {
   @Test
   @SneakyThrows
   void execute_negative_mojoExecutionExceptionRethrown() {
-    mojo.modules = List.of(new Dependency("mod-users", "1.0.0", null));
+    mojo.modules = List.of(new Dependency("mod-users", "1.0.0", null, null));
     setupContextMocks();
 
     var originalException = new MojoExecutionException("Original mojo error");

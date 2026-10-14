@@ -405,7 +405,7 @@ public class ApplicationDescriptorUpdateService {
     if (moduleId.contains(":")) {
       var name = moduleId.substring(0, moduleId.indexOf(':'));
       var version = moduleId.substring(moduleId.indexOf(':') + 1);
-      return Optional.of(new Dependency(name, version, PreReleaseFilter.TRUE));
+      return Optional.of(new Dependency(name, version, PreReleaseFilter.TRUE, null));
     }
     return splitModuleId(moduleId);
   }
