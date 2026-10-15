@@ -2,18 +2,20 @@
   "name": "${project.name}",
   "version": "${project.version}",
   "description": "${project.description}",
+  "scope": "platform",
   "dependencies": [
     {
-      "name": "postgres",
+      "name": "app-postgres",
       "version": ">=16.0"
     },
     {
-      "name": "kafka",
+      "name": "app-kafka",
       "version": ">=3.5.1",
+      "preRelease": "only",
       "optional": false
     },
     {
-      "name": "opensearch",
+      "name": "app-opensearch",
       "version": ">=2.19.0",
       "optional": true
     }

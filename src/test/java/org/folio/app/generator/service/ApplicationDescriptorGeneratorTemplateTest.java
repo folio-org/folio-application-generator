@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,7 @@ import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.configuration.SpringConfiguration;
 import org.folio.app.generator.model.ApplicationDescriptor;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
+import org.folio.app.generator.model.ApplicationScope;
 import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.ModulesLoadResult;
@@ -303,14 +305,17 @@ class ApplicationDescriptorGeneratorTemplateTest {
     doNothing().when(dependencyValidator).validateDependencies(any());
 
     var template = readTemplate("template-with-virtual-app-dependencies.json", true);
+    assertThat(template.getDependencies()).extracting(Dependency::getPreRelease)
+      .containsExactly(null, PreReleaseFilter.ONLY, null);
     generator.generate(template);
 
     var outputFile = new File(tempDir.toFile(), "test-app-1.0.0-SNAPSHOT.json");
     assertThat(outputFile).exists();
     var result = jsonConverter.parse(outputFile, ApplicationDescriptor.class);
+    assertThat(result.getScope()).isEqualTo(ApplicationScope.PLATFORM);
     assertThat(result.getDependencies()).hasSize(3);
     assertThat(result.getDependencies()).extracting(Dependency::getName)
-      .containsExactly("postgres", "kafka", "opensearch");
+      .containsExactly("app-postgres", "app-kafka", "app-opensearch");
     assertThat(result.getDependencies()).extracting(Dependency::getVersion)
       .containsExactly(">=16.0", ">=3.5.1", ">=2.19.0");
     assertThat(result.getDependencies().get(0).getOptional()).isNull();
@@ -324,6 +329,9 @@ class ApplicationDescriptorGeneratorTemplateTest {
     assertThat(json.has("uiModules")).isFalse();
     assertThat(json.has("moduleDescriptors")).isFalse();
     assertThat(json.has("uiModuleDescriptors")).isFalse();
+    assertThat(json.get("scope").asText()).isEqualTo("platform");
+    json.get("dependencies").forEach(dependency -> assertThat(dependency.has("preRelease")).isFalse());
+    assertThat(Files.readString(outputFile.toPath())).doesNotContain("preRelease");
   }
 
   @SneakyThrows

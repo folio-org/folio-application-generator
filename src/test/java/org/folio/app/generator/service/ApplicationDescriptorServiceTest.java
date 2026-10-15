@@ -14,6 +14,7 @@ import java.util.Map;
 import lombok.SneakyThrows;
 import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
+import org.folio.app.generator.model.ApplicationScope;
 import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.ModuleDefinition;
 import org.folio.app.generator.model.ModulesLoadResult;
@@ -224,6 +225,43 @@ class ApplicationDescriptorServiceTest {
     assertThat(result.getUiModules()).isNull();
     assertThat(result.getModuleDescriptors()).isNull();
     assertThat(result.getUiModuleDescriptors()).isNull();
+  }
+
+  @Test
+  @SneakyThrows
+  void create_positive_scopeCopiedFromTemplate() {
+    var template = new ApplicationDescriptorTemplate()
+      .name("test-app")
+      .version("1.0.0")
+      .scope(ApplicationScope.PLATFORM);
+
+    when(moduleDescriptorService.loadModules(eq(BE), anyList())).thenReturn(
+      new ModulesLoadResult(List.of(), List.of()));
+    when(moduleDescriptorService.loadModules(eq(UI), anyList())).thenReturn(
+      new ModulesLoadResult(List.of(), List.of()));
+    when(pluginConfig.isModuleUrlsOnly()).thenReturn(true);
+
+    var result = service.create(template);
+
+    assertThat(result.getScope()).isEqualTo(ApplicationScope.PLATFORM);
+  }
+
+  @Test
+  @SneakyThrows
+  void create_positive_scopeNullWhenTemplateHasNone() {
+    var template = new ApplicationDescriptorTemplate()
+      .name("test-app")
+      .version("1.0.0");
+
+    when(moduleDescriptorService.loadModules(eq(BE), anyList())).thenReturn(
+      new ModulesLoadResult(List.of(), List.of()));
+    when(moduleDescriptorService.loadModules(eq(UI), anyList())).thenReturn(
+      new ModulesLoadResult(List.of(), List.of()));
+    when(pluginConfig.isModuleUrlsOnly()).thenReturn(true);
+
+    var result = service.create(template);
+
+    assertThat(result.getScope()).isNull();
   }
 
   @Test

@@ -1,6 +1,7 @@
 package org.folio.app.generator.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.nio.charset.StandardCharsets;
@@ -11,6 +12,7 @@ import lombok.SneakyThrows;
 import org.folio.app.generator.configuration.SpringConfiguration;
 import org.folio.app.generator.model.ApplicationDescriptor;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
+import org.folio.app.generator.model.ApplicationScope;
 import org.folio.app.generator.support.UnitTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -42,6 +44,37 @@ class JsonConverterTest {
 
     assertNotNull(applicationDescriptor);
     assertThat(applicationDescriptor.getId()).isEqualTo("app-consortia-1.0.0-SNAPSHOT");
+  }
+
+  @Test
+  void parseApplicationDescriptorTemplate_positive_scopePlatform() {
+    var template = jsonConverter.parse("{\"scope\": \"platform\"}", ApplicationDescriptorTemplate.class);
+
+    assertThat(template.getScope()).isEqualTo(ApplicationScope.PLATFORM);
+  }
+
+  @Test
+  void parseApplicationDescriptorTemplate_positive_scopeAbsent() {
+    var template = jsonConverter.parse("{\"name\": \"app-test\"}", ApplicationDescriptorTemplate.class);
+
+    assertThat(template.getScope()).isNull();
+  }
+
+  @Test
+  void parseApplicationDescriptor_positive_scopeRegular() {
+    var descriptor = new ApplicationDescriptor().id("app-test-1.0.0").scope(ApplicationScope.REGULAR);
+
+    var json = jsonConverter.toJsonString(descriptor);
+    var parsed = jsonConverter.parse(json, ApplicationDescriptor.class);
+
+    assertThat(json).contains("\"scope\":\"regular\"");
+    assertThat(parsed.getScope()).isEqualTo(ApplicationScope.REGULAR);
+  }
+
+  @Test
+  void parseApplicationDescriptorTemplate_negative_invalidScope() {
+    assertThatThrownBy(() -> jsonConverter.parse("{\"scope\": \"global\"}", ApplicationDescriptorTemplate.class))
+      .hasStackTraceContaining("Invalid scope value: 'global'");
   }
 
   @Test

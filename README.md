@@ -208,14 +208,21 @@ already set on a registry (via its pom `<headers>` or `::headers=`) is **not** o
 
 Virtual applications have no modules, so their templates should not use `modules` and `uiModules`.
 
+The optional top-level `scope` field is `regular` or `platform` (case-insensitive; any other value fails the build).
+It is written to the descriptor as given and omitted when absent from the template. The plugin never adds
+a default. `platform` marks deployment-wide applications (for example infrastructure virtual applications).
+For `generateFromConfiguration` use the `<scope>` plugin parameter. `updateFromTemplate` copies `scope` from
+the template only when the template sets it.
+
 ```json
 {
   "name": "${project.name}",
   "version": "${project.version}",
   "description": "${project.description}",
+  "scope": "platform",
   "dependencies": [
     {
-      "name": "kafka",
+      "name": "app-kafka",
       "version": ">=3.5.1"
     }
   ]

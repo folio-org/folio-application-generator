@@ -18,6 +18,7 @@ import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.configuration.ApplicationContextBuilder;
 import org.folio.app.generator.model.ApplicationDescriptor;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
+import org.folio.app.generator.model.ApplicationScope;
 import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.ErrorDetail;
 import org.folio.app.generator.model.ExecutionResult;
@@ -143,6 +144,52 @@ class TemplateUpdateGeneratorTest {
 
     assert inputDescriptor.getDependencies().size() == 1;
     assert inputDescriptor.getDependencies().get(0).getName().equals("app-new");
+  }
+
+  @Test
+  @SneakyThrows
+  void execute_positive_templateScopeOverridesDescriptorScope() {
+    mojo.appDescriptorPath = "/path/to/descriptor.json";
+    mojo.templatePath = "/path/to/template.json";
+    mojo.allowDowngrade = true;
+    mojo.allowAddModules = true;
+    mojo.removeUnlistedModules = true;
+
+    inputDescriptor.setScope(ApplicationScope.REGULAR);
+    template.setScope(ApplicationScope.PLATFORM);
+
+    setupContextMocks();
+    when(mockJsonProvider.readJsonFromFile("/path/to/descriptor.json", ApplicationDescriptor.class, false))
+      .thenReturn(inputDescriptor);
+    when(mockJsonProvider.readJsonFromFile("/path/to/template.json", ApplicationDescriptorTemplate.class, true))
+      .thenReturn(template);
+
+    assertDoesNotThrow(() -> mojo.execute());
+
+    assert inputDescriptor.getScope() == ApplicationScope.PLATFORM;
+  }
+
+  @Test
+  @SneakyThrows
+  void execute_positive_missingTemplateScopeKeepsDescriptorScope() {
+    mojo.appDescriptorPath = "/path/to/descriptor.json";
+    mojo.templatePath = "/path/to/template.json";
+    mojo.allowDowngrade = true;
+    mojo.allowAddModules = true;
+    mojo.removeUnlistedModules = true;
+
+    inputDescriptor.setScope(ApplicationScope.PLATFORM);
+    template.setScope(null);
+
+    setupContextMocks();
+    when(mockJsonProvider.readJsonFromFile("/path/to/descriptor.json", ApplicationDescriptor.class, false))
+      .thenReturn(inputDescriptor);
+    when(mockJsonProvider.readJsonFromFile("/path/to/template.json", ApplicationDescriptorTemplate.class, true))
+      .thenReturn(template);
+
+    assertDoesNotThrow(() -> mojo.execute());
+
+    assert inputDescriptor.getScope() == ApplicationScope.PLATFORM;
   }
 
   @Test
