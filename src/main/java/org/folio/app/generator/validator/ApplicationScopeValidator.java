@@ -23,8 +23,8 @@ public class ApplicationScopeValidator {
       return;
     }
 
-    var modulesCount = emptyIfNull(template.getModules()).size();
-    var uiModulesCount = emptyIfNull(template.getUiModules()).size();
+    int modulesCount = emptyIfNull(template.getModules()).size();
+    int uiModulesCount = emptyIfNull(template.getUiModules()).size();
     if (modulesCount > 0 || uiModulesCount > 0) {
       throw new ApplicationGeneratorException(
         format("Application with scope 'platform' must not define modules or uiModules (modules: %d, uiModules: %d)",
