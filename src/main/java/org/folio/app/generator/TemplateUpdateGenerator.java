@@ -17,6 +17,7 @@ import org.folio.app.generator.service.ApplicationDescriptorUpdateService;
 import org.folio.app.generator.service.JsonProvider;
 import org.folio.app.generator.service.ModuleRegistryProvider;
 import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
+import org.folio.app.generator.validator.ApplicationScopeValidator;
 
 @Mojo(name = "updateFromTemplate", defaultPhase = LifecyclePhase.COMPILE, requiresDependencyResolution = RUNTIME)
 public class TemplateUpdateGenerator extends AbstractUpdateMojo {
@@ -50,6 +51,8 @@ public class TemplateUpdateGenerator extends AbstractUpdateMojo {
       var jsonProvider = ctx.getBean(JsonProvider.class);
       var application = jsonProvider.readJsonFromFile(appDescriptorPath, ApplicationDescriptor.class, false);
       var template = jsonProvider.readJsonFromFile(templatePath, ApplicationDescriptorTemplate.class, true);
+
+      ApplicationScopeValidator.validate(template);
 
       application.setDependencies(emptyIfNull(template.getDependencies()));
       if (template.getScope() != null) {

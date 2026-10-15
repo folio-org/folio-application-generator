@@ -34,6 +34,7 @@ public class ApplicationDependencyValidator {
    * @param template - {@link ApplicationDescriptorTemplate} to analyze
    */
   public void validateDependencies(ApplicationDescriptorTemplate template) {
+    ApplicationScopeValidator.validate(template);
     validateAndGetProjectVersion(template);
     var errors = Stream.of(emptyIfNull(template.getModules()))
       .map(this::validateModules)

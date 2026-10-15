@@ -206,7 +206,10 @@ already set on a registry (via its pom `<headers>` or `::headers=`) is **not** o
 | `optional`   | yes                   | `true` or `false`; written as given and omitted when absent from the template |
 | `preRelease` | no                    | Not used for application dependencies                                         |
 
-Virtual applications have no modules, so their templates should not use `modules` and `uiModules`.
+Virtual applications have no modules, so their templates must not use `modules` and `uiModules`.
+A template with `"scope": "platform"` and a non-empty `modules` or `uiModules` fails the build. This applies to
+the `generateFromJson`, `generateFromConfiguration` and `updateFromTemplate` goals, and the failure is reported
+as `CONFIGURATION_ERROR` in `execution-result.json`.
 
 The optional top-level `scope` field is `regular` or `platform` (case-insensitive; any other value fails the build).
 It is written to the descriptor as given and omitted when absent from the template. The plugin never adds
