@@ -30,6 +30,11 @@ public class ApplicationDescriptorTemplate {
   private String description;
 
   /**
+   * An application scope: regular or platform. Not set when omitted in the template.
+   */
+  private ApplicationScope scope;
+
+  /**
    * A list with modules to be resolved.
    */
   @JsonProperty("modules")
@@ -74,6 +79,16 @@ public class ApplicationDescriptorTemplate {
    */
   public ApplicationDescriptorTemplate version(String version) {
     this.version = version;
+    return this;
+  }
+
+  /**
+   * Sets scope field and returns {@link ApplicationDescriptorTemplate}.
+   *
+   * @return modified {@link ApplicationDescriptorTemplate} value
+   */
+  public ApplicationDescriptorTemplate scope(ApplicationScope scope) {
+    this.scope = scope;
     return this;
   }
 

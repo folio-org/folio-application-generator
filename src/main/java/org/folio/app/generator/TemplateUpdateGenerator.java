@@ -52,6 +52,9 @@ public class TemplateUpdateGenerator extends AbstractUpdateMojo {
       var template = jsonProvider.readJsonFromFile(templatePath, ApplicationDescriptorTemplate.class, true);
 
       application.setDependencies(emptyIfNull(template.getDependencies()));
+      if (template.getScope() != null) {
+        application.setScope(template.getScope());
+      }
 
       var updateConfig = buildUpdateConfig(allowDowngrade, allowAddModules, removeUnlistedModules);
 

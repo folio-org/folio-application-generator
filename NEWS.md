@@ -1,4 +1,5 @@
 ## v1.5.0 (in progress)
+* Support virtual dependency metadata in folio-application-generator (EUREKA-892)
 
 ## v1.4.0 (22.04.2026)
 * Migrate CI/CD from Jenkins to GitHub Actions Maven workflow: [APPDESCRIP-69](https://issues.folio.org/browse/APPDESCRIP-69)

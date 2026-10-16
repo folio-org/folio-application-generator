@@ -31,6 +31,12 @@ public class ApplicationDescriptor {
   private String description;
 
   /**
+   * An application scope: regular or platform.
+   */
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private ApplicationScope scope;
+
+  /**
    * A list with modules to be resolved.
    */
   @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -96,6 +102,16 @@ public class ApplicationDescriptor {
    */
   public ApplicationDescriptor description(String description) {
     this.description = description;
+    return this;
+  }
+
+  /**
+   * Sets scope field and returns {@link ApplicationDescriptor}.
+   *
+   * @return modified {@link ApplicationDescriptor} value
+   */
+  public ApplicationDescriptor scope(ApplicationScope scope) {
+    this.scope = scope;
     return this;
   }
 

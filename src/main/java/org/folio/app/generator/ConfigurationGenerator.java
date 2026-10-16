@@ -8,6 +8,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.folio.app.generator.configuration.ApplicationContextBuilder;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
+import org.folio.app.generator.model.ApplicationScope;
 import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.ErrorDetail;
 import org.folio.app.generator.service.ApplicationDescriptorGenerator;
@@ -16,6 +17,9 @@ import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 
 @Mojo(name = "generateFromConfiguration", defaultPhase = LifecyclePhase.COMPILE)
 public class ConfigurationGenerator extends AbstractGeneratorMojo {
+
+  @Parameter(name = "scope")
+  String scope;
 
   @Parameter(name = "modules")
   List<Dependency> modules;
@@ -40,6 +44,7 @@ public class ConfigurationGenerator extends AbstractGeneratorMojo {
 
     try {
       var template = new ApplicationDescriptorTemplate()
+        .scope(ApplicationScope.fromValue(scope))
         .dependencies(dependencies)
         .modules(modules)
         .uiModules(uiModules);

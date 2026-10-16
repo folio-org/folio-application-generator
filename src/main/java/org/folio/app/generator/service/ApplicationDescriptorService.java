@@ -49,6 +49,7 @@ public class ApplicationDescriptorService {
 
     baseAppDescriptor
       .description(defaultIfBlank(template.getDescription(), mavenProject.getDescription()))
+      .scope(template.getScope())
       .modules(modulesLoadResult.artifacts())
       .uiModules(uiModulesLoadResult.artifacts())
       .dependencies(stripPreRelease(template.getDependencies()));
