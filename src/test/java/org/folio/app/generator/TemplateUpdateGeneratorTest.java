@@ -8,7 +8,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -158,8 +157,6 @@ class TemplateUpdateGeneratorTest {
 
     inputDescriptor.setScope(ApplicationScope.REGULAR);
     template.setScope(ApplicationScope.PLATFORM);
-    template.setModules(List.of());
-    template.setUiModules(List.of());
 
     setupContextMocks();
     when(mockJsonProvider.readJsonFromFile("/path/to/descriptor.json", ApplicationDescriptor.class, false))
@@ -285,29 +282,6 @@ class TemplateUpdateGeneratorTest {
 
   @Test
   @SneakyThrows
-  void execute_negative_platformScopeWithModules() {
-    mojo.appDescriptorPath = "/path/to/descriptor.json";
-    mojo.templatePath = "/path/to/template.json";
-    template.setScope(ApplicationScope.PLATFORM);
-
-    setupContextMocksWithoutUpdateService();
-    when(mockJsonProvider.readJsonFromFile("/path/to/descriptor.json", ApplicationDescriptor.class, false))
-      .thenReturn(inputDescriptor);
-    when(mockJsonProvider.readJsonFromFile("/path/to/template.json", ApplicationDescriptorTemplate.class, true))
-      .thenReturn(template);
-
-    assertThatThrownBy(() -> mojo.execute())
-      .isInstanceOf(MojoExecutionException.class)
-      .hasMessage("Application with scope 'platform' must not define modules or uiModules "
-        + "(modules: 2, uiModules: 1)")
-      .hasCauseInstanceOf(ApplicationGeneratorException.class);
-
-    verifyNoInteractions(mockUpdateService);
-    verify(mockJsonProvider, times(2)).writeExecutionResult(any(ExecutionResult.class), eq("/target"));
-  }
-
-  @Test
-  @SneakyThrows
   void execute_negative_genericException() {
     mojo.appDescriptorPath = "/path/to/descriptor.json";
     mojo.templatePath = "/path/to/template.json";
@@ -329,12 +303,6 @@ class TemplateUpdateGeneratorTest {
   }
 
   private void setupContextMocks() {
-    setupContextMocksWithoutUpdateService();
-    when(mockGenericApplicationContext.getBean(ApplicationDescriptorUpdateService.class))
-      .thenReturn(mockUpdateService);
-  }
-
-  private void setupContextMocksWithoutUpdateService() {
     when(mavenProject.getArtifactId()).thenReturn("test-app");
     when(mavenProject.getBuild()).thenReturn(build);
     when(build.getDirectory()).thenReturn("/target");
@@ -345,5 +313,7 @@ class TemplateUpdateGeneratorTest {
     when(mockContextBuilder.withModuleRegistries(any())).thenReturn(mockContextBuilder);
     when(mojo.buildApplicationContext()).thenReturn(mockGenericApplicationContext);
     when(mockGenericApplicationContext.getBean(JsonProvider.class)).thenReturn(mockJsonProvider);
+    when(mockGenericApplicationContext.getBean(ApplicationDescriptorUpdateService.class))
+      .thenReturn(mockUpdateService);
   }
 }

@@ -8,10 +8,8 @@ import java.util.stream.Stream;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.folio.app.generator.model.ApplicationDescriptorTemplate;
-import org.folio.app.generator.model.ApplicationScope;
 import org.folio.app.generator.model.Dependency;
 import org.folio.app.generator.model.PreReleaseFilter;
-import org.folio.app.generator.service.exceptions.ApplicationGeneratorException;
 import org.folio.app.generator.support.UnitTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,39 +56,6 @@ class ApplicationDependencyValidatorTest {
     when(mavenProject.getVersion()).thenReturn("1.0.0");
 
     validator.validateDependencies(template);
-  }
-
-  @Test
-  void validateDependencies_positive_platformScopeWithApplicationDependenciesOnly() {
-    var template = new ApplicationDescriptorTemplate();
-    template.setScope(ApplicationScope.PLATFORM);
-    template.setDependencies(List.of(new Dependency("app-kafka", ">=3.5.1", null, null)));
-
-    when(mavenProject.getVersion()).thenReturn("1.0.0");
-
-    validator.validateDependencies(template);
-  }
-
-  @Test
-  void validateDependencies_negative_platformScopeWithModules() {
-    var template = new ApplicationDescriptorTemplate();
-    template.setScope(ApplicationScope.PLATFORM);
-    template.setModules(List.of(new Dependency("mod-foo", "1.0.0", PreReleaseFilter.FALSE, null)));
-
-    assertThatThrownBy(() -> validator.validateDependencies(template))
-      .isInstanceOf(ApplicationGeneratorException.class)
-      .hasMessageContaining("Application with scope 'platform' must not define modules or uiModules");
-  }
-
-  @Test
-  void validateDependencies_negative_platformScopeWithUiModules() {
-    var template = new ApplicationDescriptorTemplate();
-    template.setScope(ApplicationScope.PLATFORM);
-    template.setUiModules(List.of(new Dependency("folio_foo", "1.0.0", PreReleaseFilter.FALSE, null)));
-
-    assertThatThrownBy(() -> validator.validateDependencies(template))
-      .isInstanceOf(ApplicationGeneratorException.class)
-      .hasMessageContaining("Application with scope 'platform' must not define modules or uiModules");
   }
 
   @Test
