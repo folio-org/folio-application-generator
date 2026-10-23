@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.stream.Stream;
 import org.apache.maven.plugin.logging.Log;
 import org.folio.app.generator.model.Dependency;
@@ -224,6 +225,74 @@ class S3ModuleVersionResolverTest {
 
     assertThat(result).isPresent();
     assertThat(result.get()).containsExactly("1.2.0", "1.0.0");
+  }
+
+  @ParameterizedTest(name = "preRelease={0}")
+  @MethodSource("provideUiSnapshotPreReleaseFilters")
+  void getAvailableVersions_positive_uiSnapshotWithLargePatch(PreReleaseFilter filter, List<String> expected) {
+    var dependency = new Dependency("folio_example", "latest", filter, null);
+    var request = listObjectsRequest("modules/folio_example-", null);
+    var response = listObjectsResponse(
+      s3Object("modules/folio_example-1.1.0.json"),
+      s3Object("modules/folio_example-1.2.1099000000000434.json"));
+
+    when(s3Client.listObjectsV2(request)).thenReturn(response);
+
+    var result = resolver.getAvailableVersions(s3Registry(), dependency, ModuleType.UI);
+
+    assertThat(result).isPresent();
+    assertThat(result.get()).containsExactlyElementsOf(expected);
+  }
+
+  @Test
+  void getAvailableVersions_positive_uiSnapshotsWithLargePatchSorted() {
+    var dependency = new Dependency("folio_example", "latest", PreReleaseFilter.ONLY, null);
+    var request = listObjectsRequest("modules/folio_example-", null);
+    var response = listObjectsResponse(
+      s3Object("modules/folio_example-1.2.1099000000000434.json"),
+      s3Object("modules/folio_example-1.3.1099000000000100.json"),
+      s3Object("modules/folio_example-1.2.1099000000000500.json"));
+
+    when(s3Client.listObjectsV2(request)).thenReturn(response);
+
+    var result = resolver.getAvailableVersions(s3Registry(), dependency, ModuleType.UI);
+
+    assertThat(result).isPresent();
+    assertThat(result.get()).containsExactly(
+      "1.3.1099000000000100", "1.2.1099000000000500", "1.2.1099000000000434");
+  }
+
+  @ParameterizedTest(name = "preRelease={0}")
+  @MethodSource("provideBackendPreReleaseFilters")
+  void getAvailableVersions_positive_backendVersions(PreReleaseFilter filter, List<String> expected) {
+    var dependency = new Dependency("mod-foo", "latest", filter, null);
+    var request = listObjectsRequest("modules/mod-foo-", null);
+    var response = listObjectsResponse(
+      s3Object("modules/mod-foo-1.0.0-SNAPSHOT.100100000000013.json"),
+      s3Object("modules/mod-foo-19.6.361.json"));
+
+    when(s3Client.listObjectsV2(request)).thenReturn(response);
+
+    var result = resolver.getAvailableVersions(s3Registry(), dependency, ModuleType.BE);
+
+    assertThat(result).isPresent();
+    assertThat(result.get()).containsExactlyElementsOf(expected);
+  }
+
+  private static Stream<Arguments> provideUiSnapshotPreReleaseFilters() {
+    return Stream.of(
+      Arguments.of(PreReleaseFilter.ONLY, List.of("1.2.1099000000000434")),
+      Arguments.of(PreReleaseFilter.TRUE, List.of("1.2.1099000000000434", "1.1.0")),
+      Arguments.of(PreReleaseFilter.FALSE, List.of("1.1.0"))
+    );
+  }
+
+  private static Stream<Arguments> provideBackendPreReleaseFilters() {
+    return Stream.of(
+      Arguments.of(PreReleaseFilter.ONLY, List.of("1.0.0-SNAPSHOT.100100000000013")),
+      Arguments.of(PreReleaseFilter.TRUE, List.of("19.6.361", "1.0.0-SNAPSHOT.100100000000013")),
+      Arguments.of(PreReleaseFilter.FALSE, List.of("19.6.361"))
+    );
   }
 
   private static Stream<Arguments> provideInvalidS3Objects() {

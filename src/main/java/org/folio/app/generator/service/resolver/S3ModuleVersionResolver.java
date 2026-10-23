@@ -19,6 +19,7 @@ import org.folio.app.generator.model.registry.S3ModuleRegistry;
 import org.folio.app.generator.model.types.ModuleType;
 import org.folio.app.generator.model.types.RegistryType;
 import org.folio.app.generator.utils.PluginConfig;
+import org.folio.app.generator.utils.SemverUtils;
 import org.semver4j.Semver;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -59,12 +60,8 @@ public class S3ModuleVersionResolver implements ModuleVersionResolver {
       }
 
       for (S3Object s3Object : result.contents()) {
-        Pair<String, Semver> parsed = parseS3ObjectKey(s3Object, s3Registry.getPath());
-
-        // Defensive check: parsed.getRight() != null is currently unreachable since parseS3ObjectKey
-        // filters out null Semver values (line 111), but kept for safety in case implementation changes
-        if (parsed != null && parsed.getLeft().equals(moduleName)
-            && parsed.getRight() != null && matchesPreReleaseFilter(parsed.getRight(), preReleaseFilter)) {
+        var parsed = parseS3ObjectKey(s3Object, s3Registry.getPath(), moduleName);
+        if (parsed != null && matchesPreReleaseFilter(parsed.getRight(), preReleaseFilter)) {
           collected.add(parsed);
         }
       }
@@ -81,7 +78,7 @@ public class S3ModuleVersionResolver implements ModuleVersionResolver {
           moduleName, getBucketPath(s3Registry)));
 
     collected.sort(Comparator.comparing(Pair<String, Semver>::getRight).reversed());
-    return Optional.of(collected.stream().map(p -> p.getRight().getVersion()).toList());
+    return Optional.of(collected.stream().map(Pair::getLeft).toList());
   }
 
   @Override
@@ -98,7 +95,7 @@ public class S3ModuleVersionResolver implements ModuleVersionResolver {
       .build();
   }
 
-  private static Pair<String, Semver> parseS3ObjectKey(S3Object s3Object, String pathPrefix) {
+  private static Pair<String, Semver> parseS3ObjectKey(S3Object s3Object, String pathPrefix, String moduleName) {
     var s3ObjectKey = s3Object.key();
     var fileName = s3ObjectKey.substring(pathPrefix.length());
 
@@ -109,7 +106,8 @@ public class S3ModuleVersionResolver implements ModuleVersionResolver {
       .orElse(fileName);
 
     return createModuleDefinitionFromId(moduleDescriptorId)
-      .map(md -> Pair.of(md.getName(), Semver.parse(md.getVersion())))
+      .filter(md -> moduleName.equals(md.getName()))
+      .map(md -> Pair.of(md.getVersion(), SemverUtils.parse(md.getVersion())))
       .filter(pair -> pair.getRight() != null)
       .orElse(null);
   }
