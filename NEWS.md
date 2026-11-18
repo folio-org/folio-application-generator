@@ -1,5 +1,11 @@
 ## v1.5.0 (18.11.2026)
-* Support virtual dependency metadata in folio-application-generator (EUREKA-892)
+* Add ECR artifact validation and skip flags for custom modules (APPDESCRIP-71)
+* Support per-registry custom HTTP headers for module registries (APPDESCRIP-74)
+* Support S3 buckets and AWS ECR registries across different AWS regions (APPDESCRIP-77)
+* Derive npm package scope from UI module name (APPDESCRIP-80)
+* Retry all transient network errors and stop fallback registries from masking registry failures (APPDESCRIP-81)
+* Support virtual dependency metadata and the application `scope` field (EUREKA-892)
+* Resolve UI snapshot versions with large patch numbers from S3 module registries (APPDESCRIP-82)
 
 ## v1.4.0 (22.04.2026)
 * Migrate CI/CD from Jenkins to GitHub Actions Maven workflow: [APPDESCRIP-69](https://issues.folio.org/browse/APPDESCRIP-69)
