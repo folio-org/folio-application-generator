@@ -1,4 +1,4 @@
-## v1.5.0 (in progress)
+## v1.5.0 (18.11.2026)
 * Support virtual dependency metadata in folio-application-generator (EUREKA-892)
 
 ## v1.4.0 (22.04.2026)
