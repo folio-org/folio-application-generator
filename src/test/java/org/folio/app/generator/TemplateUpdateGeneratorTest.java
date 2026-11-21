@@ -155,7 +155,7 @@ class TemplateUpdateGeneratorTest {
     mojo.allowAddModules = true;
     mojo.removeUnlistedModules = true;
 
-    inputDescriptor.setScope(ApplicationScope.REGULAR);
+    inputDescriptor.setScope(ApplicationScope.TENANT);
     template.setScope(ApplicationScope.PLATFORM);
 
     setupContextMocks();

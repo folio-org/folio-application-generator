@@ -62,13 +62,13 @@ class JsonConverterTest {
 
   @Test
   void parseApplicationDescriptor_positive_scopeRegular() {
-    var descriptor = new ApplicationDescriptor().id("app-test-1.0.0").scope(ApplicationScope.REGULAR);
+    var descriptor = new ApplicationDescriptor().id("app-test-1.0.0").scope(ApplicationScope.TENANT);
 
     var json = jsonConverter.toJsonString(descriptor);
     var parsed = jsonConverter.parse(json, ApplicationDescriptor.class);
 
-    assertThat(json).contains("\"scope\":\"regular\"");
-    assertThat(parsed.getScope()).isEqualTo(ApplicationScope.REGULAR);
+    assertThat(json).contains("\"scope\":\"tenant\"");
+    assertThat(parsed.getScope()).isEqualTo(ApplicationScope.TENANT);
   }
 
   @Test

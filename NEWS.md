@@ -1,3 +1,6 @@
+## v1.5.1 (IN PROGRESS)
+* Remove references to usage regular keyword using tenant keyword for applications scope (EUREKA-938)
+
 ## v1.5.0 (18.11.2026)
 * Add ECR artifact validation and skip flags for custom modules (APPDESCRIP-71)
 * Support per-registry custom HTTP headers for module registries (APPDESCRIP-74)
