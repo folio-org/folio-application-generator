@@ -8,9 +8,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum ApplicationScope {
   /**
-   * Regular application, entitled per tenant.
+   * Tenant application, entitled per tenant.
    */
-  REGULAR("regular"),
+  TENANT("tenant"),
 
   /**
    * Deployment-wide application, only one version is active across the whole deployment.
@@ -39,7 +39,7 @@ public enum ApplicationScope {
       }
     }
     throw new IllegalArgumentException(
-      "Invalid scope value: '" + value + "'. Allowed values: 'regular', 'platform'"
+      "Invalid scope value: '" + value + "'. Allowed values: 'tenant', 'platform'"
     );
   }
 }

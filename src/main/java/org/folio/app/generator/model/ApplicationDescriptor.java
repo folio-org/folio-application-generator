@@ -31,7 +31,7 @@ public class ApplicationDescriptor {
   private String description;
 
   /**
-   * An application scope: regular or platform.
+   * An application scope: tenant or platform.
    */
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private ApplicationScope scope;

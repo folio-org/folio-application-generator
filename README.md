@@ -208,7 +208,7 @@ Fields of each entry in the template `dependencies` list:
 | `optional`   | yes                   | `true` or `false`; written as given and omitted when absent from the template |
 | `preRelease` | no                    | Not used for application dependencies                                         |
 
-Virtual applications use `"scope": "platform"`. The optional top-level `scope` field of the template (not a dependency field) is `regular` or `platform`
+Virtual applications use `"scope": "platform"`. The optional top-level `scope` field of the template (not a dependency field) is `tenant` or `platform`
 (case-insensitive; any other value fails the build). It is written to the descriptor as given and omitted when
 absent from the template.
 
