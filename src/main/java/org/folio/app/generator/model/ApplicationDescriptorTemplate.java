@@ -30,7 +30,7 @@ public class ApplicationDescriptorTemplate {
   private String description;
 
   /**
-   * An application scope: regular or platform. Not set when omitted in the template.
+   * An application scope: tenant or platform. Not set when omitted in the template.
    */
   private ApplicationScope scope;
 
